@@ -2,6 +2,8 @@
 	"name": "web-tools",
 	"version": "0.0.0",
 	"private": true,
+	"license": "MIT",
+	"author": "Bruce J. Hart",
 	"scripts": {
 		"deploy": "wrangler deploy",
 		"dev": "wrangler dev",

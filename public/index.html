@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Web Tools</title>
+    <style>
+      :root { color-scheme: light dark; }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; }
+      header { padding: 1rem; border-bottom: 1px solid #ddd; }
+      h1 { margin: 0; font-size: 1.25rem; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; padding: 1rem; }
+      .tile { display: block; border: 1px solid #ddd; border-radius: 10px; padding: 1rem; text-decoration: none; color: inherit; background: rgba(127,127,127,0.06); }
+      .tile:hover { background: rgba(127,127,127,0.12); }
+      .tile h2 { margin: 0 0 .5rem; font-size: 1.05rem; }
+      .tile p { margin: 0; color: #555; }
+      footer { padding: .75rem 1rem; border-top: 1px solid #ddd; font-size: .9rem; color: #666; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Web Tools</h1>
+    </header>
+    <main class="grid">
+      <a class="tile" href="/markdown">
+        <h2>Markdown Viewer</h2>
+        <p>Paste Markdown and view formatted HTML with MathJax.</p>
+      </a>
+    </main>
+    <footer>More tools coming soon.</footer>
+  </body>
+  </html>
+
