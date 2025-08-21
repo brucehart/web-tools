@@ -11,7 +11,42 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
-const HTML = `<!doctype html>
+const INDEX_HTML = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Web Tools</title>
+    <style>
+      :root { color-scheme: light dark; }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; }
+      header { padding: 1rem; border-bottom: 1px solid #ddd; }
+      h1 { margin: 0; font-size: 1.25rem; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; padding: 1rem; }
+      .tile { display: block; border: 1px solid #ddd; border-radius: 10px; padding: 1rem; text-decoration: none; color: inherit; background: rgba(127,127,127,0.06); }
+      .tile:hover { background: rgba(127,127,127,0.12); }
+      .tile h2 { margin: 0 0 .5rem; font-size: 1.05rem; }
+      .tile p { margin: 0; color: #555; }
+      footer { padding: .75rem 1rem; border-top: 1px solid #ddd; font-size: .9rem; color: #666; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Web Tools</h1>
+    </header>
+    <main class="grid">
+      <a class="tile" href="/markdown">
+        <h2>Markdown Viewer</h2>
+        <p>Paste Markdown and view formatted HTML with MathJax.</p>
+      </a>
+    </main>
+    <footer>More tools coming soon.</footer>
+  </body>
+  </html>`;
+
+const MARKDOWN_HTML = `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -38,17 +73,18 @@ const HTML = `<!doctype html>
     </style>
 
     <script>
-      // MathJax v3 configuration (inline: $...$, display: $$...$$)
+      // MathJax v3 configuration
+      // Use only $...$ for inline math to avoid conflicts with literal parentheses in text/links.
       window.MathJax = {
         tex: {
-          inlineMath: [['$', '$'], ['\\\(', '\\\)']],
+          inlineMath: [['$', '$']],
           displayMath: [['$$','$$'], ['\\\[', '\\\]']]
         },
         options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] }
       };
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" integrity="sha384-+A5oQk0v7x9JjC3u6l3LnhiqWkY3VZzYvjoLrbw9FJ6lHXe2kB6iO1p0l7R7dK4M" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js" integrity="sha384-8bMZQ8x1bXy2XQ4w6QmV3Yv3z8xWf3XyA6xYq6m1o0yJvM2JrZ5wN5+0O8S9o3eG" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
     <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
   </head>
   <body>
@@ -84,13 +120,18 @@ $$
         if (!input || !preview) return;
 
         // Configure marked for GFM and line breaks
-        if (window.marked) {
+        if (window.marked && typeof window.marked.setOptions === 'function') {
           window.marked.setOptions({ gfm: true, breaks: true });
         }
 
         const render = () => {
           const md = input.value || '';
-          const raw = window.marked ? window.marked.parse(md) : md;
+          let raw = md;
+          const mk = window.marked;
+          if (mk) {
+            if (typeof mk.parse === 'function') raw = mk.parse(md);
+            else if (typeof mk === 'function') raw = mk(md);
+          }
           const safe = window.DOMPurify ? window.DOMPurify.sanitize(raw) : raw;
           preview.innerHTML = safe;
           if (window.MathJax && window.MathJax.typesetPromise) {
@@ -107,8 +148,19 @@ $$
   </html>`;
 
 export default {
-  async fetch(_request, _env, _ctx): Promise<Response> {
-    return new Response(HTML, {
+  async fetch(request, _env, _ctx): Promise<Response> {
+    const url = new URL(request.url);
+    const path = url.pathname;
+    if (path === '/markdown' || path.startsWith('/markdown/')) {
+      return new Response(MARKDOWN_HTML, {
+        headers: {
+          'content-type': 'text/html; charset=utf-8',
+          'cache-control': 'no-store',
+        },
+      });
+    }
+    // Default to index page
+    return new Response(INDEX_HTML, {
       headers: {
         'content-type': 'text/html; charset=utf-8',
         'cache-control': 'no-store',
