@@ -32,6 +32,11 @@
       header .actions { display: flex; gap: 8px; align-items: center; }
       .icon-btn { appearance: none; border: 1px solid var(--border); background: transparent; color: inherit; padding: 6px 10px; border-radius: 8px; font-size: 0.9rem; line-height: 1; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
       .icon-btn:hover { background: rgba(127,127,127,0.12); }
+      .tabs { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 48px; z-index: 9; }
+      .tab-list { display: flex; gap: 6px; flex-wrap: wrap; }
+      .tab { padding: 6px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--pane-bg); cursor: pointer; user-select: none; }
+      .tab.active { background: transparent; border-color: #7aa2f7; color: inherit; box-shadow: 0 0 0 2px rgba(122,162,247,0.2) inset; }
+      .tabs .spacer { flex: 1; }
       .container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; height: calc(100% - 48px); padding: 12px; }
       .pane { height: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--pane-bg); overflow: hidden; }
       textarea { width: 100%; height: 100%; padding: 1rem; border: 0; outline: none; resize: none; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 14px; line-height: 1.5; background: transparent; color: inherit; }
@@ -68,6 +73,14 @@
         <button id="toggleTheme" class="icon-btn" title="Toggle theme">🌙</button>
       </div>
     </header>
+    <nav class="tabs">
+      <div id="tabList" class="tab-list" role="tablist" aria-label="Markdown documents"></div>
+      <div class="spacer"></div>
+      <button id="newTab" class="icon-btn" title="New document">+ New</button>
+      <button id="renameTab" class="icon-btn" title="Rename document">Rename</button>
+      <button id="deleteTab" class="icon-btn" title="Delete document">Delete</button>
+    </nav>
+
     <div class="container">
       <section class="pane">
         <textarea id="input" placeholder="Paste Markdown here..."># Welcome
@@ -93,6 +106,8 @@ $$
     <script>
       (function() {
         const THEME_KEY = 'md_theme';
+        const STORAGE_KEY = 'md_docs_v1';
+        const ACTIVE_KEY = 'md_active_v1';
         const root = document.documentElement;
         function preferredTheme() {
           const saved = localStorage.getItem(THEME_KEY);
@@ -108,12 +123,109 @@ $$
 
         const input = document.getElementById('input');
         const preview = document.getElementById('preview');
+        const tabList = document.getElementById('tabList');
+        const newBtn = document.getElementById('newTab');
+        const renameBtn = document.getElementById('renameTab');
+        const deleteBtn = document.getElementById('deleteTab');
         if (!input || !preview) return;
 
         // Configure marked for GFM and line breaks
         if (window.marked && typeof window.marked.setOptions === 'function') {
           window.marked.setOptions({ gfm: true, breaks: true });
         }
+
+        // --- Tabs & Storage ---
+        function loadState() {
+          let docs = [];
+          try { docs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch {}
+          let active = localStorage.getItem(ACTIVE_KEY) || (docs[0]?.id ?? '');
+          return { docs, active };
+        }
+        function saveState(docs, active) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
+          if (active) localStorage.setItem(ACTIVE_KEY, active);
+        }
+        function uid() { return 'd_' + Math.random().toString(36).slice(2, 9); }
+
+        const DEFAULT_CONTENT = `# Welcome\n\nType Markdown on the left and see HTML on the right.\n\n- Supports GitHub-flavored Markdown\n- Sanitizes output with DOMPurify\n- Renders LaTeX via MathJax: $E=mc^2$\n\nBlock math:\n\n$$\n\\int_{-\\infty}^{\\infty} e^{-x^2} \\mathrm{d}x = \\sqrt{\\pi}\n$$\n`;
+
+        let { docs, active } = loadState();
+        if (!Array.isArray(docs) || docs.length === 0) {
+          docs = [{ id: uid(), title: 'Welcome', content: input.value || DEFAULT_CONTENT }];
+          active = docs[0].id;
+          saveState(docs, active);
+        }
+
+        function getActive() { return docs.find(d => d.id === active) || docs[0]; }
+
+        function renderTabs() {
+          if (!tabList) return;
+          tabList.innerHTML = '';
+          docs.forEach(doc => {
+            const b = document.createElement('button');
+            b.className = 'tab' + (doc.id === active ? ' active' : '');
+            b.textContent = doc.title || 'Untitled';
+            b.setAttribute('role', 'tab');
+            b.setAttribute('aria-selected', String(doc.id === active));
+            b.addEventListener('click', () => {
+              // Save current before switching
+              const current = getActive();
+              if (current) current.content = input.value;
+              active = doc.id;
+              saveState(docs, active);
+              input.value = doc.content || '';
+              render();
+              renderTabs();
+            });
+            tabList.appendChild(b);
+          });
+        }
+
+        function newDoc() {
+          const count = docs.length + 1;
+          const doc = { id: uid(), title: `Doc ${count}`, content: '' };
+          const current = getActive();
+          if (current) current.content = input.value;
+          docs.push(doc);
+          active = doc.id;
+          saveState(docs, active);
+          input.value = '';
+          render();
+          renderTabs();
+        }
+
+        function renameDoc() {
+          const current = getActive();
+          if (!current) return;
+          const name = prompt('Rename document:', current.title || 'Untitled');
+          if (name !== null) {
+            current.title = name.trim() || current.title || 'Untitled';
+            saveState(docs, active);
+            renderTabs();
+          }
+        }
+
+        function deleteDoc() {
+          if (docs.length <= 1) { alert('At least one document must remain.'); return; }
+          const current = getActive();
+          if (!current) return;
+          const idx = docs.findIndex(d => d.id === current.id);
+          if (idx >= 0) {
+            docs.splice(idx, 1);
+            active = docs[Math.max(0, idx - 1)].id;
+            saveState(docs, active);
+            input.value = getActive().content || '';
+            render();
+            renderTabs();
+          }
+        }
+
+        if (newBtn) newBtn.addEventListener('click', newDoc);
+        if (renameBtn) renameBtn.addEventListener('click', renameDoc);
+        if (deleteBtn) deleteBtn.addEventListener('click', deleteDoc);
+
+        // Load active doc into textarea
+        input.value = getActive().content || '';
 
         const render = () => {
           const md = input.value || '';
@@ -130,7 +242,19 @@ $$
           }
         };
 
-        input.addEventListener('input', render);
+        // Persist content with a small debounce
+        let t;
+        input.addEventListener('input', () => {
+          render();
+          clearTimeout(t);
+          t = setTimeout(() => {
+            const current = getActive();
+            if (current) {
+              current.content = input.value;
+              saveState(docs, active);
+            }
+          }, 200);
+        });
         // Copy rendered HTML
         const copyBtn = document.getElementById('copyHtml');
         if (copyBtn) {
@@ -162,6 +286,7 @@ $$
         }
 
         // Initial render
+        renderTabs();
         render();
       })();
     </script>
