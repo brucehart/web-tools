@@ -38,6 +38,12 @@
       header .actions { display: flex; gap: 8px; align-items: center; }
       .icon-btn { appearance: none; border: 1px solid var(--border); background: transparent; color: inherit; padding: 6px 10px; border-radius: 8px; font-size: 0.9rem; line-height: 1; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
       .icon-btn:hover { background: rgba(127,127,127,0.12); }
+      .tabs { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 48px; z-index: 9; }
+      .tab-list { display: flex; gap: 6px; flex-wrap: wrap; }
+      .tab { padding: 6px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--pane-bg); cursor: pointer; user-select: none; color: inherit; }
+      .tab.active { background: transparent; border-color: var(--accent); color: inherit; box-shadow: 0 0 0 2px rgba(122,162,247,0.2) inset; }
+      .tab input.tab-rename { font: inherit; color: inherit; background: transparent; border: 0; outline: none; padding: 0; margin: 0; min-width: 60px; width: 12ch; }
+      .tabs .spacer { flex: 1; }
       .container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; height: calc(100% - 48px); padding: 12px; }
       .pane { height: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--pane-bg); overflow: hidden; }
       textarea { width: 100%; height: 100%; padding: 1rem; border: 0; outline: none; resize: none; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 14px; line-height: 1.5; background: transparent; color: inherit; }
@@ -73,17 +79,27 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
     <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/common.min.js"></script>
+    <!-- Highlight.js theme (swapped dynamically for dark/light) -->
+    <link id="hljs-theme" rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/github.min.css">
+    <!-- Highlight.js full build (includes all languages). Load synchronously so it's ready before our script runs. -->
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js"></script>
   </head>
   <body>
     <header>
       <h1>Euler Preview (Project Euler)</h1>
       <div class="actions">
+        <a href="/" class="icon-btn" title="Home" aria-label="Home">🏠</a>
         <button id="copyHtml" class="icon-btn" title="Copy rendered HTML">Copy HTML</button>
         <button id="toggleTheme" class="icon-btn" title="Toggle theme">🌙</button>
       </div>
     </header>
+    <nav class="tabs">
+      <div id="tabList" class="tab-list" role="tablist" aria-label="Euler documents"></div>
+      <div class="spacer"></div>
+      <button id="newTab" class="icon-btn" title="New document">+ New</button>
+      <button id="renameTab" class="icon-btn" title="Rename document">Rename</button>
+      <button id="deleteTab" class="icon-btn" title="Delete document">Delete</button>
+    </nav>
 
     <div class="container">
       <section class="pane">
@@ -118,11 +134,13 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
       </section>
       <section id="preview" class="pane"></section>
     </div>
-    <div class="footer">TeX: $inline$ or $$block$$. BBCode tags supported per Project Euler forum.</div>
+    
 
     <script>
       (function() {
         const THEME_KEY = 'euler_theme';
+        const STORAGE_KEY = 'euler_docs_v1';
+        const ACTIVE_KEY = 'euler_active_v1';
         const root = document.documentElement;
         function preferredTheme() {
           const saved = localStorage.getItem(THEME_KEY);
@@ -134,11 +152,64 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
           localStorage.setItem(THEME_KEY, theme);
           const btn = document.getElementById('toggleTheme');
           if (btn) btn.textContent = (theme === 'dark') ? '☀️' : '🌙';
+          // Swap highlight.js theme for readability in dark/light
+          const link = document.getElementById('hljs-theme');
+          if (link && link.tagName === 'LINK') {
+            const base = 'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/';
+            link.setAttribute('href', theme === 'dark' ? base + 'github-dark-dimmed.min.css' : base + 'github.min.css');
+          }
         }
 
         const input = document.getElementById('input');
         const preview = document.getElementById('preview');
+        const tabList = document.getElementById('tabList');
+        const newBtn = document.getElementById('newTab');
+        const renameBtn = document.getElementById('renameTab');
+        const deleteBtn = document.getElementById('deleteTab');
         if (!input || !preview) return;
+
+        // Map common aliases to highlight.js language IDs
+        function normalizeLang(lang) {
+          if (!lang) return '';
+          let id = String(lang).trim().toLowerCase();
+          id = id.replace(/^language-/, '').replace(/[^a-z0-9+#-]+/g, '');
+          const map = {
+            js: 'javascript', mjs: 'javascript', cjs: 'javascript', node: 'javascript',
+            ts: 'typescript', tsx: 'typescript', jsx: 'javascript',
+            cplusplus: 'cpp', 'c++': 'cpp', cpp: 'cpp',
+            csharp: 'csharp', 'c#': 'csharp', cs: 'csharp',
+            sh: 'bash', zsh: 'bash', shell: 'bash', console: 'bash',
+            ps1: 'powershell', pwsh: 'powershell',
+            py: 'python',
+            rb: 'ruby',
+            tf: 'hcl', terraform: 'hcl',
+            yml: 'yaml'
+          };
+          return map[id] || id;
+        }
+
+        // --- Tabs & Storage ---
+        function loadState() {
+          let docs = [];
+          try { docs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch {}
+          let active = localStorage.getItem(ACTIVE_KEY) || (docs[0]?.id ?? '');
+          return { docs, active };
+        }
+        function saveState(docs, active) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
+          if (active) localStorage.setItem(ACTIVE_KEY, active);
+        }
+        function uid() { return 'd_' + Math.random().toString(36).slice(2, 9); }
+
+        const DEFAULT_CONTENT = `[h1]Welcome[/h1]\n\nYou can use [b]BBCode[/b], inline TeX like $E=mc^2$, and blocks:\n\n$$\n\\int_{-\\infty}^{\\infty} e^{-x^2} \\, dx = \\sqrt{\\pi}\n$$\n\n[quote=\"euler\"]Obvious is the most dangerous word in mathematics.[/quote]\n\n[collapse=Code Example]\n[code=python]\n# Code highlighting demo\ndef fib(n):\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a\nprint(fib(10))\n[/code]\n[/collapse]\n\nList:[list=1]\n[*] First\n[*] Second\n[/list]\n\nHidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].\n`;
+
+        let { docs, active } = loadState();
+        if (!Array.isArray(docs) || docs.length === 0) {
+          docs = [{ id: uid(), title: 'Welcome', content: input.value || DEFAULT_CONTENT }];
+          active = docs[0].id;
+          saveState(docs, active);
+        }
+        function getActive() { return docs.find(d => d.id === active) || docs[0]; }
 
         function escapeHtml(s) {
           return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
@@ -157,7 +228,7 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
               if (p.includes('*')) { noHighlight = true; p = p.replace('*', ''); }
               if (p.includes('?')) { forceAuto = true; p = p.replace('?', ''); }
               p = p.trim();
-              if (p) lang = p.toLowerCase();
+              if (p) lang = normalizeLang(p.toLowerCase());
             }
             const idx = codeStore.push({ lang, noHighlight, forceAuto, code: body }) - 1;
             return `\uE000CODE${idx}\uE000`;
@@ -233,7 +304,9 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
             const idx = Number(i);
             const c = codeStore[idx];
             if (!c) return '';
-            const codeHtml = escapeHtml(c.code);
+            // c.code already contains escaped entities because we escaped the whole input earlier.
+            // Avoid double-escaping so <, >, & render correctly in code blocks.
+            const codeHtml = c.code;
             const label = c.lang ? c.lang : (c.forceAuto ? 'auto' : 'code');
             const langClass = c.lang ? ` language-${c.lang}` : '';
             const pre = `<pre><code class="hljs${c.noHighlight ? '' : langClass}">${codeHtml}<\/code><\/pre>`;
@@ -242,6 +315,121 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
 
           return text;
         }
+
+        function startInlineRename(docId) {
+          if (!tabList) return;
+          const doc = docs.find(d => d.id === docId);
+          const btn = tabList.querySelector(`button.tab[data-id="${docId}"]`);
+          if (!doc || !btn) return;
+          if (btn.querySelector('input.tab-rename')) return;
+          const original = doc.title || 'Untitled';
+          const inputEl = document.createElement('input');
+          inputEl.type = 'text';
+          inputEl.className = 'tab-rename';
+          inputEl.value = original;
+          btn.textContent = '';
+          btn.appendChild(inputEl);
+          btn.disabled = true;
+          inputEl.focus();
+          inputEl.select();
+          const finish = (commit) => {
+            if (!btn.disabled) return;
+            btn.disabled = false;
+            inputEl.blur();
+            const val = (commit ? inputEl.value : original).trim();
+            if (commit) {
+              doc.title = val || original;
+              saveState(docs, active);
+            }
+            renderTabs();
+            const newBtnRef = tabList.querySelector(`button.tab[data-id="${docId}"]`);
+            if (newBtnRef) newBtnRef.focus();
+          };
+          inputEl.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+            else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+          });
+          inputEl.addEventListener('blur', () => finish(true), { once: true });
+        }
+
+        function renderTabs() {
+          if (!tabList) return;
+          tabList.innerHTML = '';
+          docs.forEach(doc => {
+            const b = document.createElement('button');
+            b.className = 'tab' + (doc.id === active ? ' active' : '');
+            b.textContent = doc.title || 'Untitled';
+            b.dataset.id = doc.id;
+            b.setAttribute('role', 'tab');
+            b.setAttribute('aria-selected', String(doc.id === active));
+            b.addEventListener('click', () => {
+              const current = getActive();
+              if (current) current.content = input.value;
+              active = doc.id;
+              saveState(docs, active);
+              input.value = doc.content || '';
+              render();
+              renderTabs();
+            });
+            b.addEventListener('dblclick', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (active !== doc.id) {
+                const current = getActive();
+                if (current) current.content = input.value;
+                active = doc.id;
+                saveState(docs, active);
+                input.value = doc.content || '';
+                render();
+                renderTabs();
+              }
+              setTimeout(() => startInlineRename(doc.id), 0);
+            });
+            tabList.appendChild(b);
+          });
+        }
+
+        function newDoc() {
+          const count = docs.length + 1;
+          const doc = { id: uid(), title: `Doc ${count}`, content: '' };
+          const current = getActive();
+          if (current) current.content = input.value;
+          docs.push(doc);
+          active = doc.id;
+          saveState(docs, active);
+          input.value = '';
+          render();
+          renderTabs();
+        }
+
+        function renameDoc() {
+          const current = getActive();
+          if (!current) return;
+          renderTabs();
+          startInlineRename(current.id);
+        }
+
+        function deleteDoc() {
+          if (docs.length <= 1) { alert('At least one document must remain.'); return; }
+          const current = getActive();
+          if (!current) return;
+          const idx = docs.findIndex(d => d.id === current.id);
+          if (idx >= 0) {
+            docs.splice(idx, 1);
+            active = docs[Math.max(0, idx - 1)].id;
+            saveState(docs, active);
+            input.value = getActive().content || '';
+            render();
+            renderTabs();
+          }
+        }
+
+        if (newBtn) newBtn.addEventListener('click', newDoc);
+        if (renameBtn) renameBtn.addEventListener('click', renameDoc);
+        if (deleteBtn) deleteBtn.addEventListener('click', deleteDoc);
+
+        input.value = getActive().content || '';
 
         const render = () => {
           const raw = input.value || '';
@@ -255,12 +443,19 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
           if (window.hljs) {
             preview.querySelectorAll('pre code').forEach((el) => {
               if (el.classList.contains('nohighlight')) return;
-              if (!el.className.includes('language-')) {
-                // auto-detect if no language class
-                try { window.hljs.highlightElement(el); } catch {}
-              } else if (!el.className.includes('nohighlight')) {
-                try { window.hljs.highlightElement(el); } catch {}
-              }
+              try {
+                // Normalize language if present
+                let given = '';
+                for (const c of el.classList) { if (c.startsWith('language-')) { given = c.slice(9); break; } }
+                const norm = normalizeLang(given);
+                // Remove all language-* so we can add the normalized one or let auto-detect work
+                Array.from(el.classList).filter(c => c.startsWith('language-')).forEach(c => el.classList.remove(c));
+                if (norm && window.hljs.getLanguage && window.hljs.getLanguage(norm)) {
+                  el.classList.add('language-' + norm);
+                }
+                el.classList.add('hljs');
+                window.hljs.highlightElement(el);
+              } catch {}
             });
           }
           // MathJax typeset
@@ -274,7 +469,13 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
         input.addEventListener('input', () => {
           render();
           clearTimeout(t);
-          t = setTimeout(() => {}, 200);
+          t = setTimeout(() => {
+            const current = getActive();
+            if (current) {
+              current.content = input.value;
+              saveState(docs, active);
+            }
+          }, 200);
         });
 
         const copyBtn = document.getElementById('copyHtml');
@@ -305,6 +506,7 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
           });
         }
 
+        renderTabs();
         render();
       })();
     </script>
