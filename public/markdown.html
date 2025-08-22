@@ -54,7 +54,6 @@
 
     <script>
       // MathJax v3 configuration
-      // Use only $...$ for inline math to avoid conflicts with literal parentheses in text/links.
       window.MathJax = {
         tex: {
           inlineMath: [['$', '$']],
@@ -65,8 +64,10 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/common.min.js"></script>
+    <!-- Highlight.js theme (swapped dynamically for dark/light) -->
+    <link id="hljs-theme" rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/github.min.css">
+    <!-- Highlight.js full build (includes all languages) -->
+    <script defer src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js"></script>
     <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
   </head>
   <body>
@@ -95,10 +96,18 @@ Type Markdown on the left and see HTML on the right.
 - Sanitizes output with DOMPurify
 - Renders LaTeX via MathJax: $E=mc^2$
 
+```js
+// Code highlighting demo
+function hello(name) {
+  console.log(`Hello, ${name}!`)
+}
+hello('world')
+```
+
 Block math:
 
 $$
-\int_{-\infty}^{\infty} e^{-x^2} \mathrm{d}x = \sqrt{\pi}
+\int_{-\infty}^{\infty} e^{-x^2} \\mathrm{d}x = \sqrt{\pi}
 $$
 
         </textarea>
@@ -123,6 +132,12 @@ $$
           localStorage.setItem(THEME_KEY, theme);
           const btn = document.getElementById('toggleTheme');
           if (btn) btn.textContent = (theme === 'dark') ? '☀️' : '🌙';
+          // Swap highlight.js theme for readability in dark/light
+          const link = document.getElementById('hljs-theme');
+          if (link && link.tagName === 'LINK') {
+            const base = 'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/';
+            link.setAttribute('href', theme === 'dark' ? base + 'github-dark-dimmed.min.css' : base + 'github.min.css');
+          }
         }
 
         const input = document.getElementById('input');
@@ -133,21 +148,29 @@ $$
         const deleteBtn = document.getElementById('deleteTab');
         if (!input || !preview) return;
 
-        // Configure marked for GFM and line breaks, with syntax highlighting via highlight.js
+        // Map common aliases to highlight.js language IDs
+        function normalizeLang(lang) {
+          if (!lang) return '';
+          let id = String(lang).trim().toLowerCase();
+          id = id.replace(/^language-/, '').replace(/[^a-z0-9+#-]+/g, '');
+          const map = {
+            js: 'javascript', mjs: 'javascript', cjs: 'javascript', node: 'javascript',
+            ts: 'typescript', tsx: 'typescript', jsx: 'javascript',
+            cplusplus: 'cpp', 'c++': 'cpp', cpp: 'cpp',
+            csharp: 'csharp', 'c#': 'csharp', cs: 'csharp',
+            sh: 'bash', zsh: 'bash', shell: 'bash', console: 'bash',
+            ps1: 'powershell', pwsh: 'powershell',
+            py: 'python',
+            rb: 'ruby',
+            tf: 'hcl', terraform: 'hcl',
+            yml: 'yaml'
+          };
+          return map[id] || id;
+        }
+
+        // Configure marked for GFM and line breaks
         if (window.marked && typeof window.marked.setOptions === 'function') {
-          window.marked.setOptions({
-            gfm: true,
-            breaks: true,
-            langPrefix: 'language-',
-            highlight(code, lang) {
-              try {
-                if (lang && window.hljs?.getLanguage(lang)) {
-                  return window.hljs.highlight(code, { language: lang }).value;
-                }
-                return window.hljs ? window.hljs.highlightAuto(code).value : code;
-              } catch { return code; }
-            }
-          });
+          window.marked.setOptions({ gfm: true, breaks: true });
         }
 
         // --- Tabs & Storage ---
@@ -179,22 +202,18 @@ $$
           const doc = docs.find(d => d.id === docId);
           const btn = tabList.querySelector(`button.tab[data-id="${docId}"]`);
           if (!doc || !btn) return;
-          // Prevent duplicate editors
           if (btn.querySelector('input.tab-rename')) return;
           const original = doc.title || 'Untitled';
           const inputEl = document.createElement('input');
           inputEl.type = 'text';
           inputEl.className = 'tab-rename';
           inputEl.value = original;
-          // Replace button content with input for editing
           btn.textContent = '';
           btn.appendChild(inputEl);
-          // Disable tab switching while editing
           btn.disabled = true;
           inputEl.focus();
           inputEl.select();
           const finish = (commit) => {
-            // Avoid multiple invocations
             if (!btn.disabled) return;
             btn.disabled = false;
             inputEl.blur();
@@ -204,7 +223,6 @@ $$
               saveState(docs, active);
             }
             renderTabs();
-            // Restore focus to the renamed tab
             const newBtnRef = tabList.querySelector(`button.tab[data-id="${docId}"]`);
             if (newBtnRef) newBtnRef.focus();
           };
@@ -232,7 +250,6 @@ $$
             b.setAttribute('role', 'tab');
             b.setAttribute('aria-selected', String(doc.id === active));
             b.addEventListener('click', () => {
-              // Save current before switching
               const current = getActive();
               if (current) current.content = input.value;
               active = doc.id;
@@ -241,13 +258,10 @@ $$
               render();
               renderTabs();
             });
-            // Inline rename on double-click
             b.addEventListener('dblclick', (e) => {
               e.preventDefault();
               e.stopPropagation();
-              // Ensure this tab is active before rename to avoid confusion
               if (active !== doc.id) {
-                // Switch to this tab first
                 const current = getActive();
                 if (current) current.content = input.value;
                 active = doc.id;
@@ -256,7 +270,6 @@ $$
                 render();
                 renderTabs();
               }
-              // Start rename after current tick so DOM is up to date
               setTimeout(() => startInlineRename(doc.id), 0);
             });
             tabList.appendChild(b);
@@ -279,7 +292,6 @@ $$
         function renameDoc() {
           const current = getActive();
           if (!current) return;
-          // Ensure tabs are rendered, then start inline rename for active tab
           renderTabs();
           startInlineRename(current.id);
         }
@@ -303,7 +315,6 @@ $$
         if (renameBtn) renameBtn.addEventListener('click', renameDoc);
         if (deleteBtn) deleteBtn.addEventListener('click', deleteDoc);
 
-        // Load active doc into textarea
         input.value = getActive().content || '';
 
         const render = () => {
@@ -316,10 +327,23 @@ $$
           }
           const safe = window.DOMPurify ? window.DOMPurify.sanitize(raw) : raw;
           preview.innerHTML = safe;
-          // Highlight any code blocks not covered by marked's highlight (defensive)
+
+          // Highlight any code blocks (prefer declared language; if unknown, auto-detect)
           if (window.hljs) {
             preview.querySelectorAll('pre code').forEach((el) => {
-              try { window.hljs.highlightElement(el); } catch {}
+              try {
+                // Normalize language if present
+                let given = '';
+                for (const c of el.classList) { if (c.startsWith('language-')) { given = c.slice(9); break; } }
+                const norm = normalizeLang(given);
+                // Remove all language-* so we can add the normalized one or let auto-detect work
+                Array.from(el.classList).filter(c => c.startsWith('language-')).forEach(c => el.classList.remove(c));
+                if (norm && window.hljs.getLanguage(norm)) {
+                  el.classList.add('language-' + norm);
+                }
+                el.classList.add('hljs');
+                window.hljs.highlightElement(el);
+              } catch {}
             });
           }
           if (window.MathJax && window.MathJax.typesetPromise) {
@@ -327,7 +351,6 @@ $$
           }
         };
 
-        // Persist content with a small debounce
         let t;
         input.addEventListener('input', () => {
           render();
@@ -340,7 +363,6 @@ $$
             }
           }, 200);
         });
-        // Copy rendered HTML
         const copyBtn = document.getElementById('copyHtml');
         if (copyBtn) {
           copyBtn.addEventListener('click', async () => {
@@ -360,7 +382,6 @@ $$
           });
         }
 
-        // Theme: apply saved or system preference, then wire toggle
         applyTheme(preferredTheme());
         const toggleBtn = document.getElementById('toggleTheme');
         if (toggleBtn) {
@@ -370,10 +391,9 @@ $$
           });
         }
 
-        // Initial render
         renderTabs();
         render();
       })();
     </script>
   </body>
-  </html>
+</html>
