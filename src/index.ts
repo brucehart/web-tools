@@ -96,6 +96,17 @@ async function requireUser(req: Request, env: Bindings): Promise<{ id: string; e
   return user;
 }
 
+function isAllowedEmail(email?: string | null): boolean {
+  return (email || '').toLowerCase() === 'bruce.hart@gmail.com';
+}
+
+async function requireAllowedUser(req: Request, env: Bindings): Promise<{ id: string; email?: string } | Response> {
+  const u = await getSessionUser(req, env);
+  if (!u) return new Response('Unauthorized', { status: 401 });
+  if (!isAllowedEmail(u.email || '')) return new Response('Forbidden', { status: 403 });
+  return u;
+}
+
 export default {
   async fetch(request, env, _ctx): Promise<Response> {
     const b = env as unknown as Bindings;
@@ -105,7 +116,7 @@ export default {
     // -------- Auth API --------
     if (path === '/api/auth/me' && request.method === 'GET') {
       const user = await getSessionUser(request, b);
-      return json({ loggedIn: !!user, user });
+      return json({ loggedIn: !!user, user, allowed: !!(user && isAllowedEmail(user.email || '')) });
     }
     if (path === '/api/auth/logout' && request.method === 'POST') {
       const cookieName = b.SESSION_COOKIE_NAME || 'wt_session';
@@ -177,7 +188,7 @@ export default {
 
     // -------- Pastebin API --------
     if (path === '/api/pastebin/create' && request.method === 'POST') {
-      const user = await requireUser(request, b);
+      const user = await requireAllowedUser(request, b);
       if (user instanceof Response) return user;
       const body = await readJson<{ title?: string; content?: string; visibility?: 'public' | 'unlisted' }>(request);
       const content = (body.content || '').toString();
@@ -196,7 +207,7 @@ export default {
       return badRequest('Failed to allocate id', 500);
     }
     if (path === '/api/pastebin/mine' && request.method === 'GET') {
-      const user = await requireUser(request, b);
+      const user = await requireAllowedUser(request, b);
       if (user instanceof Response) return user;
       const rows = await b.DB.prepare('SELECT id, title, visibility, created_at FROM pastes WHERE user_id = ? ORDER BY created_at DESC LIMIT 200').bind((user as any).id).all();
       return json(rows.results || []);
@@ -216,7 +227,7 @@ export default {
       return json({ ...rest, can_delete });
     }
     if (path === '/api/pastebin/delete' && request.method === 'POST') {
-      const user = await requireUser(request, b);
+      const user = await requireAllowedUser(request, b);
       if (user instanceof Response) return user;
       const body = await readJson<{ id?: string }>(request);
       const id = (body.id || '').toString();
