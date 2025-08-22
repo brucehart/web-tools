@@ -34,8 +34,10 @@
       .icon-btn:hover { background: rgba(127,127,127,0.12); }
       .tabs { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 48px; z-index: 9; }
       .tab-list { display: flex; gap: 6px; flex-wrap: wrap; }
-      .tab { padding: 6px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--pane-bg); cursor: pointer; user-select: none; }
+      .tab { padding: 6px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--pane-bg); cursor: pointer; user-select: none; color: inherit; }
       .tab.active { background: transparent; border-color: #7aa2f7; color: inherit; box-shadow: 0 0 0 2px rgba(122,162,247,0.2) inset; }
+      /* Inline rename input inside tabs */
+      .tab input.tab-rename { font: inherit; color: inherit; background: transparent; border: 0; outline: none; padding: 0; margin: 0; min-width: 60px; width: 12ch; }
       .tabs .spacer { flex: 1; }
       .container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; height: calc(100% - 48px); padding: 12px; }
       .pane { height: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--pane-bg); overflow: hidden; }
@@ -158,6 +160,53 @@ $$
 
         function getActive() { return docs.find(d => d.id === active) || docs[0]; }
 
+        function startInlineRename(docId) {
+          if (!tabList) return;
+          const doc = docs.find(d => d.id === docId);
+          const btn = tabList.querySelector(`button.tab[data-id="${docId}"]`);
+          if (!doc || !btn) return;
+          // Prevent duplicate editors
+          if (btn.querySelector('input.tab-rename')) return;
+          const original = doc.title || 'Untitled';
+          const inputEl = document.createElement('input');
+          inputEl.type = 'text';
+          inputEl.className = 'tab-rename';
+          inputEl.value = original;
+          // Replace button content with input for editing
+          btn.textContent = '';
+          btn.appendChild(inputEl);
+          // Disable tab switching while editing
+          btn.disabled = true;
+          inputEl.focus();
+          inputEl.select();
+          const finish = (commit) => {
+            // Avoid multiple invocations
+            if (!btn.disabled) return;
+            btn.disabled = false;
+            inputEl.blur();
+            const val = (commit ? inputEl.value : original).trim();
+            if (commit) {
+              doc.title = val || original;
+              saveState(docs, active);
+            }
+            renderTabs();
+            // Restore focus to the renamed tab
+            const newBtnRef = tabList.querySelector(`button.tab[data-id="${docId}"]`);
+            if (newBtnRef) newBtnRef.focus();
+          };
+          inputEl.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              finish(true);
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              finish(false);
+            }
+          });
+          inputEl.addEventListener('blur', () => finish(true), { once: true });
+        }
+
         function renderTabs() {
           if (!tabList) return;
           tabList.innerHTML = '';
@@ -165,6 +214,7 @@ $$
             const b = document.createElement('button');
             b.className = 'tab' + (doc.id === active ? ' active' : '');
             b.textContent = doc.title || 'Untitled';
+            b.dataset.id = doc.id;
             b.setAttribute('role', 'tab');
             b.setAttribute('aria-selected', String(doc.id === active));
             b.addEventListener('click', () => {
@@ -176,6 +226,24 @@ $$
               input.value = doc.content || '';
               render();
               renderTabs();
+            });
+            // Inline rename on double-click
+            b.addEventListener('dblclick', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              // Ensure this tab is active before rename to avoid confusion
+              if (active !== doc.id) {
+                // Switch to this tab first
+                const current = getActive();
+                if (current) current.content = input.value;
+                active = doc.id;
+                saveState(docs, active);
+                input.value = doc.content || '';
+                render();
+                renderTabs();
+              }
+              // Start rename after current tick so DOM is up to date
+              setTimeout(() => startInlineRename(doc.id), 0);
             });
             tabList.appendChild(b);
           });
@@ -197,12 +265,9 @@ $$
         function renameDoc() {
           const current = getActive();
           if (!current) return;
-          const name = prompt('Rename document:', current.title || 'Untitled');
-          if (name !== null) {
-            current.title = name.trim() || current.title || 'Untitled';
-            saveState(docs, active);
-            renderTabs();
-          }
+          // Ensure tabs are rendered, then start inline rename for active tab
+          renderTabs();
+          startInlineRename(current.id);
         }
 
         function deleteDoc() {
