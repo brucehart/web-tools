@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Euler Preview (Project Euler Forum)</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --fg: #111111;
+        --header-bg: #2f2f2f;
+        --header-fg: #f3f3f3;
+        --border: #cfcfcf;
+        --pane-bg: #f6f6f6;
+        --muted: #666666;
+        --accent: #7aa2f7;
+        --red: #d93025;
+        --green: #188038;
+      }
+      [data-theme="dark"] {
+        --bg: #121212;
+        --fg: #eaeaea;
+        --header-bg: #2f2f2f;
+        --header-fg: #f3f3f3;
+        --border: #3a3a3a;
+        --pane-bg: #1a1a1a;
+        --muted: #9aa0a6;
+        --accent: #7aa2f7;
+        --red: #ff6b6b;
+        --green: #4caf50;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body { background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; }
+      header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); background: var(--header-bg); color: var(--header-fg); position: sticky; top: 0; z-index: 10; }
+      header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+      header .actions { display: flex; gap: 8px; align-items: center; }
+      .icon-btn { appearance: none; border: 1px solid var(--border); background: transparent; color: inherit; padding: 6px 10px; border-radius: 8px; font-size: 0.9rem; line-height: 1; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+      .icon-btn:hover { background: rgba(127,127,127,0.12); }
+      .container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; height: calc(100% - 48px); padding: 12px; }
+      .pane { height: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--pane-bg); overflow: hidden; }
+      textarea { width: 100%; height: 100%; padding: 1rem; border: 0; outline: none; resize: none; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 14px; line-height: 1.5; background: transparent; color: inherit; }
+      #preview { overflow: auto; padding: 1rem; }
+      .pe-quote { border-left: 3px solid var(--border); margin: .75rem 0; padding: .5rem .75rem; background: rgba(127,127,127,0.06); }
+      .pe-quote .pe-quote-head { font-size: .9rem; color: var(--muted); margin-bottom: .4rem; }
+      .pe-collapse { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin: .75rem 0; }
+      .pe-collapse summary { cursor: pointer; padding: .4rem .6rem; background: rgba(127,127,127,0.08); font-weight: 600; }
+      .pe-collapse .pe-collapse-body { padding: .6rem .8rem; }
+      .pe-hide { color: transparent; background: currentColor; border-radius: 4px; padding: 0 .3rem; }
+      .pe-hide:hover, .pe-hide:focus { color: inherit; background: transparent; }
+      .pe-red { color: var(--red); }
+      .pe-green { color: var(--green); }
+      pre { background: rgba(127,127,127,0.1); padding: .75rem; overflow: auto; border-radius: 6px; }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+      .footer { font-size: .85rem; color: var(--muted); padding: .5rem 1rem; border-top: 1px solid var(--border); }
+      .pe-center { text-align: center; }
+      .pe-right { text-align: right; }
+      img { max-width: 100%; height: auto; }
+      a { color: var(--accent); }
+      @media (max-width: 900px) { .container { grid-template-columns: 1fr; grid-auto-rows: 50vh 50vh; } }
+    </style>
+
+    <script>
+      // MathJax v3 configuration (use $...$ and $$...$$)
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$', '$']],
+          displayMath: [['$$','$$'], ['\\[', '\\]']]
+        },
+        options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] }
+      };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/common.min.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>Euler Preview (Project Euler)</h1>
+      <div class="actions">
+        <button id="copyHtml" class="icon-btn" title="Copy rendered HTML">Copy HTML</button>
+        <button id="toggleTheme" class="icon-btn" title="Toggle theme">🌙</button>
+      </div>
+    </header>
+
+    <div class="container">
+      <section class="pane">
+        <textarea id="input" placeholder="Paste Project Euler forum text here...">[h1]Welcome[/h1]
+
+You can use [b]BBCode[/b], inline TeX like $E=mc^2$, and blocks:
+
+$$
+\int_{-\infty}^{\infty} e^{-x^2} \, dx = \sqrt{\pi}
+$$
+
+[quote="euler"]Obvious is the most dangerous word in mathematics.[/quote]
+
+[collapse=Code Example]
+[code=python]
+def fib(n):
+    a, b = 0, 1
+    for _ in range(n):
+        a, b = b, a + b
+    return a
+print(fib(10))
+[/code]
+[/collapse]
+
+List:[list=1]
+[*] First
+[*] Second
+[/list]
+
+Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
+        </textarea>
+      </section>
+      <section id="preview" class="pane"></section>
+    </div>
+    <div class="footer">TeX: $inline$ or $$block$$. BBCode tags supported per Project Euler forum.</div>
+
+    <script>
+      (function() {
+        const THEME_KEY = 'euler_theme';
+        const root = document.documentElement;
+        function preferredTheme() {
+          const saved = localStorage.getItem(THEME_KEY);
+          if (saved === 'light' || saved === 'dark') return saved;
+          return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        }
+        function applyTheme(theme) {
+          root.setAttribute('data-theme', theme);
+          localStorage.setItem(THEME_KEY, theme);
+          const btn = document.getElementById('toggleTheme');
+          if (btn) btn.textContent = (theme === 'dark') ? '☀️' : '🌙';
+        }
+
+        const input = document.getElementById('input');
+        const preview = document.getElementById('preview');
+        if (!input || !preview) return;
+
+        function escapeHtml(s) {
+          return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+        }
+
+        function renderPE(src) {
+          if (!src) return '';
+          let text = src;
+
+          // Extract [code] blocks to avoid parsing inside
+          const codeStore = [];
+          text = text.replace(/\[code(?:=([^\]]+))?\]([\s\S]*?)\[\/code\]/gi, (m, langParam, body) => {
+            let lang = null, noHighlight = false, forceAuto = false;
+            if (langParam) {
+              let p = String(langParam).trim();
+              if (p.includes('*')) { noHighlight = true; p = p.replace('*', ''); }
+              if (p.includes('?')) { forceAuto = true; p = p.replace('?', ''); }
+              p = p.trim();
+              if (p) lang = p.toLowerCase();
+            }
+            const idx = codeStore.push({ lang, noHighlight, forceAuto, code: body }) - 1;
+            return `\uE000CODE${idx}\uE000`;
+          });
+
+          // Basic formatting tags
+          const replacements = [
+            { re: /\[b\]([\s\S]*?)\[\/b\]/gi, out: '<strong>$1</strong>' },
+            { re: /\[i\]([\s\S]*?)\[\/i\]/gi, out: '<em>$1</em>' },
+            { re: /\[s\]([\s\S]*?)\[\/s\]/gi, out: '<del>$1</del>' },
+            { re: /\[sup\]([\s\S]*?)\[\/sup\]/gi, out: '<sup>$1</sup>' },
+            { re: /\[sub\]([\s\S]*?)\[\/sub\]/gi, out: '<sub>$1</sub>' },
+            { re: /\[r\]([\s\S]*?)\[\/r\]/gi, out: '<span class="pe-red">$1</span>' },
+            { re: /\[g\]([\s\S]*?)\[\/g\]/gi, out: '<span class="pe-green">$1</span>' },
+            { re: /\[h1\]([\s\S]*?)\[\/h1\]/gi, out: '<h1>$1<\/h1>' },
+            { re: /\[h2\]([\s\S]*?)\[\/h2\]/gi, out: '<h2>$1<\/h2>' },
+            { re: /\[center\]([\s\S]*?)\[\/center\]/gi, out: '<div class="pe-center">$1<\/div>' },
+            { re: /\[right\]([\s\S]*?)\[\/right\]/gi, out: '<div class="pe-right">$1<\/div>' },
+            { re: /\[img\]([\s\S]*?)\[\/img\]/gi, out: '<img src="$1" alt="image" />' },
+            { re: /\[url\]([\s\S]*?)\[\/url\]/gi, out: '<a href="$1" target="_blank" rel="noopener noreferrer">$1<\/a>' },
+            { re: /\[url=([^\]]+)\]([\s\S]*?)\[\/url\]/gi, out: '<a href="$1" target="_blank" rel="noopener noreferrer">$2<\/a>' },
+            { re: /\[hide\]([\s\S]*?)\[\/hide\]/gi, out: '<span class="pe-hide" tabindex="0">$1<\/span>' },
+          ];
+          replacements.forEach(r => { text = text.replace(r.re, r.out); });
+
+          // [quote] and [quote=...] blocks
+          text = text.replace(/\[quote(?:=([^\]]+))?\]([\s\S]*?)\[\/quote\]/gi, (m, who, body) => {
+            let head = '';
+            if (who) {
+              let w = String(who).trim();
+              w = w.replace(/^"|"$/g, '');
+              if (/^\d+$/.test(w)) head = `<div class="pe-quote-head">User ${w} said<\/div>`;
+              else head = `<div class="pe-quote-head">${escapeHtml(w)} said<\/div>`;
+            }
+            return `<div class="pe-quote">${head}<div>${body}<\/div><\/div>`;
+          });
+
+          // [collapse] and [collapse=Title]
+          text = text.replace(/\[collapse(?:=([^\]]+))?\]([\s\S]*?)\[\/collapse\]/gi, (m, title, body) => {
+            const t = title ? escapeHtml(String(title)) : 'Details';
+            return `<details class="pe-collapse"><summary>${t}<\/summary><div class="pe-collapse-body">${body}<\/div><\/details>`;
+          });
+
+          // [list] blocks with [*] items and optional type/start like [list=i@3]
+          function replaceLists(str) {
+            return str.replace(/\[list(?:=([^\]@\n]+)?(?:@([0-9]+))?)?\]([\s\S]*?)\[\/list\]/gi, (m, type, start, body) => {
+              const items = [];
+              const reItem = /\[\*\](.*?)(?=(?:\n\[\*\])|$)/gs;
+              let match; let content = body.trim();
+              while ((match = reItem.exec(content)) !== null) {
+                items.push(match[1].trim());
+              }
+              const isOrdered = !!type;
+              let typeAttr = '';
+              if (type && /^(?:1|a|A|i|I)$/.test(type)) typeAttr = ` type="${type}"`;
+              const startAttr = (start && /^\d+$/.test(start)) ? ` start="${start}"` : '';
+              if (isOrdered) {
+                return `<ol${typeAttr}${startAttr}>` + items.map(it => `<li>${it}<\/li>`).join('') + `<\/ol>`;
+              }
+              return `<ul>` + items.map(it => `<li>${it}<\/li>`).join('') + `<\/ul>`;
+            });
+          }
+          text = replaceLists(text);
+
+          // Auto-link bare URLs
+          text = text.replace(/(^|\s)(https?:\/\/[^\s<>]+)(?=\s|$)/g, (m, pre, url) => `${pre}<a href="${url}" target="_blank" rel="noopener noreferrer">${url}<\/a>`);
+
+          // Restore code blocks
+          text = text.replace(/\uE000CODE(\d+)\uE000/g, (m, i) => {
+            const idx = Number(i);
+            const c = codeStore[idx];
+            if (!c) return '';
+            const codeHtml = escapeHtml(c.code);
+            const label = c.lang ? c.lang : (c.forceAuto ? 'auto' : 'code');
+            const langClass = c.lang ? ` language-${c.lang}` : '';
+            const pre = `<pre><code class="hljs${c.noHighlight ? '' : langClass}">${codeHtml}<\/code><\/pre>`;
+            return `<details class="pe-collapse" open><summary>Code (${escapeHtml(label)})<\/summary><div class="pe-collapse-body">${pre}<\/div><\/details>`;
+          });
+
+          // Convert newlines to <br> to preserve formatting outside blocks
+          text = text.replace(/\r?\n/g, '<br>');
+
+          return text;
+        }
+
+        const render = () => {
+          const raw = input.value || '';
+          // Escape any HTML first, then convert BBCode to HTML
+          const preEscaped = raw.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+          let html = renderPE(preEscaped);
+          // Sanitize
+          const safe = window.DOMPurify ? window.DOMPurify.sanitize(html, { ADD_ATTR: ['target','rel','open','start','type'] }) : html;
+          preview.innerHTML = safe;
+          // Syntax highlight if available
+          if (window.hljs) {
+            preview.querySelectorAll('pre code').forEach((el) => {
+              if (!el.className.includes('language-')) {
+                // auto-detect if no language class
+                try { window.hljs.highlightElement(el); } catch {}
+              } else if (!el.className.includes('nohighlight')) {
+                try { window.hljs.highlightElement(el); } catch {}
+              }
+            });
+          }
+          // MathJax typeset
+          if (window.MathJax && window.MathJax.typesetPromise) {
+            window.MathJax.typesetPromise([preview]).catch(() => {});
+          }
+        };
+
+        // Render & wire events
+        let t;
+        input.addEventListener('input', () => {
+          render();
+          clearTimeout(t);
+          t = setTimeout(() => {}, 200);
+        });
+
+        const copyBtn = document.getElementById('copyHtml');
+        if (copyBtn) {
+          copyBtn.addEventListener('click', async () => {
+            try {
+              await navigator.clipboard.writeText(preview.innerHTML);
+              const old = copyBtn.textContent;
+              copyBtn.textContent = 'Copied!';
+              setTimeout(() => { copyBtn.textContent = old || 'Copy HTML'; }, 1200);
+            } catch {
+              const tmp = document.createElement('textarea');
+              tmp.value = preview.innerHTML;
+              document.body.appendChild(tmp);
+              tmp.select();
+              document.execCommand('copy');
+              document.body.removeChild(tmp);
+            }
+          });
+        }
+
+        applyTheme(preferredTheme());
+        const toggleBtn = document.getElementById('toggleTheme');
+        if (toggleBtn) {
+          toggleBtn.addEventListener('click', () => {
+            const current = root.getAttribute('data-theme') || preferredTheme();
+            applyTheme(current === 'dark' ? 'light' : 'dark');
+          });
+        }
+
+        render();
+      })();
+    </script>
+  </body>
+  </html>
+

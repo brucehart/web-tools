@@ -33,6 +33,7 @@ export default {
     let path = url.pathname;
     if (path === '/' || path === '') path = '/index.html';
     else if (path === '/markdown' || path === '/markdown/') path = '/markdown.html';
+    else if (path === '/euler' || path === '/euler/') path = '/euler.html';
 
     const assetUrl = new URL(url);
     assetUrl.pathname = path;
@@ -46,6 +47,7 @@ export default {
 
     // Fallback to bundled HTML (tests/dev) if assets binding unavailable
     if (path.endsWith('markdown.html')) return loadHtml('markdown.html');
+    if (path.endsWith('euler.html')) return loadHtml('euler.html');
     if (path.endsWith('index.html')) return loadHtml('index.html');
 
     return new Response('Not found', { status: 404 });
