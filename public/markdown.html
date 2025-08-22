@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Markdown to HTML Viewer</title>
+    <title>Markdown Preview</title>
     <style>
       :root {
         color-scheme: light dark;
@@ -72,8 +72,9 @@
   </head>
   <body>
     <header>
-      <h1>Markdown → HTML (MathJax)</h1>
+      <h1>Markdown Preview</h1>
       <div class="actions">
+        <a href="/" class="icon-btn" title="Home" aria-label="Home">🏠</a>
         <button id="copyHtml" class="icon-btn" title="Copy rendered HTML">Copy HTML</button>
         <button id="toggleTheme" class="icon-btn" title="Toggle theme">🌙</button>
       </div>
@@ -114,7 +115,7 @@ $$
       </section>
       <section id="preview" class="pane"></section>
     </div>
-    <div class="footer">Tip: Use $inline$ or $$block$$ for LaTeX.</div>
+    
 
     <script>
       (function() {
