@@ -249,11 +249,12 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
           const preEscaped = raw.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
           let html = renderPE(preEscaped);
           // Sanitize
-          const safe = window.DOMPurify ? window.DOMPurify.sanitize(html, { ADD_ATTR: ['target','rel','open','start','type'] }) : html;
+          const safe = window.DOMPurify ? window.DOMPurify.sanitize(html, { ADD_ATTR: ['target','rel','open','start','type'], ADD_TAGS: ['details','summary'] }) : html;
           preview.innerHTML = safe;
           // Syntax highlight if available
           if (window.hljs) {
             preview.querySelectorAll('pre code').forEach((el) => {
+              if (el.classList.contains('nohighlight')) return;
               if (!el.className.includes('language-')) {
                 // auto-detect if no language class
                 try { window.hljs.highlightElement(el); } catch {}
