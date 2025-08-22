@@ -225,7 +225,10 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
           // Auto-link bare URLs
           text = text.replace(/(^|\s)(https?:\/\/[^\s<>]+)(?=\s|$)/g, (m, pre, url) => `${pre}<a href="${url}" target="_blank" rel="noopener noreferrer">${url}<\/a>`);
 
-          // Restore code blocks
+          // Convert remaining newlines to <br> outside code blocks to preserve layout
+          text = text.replace(/\r?\n/g, '<br>');
+
+          // Restore code blocks (keeps original newlines inside <pre>)
           text = text.replace(/\uE000CODE(\d+)\uE000/g, (m, i) => {
             const idx = Number(i);
             const c = codeStore[idx];
@@ -236,9 +239,6 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
             const pre = `<pre><code class="hljs${c.noHighlight ? '' : langClass}">${codeHtml}<\/code><\/pre>`;
             return `<details class="pe-collapse" open><summary>Code (${escapeHtml(label)})<\/summary><div class="pe-collapse-body">${pre}<\/div><\/details>`;
           });
-
-          // Convert newlines to <br> to preserve formatting outside blocks
-          text = text.replace(/\r?\n/g, '<br>');
 
           return text;
         }
@@ -309,4 +309,3 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
     </script>
   </body>
   </html>
-
