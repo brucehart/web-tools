@@ -35,6 +35,18 @@
 	 * https://developers.cloudflare.com/workers/static-assets/binding/
 	 */
 	"assets": { "directory": "./public/", "binding": "ASSETS" },
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "web_tools_db",
+			"database_id": "f09d1fa6-3f91-4679-ae32-78c588c1e0bb"
+		}
+	],
+	"vars": {
+		"OAUTH_REDIRECT_URL": "https://web-tools.bruce-hart.workers.dev/auth/google/callback",
+		"GOOGLE_CLIENT_ID": "23831454371-uqiege2i9k1bg9qnktbnhdlccm5pi934.apps.googleusercontent.com",
+		"SESSION_COOKIE_NAME": "wt_session"
+	}
 	/**
 	 * Service Bindings (communicate between multiple Workers)
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
