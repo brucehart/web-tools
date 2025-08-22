@@ -119,36 +119,66 @@
         return res.json();
       }
       function el(tag, attrs={}, children=[]) { const e = document.createElement(tag); Object.entries(attrs).forEach(([k,v])=>{ if(k==='class') e.className=v; else if(k==='href'||k==='target'||k==='rel') e.setAttribute(k,v); else e[k]=v; }); children.forEach(c=> e.appendChild(typeof c==='string'?document.createTextNode(c):c)); return e; }
+      function uid(prefix='l_') { return prefix + Math.random().toString(36).slice(2, 10); }
+      const LS_KEY = 'pb_local_pastes_v1';
+      function loadLocal() { try { return JSON.parse(localStorage.getItem(LS_KEY)||'[]'); } catch { return []; } }
+      function saveLocal(list) { localStorage.setItem(LS_KEY, JSON.stringify(list)); }
 
+      let PB_STATE = { loggedIn: false, allowed: false, user: null };
       async function refreshAuth() {
         try {
           const me = await api('/api/auth/me');
+          PB_STATE = me || { loggedIn: false, allowed: false, user: null };
           if (me.loggedIn) {
             qs('#authArea').innerHTML = '';
             qs('#authArea').append(
               el('span', { class: 'muted' }, [me.user.email]),
               el('button', { onclick: async()=>{ await api('/api/auth/logout', { method: 'POST' }); location.reload(); } }, ['Logout'])
             );
-            const titleEl = qs('#title');
-            const contentEl = qs('#content');
-            const visEl = qs('#visibility');
-            const createBtn = qs('#createBtn');
             if (me.allowed) {
               loadMine();
-              [titleEl, contentEl, visEl, createBtn].forEach(el => el && (el.disabled = false));
             } else {
-              qs('#mineList').innerHTML = '<div class="muted">Access restricted.</div>';
-              [titleEl, contentEl, visEl, createBtn].forEach(el => el && (el.disabled = true));
+              const list = qs('#mineList');
+              if (list) list.innerHTML = '';
+              renderLocalMine();
+              qs('#createResult').textContent = 'Not allowed to save on server; creating local pastes.';
             }
           } else {
             qs('#authArea').innerHTML = '';
             qs('#authArea').append(
               el('a', { href: '/auth/google/login' }, ['Login with Google'])
             );
+            const list = qs('#mineList');
+            if (list) list.innerHTML = '';
+            renderLocalMine();
+            qs('#createResult').textContent = 'Not signed in; creating local pastes.';
           }
         } catch (e) {
           console.error(e);
         }
+      }
+
+      function renderLocalMine() {
+        const list = qs('#mineList');
+        if (!list) return;
+        const items = loadLocal().sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
+        list.innerHTML = '';
+        if (!items.length) { list.append(el('div', {class:'muted'}, ['No local pastes yet.'])); return; }
+        items.forEach(p => {
+          const row = el('div', { class: 'list-item' }, []);
+          const link = el('a', { href: `/pastebin#local=${p.id}` }, [p.title || '(untitled)']);
+          const vis = el('span', { class: 'pill' }, [p.visibility || 'unlisted']);
+          const del = el('button', { class: 'btn-danger', title: 'Delete paste' }, ['Delete']);
+          del.addEventListener('click', (ev) => {
+            ev.preventDefault(); ev.stopPropagation();
+            const all = loadLocal();
+            const idx = all.findIndex(x => x.id === p.id);
+            if (idx >= 0) { all.splice(idx, 1); saveLocal(all); renderLocalMine(); }
+            if ((location.hash||'').includes(`#local=${p.id}`)) location.href = '/pastebin';
+          });
+          row.append(link, vis, del);
+          list.append(row);
+        });
       }
 
       async function loadMine() {
@@ -205,18 +235,28 @@
         const content = qs('#content').value;
         const visibility = qs('#visibility').value;
         if (!content) { alert('Please enter content'); return; }
-        try {
-          const res = await api('/api/pastebin/create', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ title, content, visibility })
-          });
-          const url = `/pastebin/p/${res.id}`;
-          qs('#createResult').innerHTML = `Created: <a href="${url}">${url}</a>`;
-          loadMine();
-          if (visibility === 'public') loadPublic();
-        } catch (e) {
-          alert('Failed to create paste: ' + e.message);
+        if (window.PB_STATE && window.PB_STATE.allowed) {
+          try {
+            const res = await api('/api/pastebin/create', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ title, content, visibility })
+            });
+            const url = `/pastebin/p/${res.id}`;
+            qs('#createResult').innerHTML = `Created: <a href="${url}">${url}</a>`;
+            loadMine();
+            if (visibility === 'public') loadPublic();
+          } catch (e) {
+            alert('Failed to create paste: ' + e.message);
+          }
+        } else {
+          const id = uid();
+          const all = loadLocal();
+          all.unshift({ id, title, content, visibility, created_at: new Date().toISOString() });
+          saveLocal(all);
+          const url = `/pastebin#local=${id}`;
+          qs('#createResult').innerHTML = `Saved locally: <a href="${url}">${url}</a>`;
+          renderLocalMine();
         }
       }
 
@@ -230,16 +270,32 @@
       async function maybeView() {
         const injected = window.PASTE_ID;
         const m = !injected && location.pathname.match(/\/pastebin\/p\/([^\/?#]+)/);
-        const id = injected || (m ? m[1].replace(/\/$/, '') : (new URL(location.href)).searchParams.get('id'));
-        if (!id) return;
+        const urlObj = new URL(location.href);
+        const id = injected || (m ? m[1].replace(/\/$/, '') : urlObj.searchParams.get('id'));
+        const hashMatch = (location.hash||'').match(/local=([^&]+)/);
+        const lid = urlObj.searchParams.get('lid') || (hashMatch ? hashMatch[1] : '');
+        if (!id && !lid) return;
         try {
+          if (lid) {
+            const all = loadLocal();
+            const p = all.find(x => x.id === lid);
+            if (!p) throw new Error('Not found');
+            document.title = (p.title || 'Paste') + ' - Pastebin';
+            qs('#vtitle').value = p.title || '';
+            qs('#vcontent').value = p.content || '';
+            qs('#vmeta').textContent = `${(p.visibility||'unlisted').toUpperCase()} • ${new Date(p.created_at).toLocaleString()} • Local`;
+            qs('#viewPanel').style.display = '';
+            // De-emphasize create/list panels
+            document.querySelectorAll('main > section.panel').forEach((s, idx) => { if (idx > 0) s.style.opacity = '0.6'; });
+            window.scrollTo({ top: 0 });
+            return;
+          }
           const data = await api(`/api/pastebin/get?id=${encodeURIComponent(id)}`);
           document.title = (data.title || 'Paste') + ' - Pastebin';
           qs('#vtitle').value = data.title || '';
           qs('#vcontent').value = data.content || '';
           qs('#vmeta').textContent = `${data.visibility.toUpperCase()} • ${new Date(data.created_at).toLocaleString()}`;
           qs('#viewPanel').style.display = '';
-          // De-emphasize create/list panels when viewing a specific paste
           document.querySelectorAll('main > section.panel').forEach((s, idx) => { if (idx > 0) s.style.opacity = '0.6'; });
           if (data.can_delete) {
             const delBtn = qs('#deleteBtn');
@@ -254,7 +310,6 @@
               }
             };
           }
-          // Scroll to top to show the viewer first
           window.scrollTo({ top: 0 });
         } catch (e) {
           console.error(e);

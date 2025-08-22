@@ -26,6 +26,7 @@ Both tools include a Home button in the header to return to `/`.
   - Create and share text snippets.
   - Visibility options: `public` (listed) or `unlisted` (hidden from lists, accessible by link).
   - Auth via Google OAuth; stores users, sessions, and pastes in Cloudflare D1.
+  - Not signed in or not allowed: pastes are saved in your browser’s localStorage (local mode). Local pastes are only visible in that browser/device; you can open them via `#local=<id>` in the URL.
   - Public listing at `/pastebin` shows recent public pastes; your pastes appear after sign-in.
   - Direct links like `/pastebin/p/abcd1234` open a read-only view.
 
@@ -71,6 +72,7 @@ If you change static HTML in `public/`, no Worker code changes are required.
 Security notes:
 - Sessions use random tokens stored in D1 and set as HttpOnly, Secure, SameSite=Lax cookies.
 - Only `public` pastes appear in listings; `unlisted` require the direct link.
+ - When not signed in or not allowed, pastes are saved to `localStorage` only and cannot be shared across devices. View a local paste by opening `/pastebin#local=<id>` on the same browser.
 
 ## Notes
 - MathJax inline delimiters are restricted to `$...$` to avoid conflicts with literal parentheses in text and links; display math supports `$$...$$` and `\[...\]`.
