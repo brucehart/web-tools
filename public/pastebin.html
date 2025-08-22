@@ -5,25 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Pastebin</title>
     <style>
-      :root { color-scheme: light dark; }
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --fg: #111111;
+        --header-bg: #2f2f2f;
+        --header-fg: #f3f3f3;
+        --border: #cfcfcf;
+        --pane-bg: #f6f6f6;
+        --muted: #666666;
+        --accent: #7aa2f7;
+      }
+      [data-theme="dark"] {
+        --bg: #121212;
+        --fg: #eaeaea;
+        --header-bg: #2f2f2f;
+        --header-fg: #f3f3f3;
+        --border: #3a3a3a;
+        --pane-bg: #1a1a1a;
+        --muted: #9aa0a6;
+        --accent: #7aa2f7;
+      }
       * { box-sizing: border-box; }
       html, body { height: 100%; margin: 0; }
-      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; }
-      header { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: .75rem 1rem; border-bottom: 1px solid #ddd; }
+      body { background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; }
+      header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); background: var(--header-bg); color: var(--header-fg); position: sticky; top: 0; z-index: 10; }
+      header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+      header .actions { display: flex; gap: 8px; align-items: center; }
+      .icon-btn { appearance: none; border: 1px solid var(--border); background: transparent; color: inherit; padding: 6px 10px; border-radius: 8px; font-size: 0.9rem; line-height: 1; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+      .icon-btn:hover { background: rgba(127,127,127,0.12); }
       h1 { margin: 0; font-size: 1.15rem; }
       main { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; }
-      .panel { border: 1px solid #ddd; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
-      .panel header { border-bottom: 1px solid #ddd; padding: .5rem .75rem; }
+      .panel { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; background: var(--pane-bg); }
+      .panel header { border-bottom: 1px solid var(--border); padding: .5rem .75rem; }
       .panel .content { padding: .75rem; display: flex; gap: 8px; flex-direction: column; }
-      textarea { width: 100%; min-height: 220px; resize: vertical; padding: .75rem; border: 1px solid #ccc; border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 14px; }
-      input, select, button { font: inherit; padding: .5rem .6rem; border-radius: 8px; border: 1px solid #ccc; }
+      textarea { width: 100%; min-height: 220px; resize: vertical; padding: .75rem; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: inherit; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 14px; }
+      input, select, button { font: inherit; padding: .5rem .6rem; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: inherit; }
       .row { display: flex; gap: 8px; align-items: center; }
       .grow { flex: 1; }
-      .muted { color: #777; font-size: .9rem; }
+      .muted { color: var(--muted); font-size: .9rem; }
       .list { padding: .5rem; max-height: 420px; overflow: auto; }
-      .list-item { display: flex; justify-content: space-between; align-items: center; padding: .5rem; border-bottom: 1px solid #eee; gap: 8px; }
+      .list-item { display: flex; justify-content: space-between; align-items: center; padding: .5rem; border-bottom: 1px solid var(--border); gap: 8px; }
       .list-item a { text-decoration: none; }
-      .pill { font-size: .75rem; border: 1px solid #bbb; border-radius: 999px; padding: .15rem .5rem; }
+      .pill { font-size: .75rem; border: 1px solid var(--border); border-radius: 999px; padding: .15rem .5rem; }
       .right { margin-left: auto; }
       .btn-danger { background:#d9534f; border-color:#d43f3a; color:white }
       @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
@@ -32,7 +56,11 @@
   <body>
     <header>
       <h1>Pastebin</h1>
-      <div id="authArea" class="row"></div>
+      <div class="actions">
+        <a href="/" class="icon-btn" title="Home" aria-label="Home">🏠</a>
+        <button id="toggleTheme" class="icon-btn" title="Toggle theme">🌙</button>
+        <div id="authArea" class="row"></div>
+      </div>
     </header>
     <main>
       <section id="viewPanel" class="panel" style="display:none">
@@ -72,6 +100,19 @@
     </main>
     <script>
       const qs = (sel) => document.querySelector(sel);
+      const THEME_KEY = 'pb_theme';
+      const root = document.documentElement;
+      function preferredTheme() {
+        const saved = localStorage.getItem(THEME_KEY);
+        if (saved === 'light' || saved === 'dark') return saved;
+        return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      }
+      function applyTheme(theme) {
+        root.setAttribute('data-theme', theme);
+        localStorage.setItem(THEME_KEY, theme);
+        const btn = document.getElementById('toggleTheme');
+        if (btn) btn.textContent = (theme === 'dark') ? '☀️' : '🌙';
+      }
       async function api(path, opts={}) {
         const res = await fetch(path, Object.assign({credentials:'include'}, opts));
         if (!res.ok) throw new Error(await res.text());
@@ -88,7 +129,17 @@
               el('span', { class: 'muted' }, [me.user.email]),
               el('button', { onclick: async()=>{ await api('/api/auth/logout', { method: 'POST' }); location.reload(); } }, ['Logout'])
             );
-            loadMine();
+            const titleEl = qs('#title');
+            const contentEl = qs('#content');
+            const visEl = qs('#visibility');
+            const createBtn = qs('#createBtn');
+            if (me.allowed) {
+              loadMine();
+              [titleEl, contentEl, visEl, createBtn].forEach(el => el && (el.disabled = false));
+            } else {
+              qs('#mineList').innerHTML = '<div class="muted">Access restricted.</div>';
+              [titleEl, contentEl, visEl, createBtn].forEach(el => el && (el.disabled = true));
+            }
           } else {
             qs('#authArea').innerHTML = '';
             qs('#authArea').append(
@@ -170,6 +221,12 @@
       }
 
       qs('#createBtn').addEventListener('click', createPaste);
+      applyTheme(preferredTheme());
+      const toggleBtn = document.getElementById('toggleTheme');
+      if (toggleBtn) toggleBtn.addEventListener('click', () => {
+        const current = root.getAttribute('data-theme') || preferredTheme();
+        applyTheme(current === 'dark' ? 'light' : 'dark');
+      });
       async function maybeView() {
         const injected = window.PASTE_ID;
         const m = !injected && location.pathname.match(/\/pastebin\/p\/([^\/?#]+)/);
