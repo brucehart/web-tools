@@ -136,14 +136,8 @@
               el('span', { class: 'muted' }, [me.user.email]),
               el('button', { onclick: async()=>{ await api('/api/auth/logout', { method: 'POST' }); location.reload(); } }, ['Logout'])
             );
-            if (me.allowed) {
-              loadMine();
-            } else {
-              const list = qs('#mineList');
-              if (list) list.innerHTML = '';
-              renderLocalMine();
-              qs('#createResult').textContent = 'Not allowed to save on server; creating local pastes.';
-            }
+            // Any logged-in user stores in server DB
+            loadMine();
           } else {
             qs('#authArea').innerHTML = '';
             qs('#authArea').append(
@@ -236,7 +230,7 @@
         const content = qs('#content').value;
         const visibility = qs('#visibility').value;
         if (!content) { alert('Please enter content'); return; }
-        if (window.PB_STATE && window.PB_STATE.allowed) {
+        if (PB_STATE && PB_STATE.loggedIn) {
           try {
             const res = await api('/api/pastebin/create', {
               method: 'POST',

@@ -188,7 +188,7 @@ export default {
 
     // -------- Pastebin API --------
     if (path === '/api/pastebin/create' && request.method === 'POST') {
-      const user = await requireAllowedUser(request, b);
+      const user = await requireUser(request, b);
       if (user instanceof Response) return user;
       const body = await readJson<{ title?: string; content?: string; visibility?: 'public' | 'unlisted' | 'private' }>(request);
       const content = (body.content || '').toString();
@@ -211,7 +211,7 @@ export default {
       return badRequest('Failed to allocate id', 500);
     }
     if (path === '/api/pastebin/mine' && request.method === 'GET') {
-      const user = await requireAllowedUser(request, b);
+      const user = await requireUser(request, b);
       if (user instanceof Response) return user;
       const rows = await b.DB.prepare('SELECT id, title, visibility, created_at FROM pastes WHERE user_id = ? ORDER BY created_at DESC LIMIT 200').bind((user as any).id).all();
       return json(rows.results || []);
@@ -234,7 +234,7 @@ export default {
       return json({ ...rest, can_delete });
     }
     if (path === '/api/pastebin/delete' && request.method === 'POST') {
-      const user = await requireAllowedUser(request, b);
+      const user = await requireUser(request, b);
       if (user instanceof Response) return user;
       const body = await readJson<{ id?: string }>(request);
       const id = (body.id || '').toString();
