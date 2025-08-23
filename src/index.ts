@@ -190,10 +190,14 @@ export default {
     if (path === '/api/pastebin/create' && request.method === 'POST') {
       const user = await requireAllowedUser(request, b);
       if (user instanceof Response) return user;
-      const body = await readJson<{ title?: string; content?: string; visibility?: 'public' | 'unlisted' }>(request);
+      const body = await readJson<{ title?: string; content?: string; visibility?: 'public' | 'unlisted' | 'private' }>(request);
       const content = (body.content || '').toString();
       const title = (body.title || '').toString().slice(0, 200);
-      const visibility = (body.visibility === 'unlisted' ? 'unlisted' : 'public') as 'public' | 'unlisted';
+      const visibility = (body.visibility === 'unlisted'
+        ? 'unlisted'
+        : body.visibility === 'private'
+        ? 'private'
+        : 'public') as 'public' | 'unlisted' | 'private';
       if (!content) return badRequest('content required');
       for (let i = 0; i < 5; i++) {
         const slug = visibility === 'public' ? urlSafeRandom(8) : urlSafeRandom(14);
@@ -222,6 +226,9 @@ export default {
       const row = (await b.DB.prepare('SELECT id, user_id, title, content, visibility, created_at FROM pastes WHERE id = ?').bind(id).first()) as any;
       if (!row) return new Response('Not found', { status: 404 });
       const me = await getSessionUser(request, b);
+      if (row.visibility === 'private') {
+        if (!me || me.id !== row.user_id) return new Response('Forbidden', { status: 403 });
+      }
       const can_delete = !!(me && me.id === row.user_id);
       const { user_id, ...rest } = row;
       return json({ ...rest, can_delete });
