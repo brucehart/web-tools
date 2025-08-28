@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Date Calculator</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --fg: #111111;
+        --header-bg: #2f2f2f;
+        --header-fg: #f3f3f3;
+        --border: #cfcfcf;
+        --pane-bg: #f6f6f6;
+        --muted: #666666;
+        --accent: #7aa2f7;
+      }
+      [data-theme="dark"] {
+        --bg: #121212;
+        --fg: #eaeaea;
+        --header-bg: #2f2f2f;
+        --header-fg: #f3f3f3;
+        --border: #3a3a3a;
+        --pane-bg: #1a1a1a;
+        --muted: #9aa0a6;
+        --accent: #7aa2f7;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body { background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; }
+      header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); background: var(--header-bg); color: var(--header-fg); position: sticky; top: 0; z-index: 10; }
+      header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+      header .actions { display: flex; gap: 8px; align-items: center; }
+      .icon-btn { appearance: none; border: 1px solid var(--border); background: transparent; color: inherit; padding: 6px 10px; border-radius: 8px; font-size: 0.9rem; line-height: 1; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+      .icon-btn:hover { background: rgba(127,127,127,0.12); }
+      main { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; }
+      .panel { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; background: var(--pane-bg); }
+      .panel header { border-bottom: 1px solid var(--border); padding: .6rem .8rem; font-weight: 600; }
+      .panel .content { padding: .75rem; display: flex; gap: 10px; flex-direction: column; }
+      .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      label { min-width: 120px; }
+      input, select, button { font: inherit; padding: .5rem .6rem; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: inherit; }
+      input[type="number"] { width: 8ch; }
+      .grow { flex: 1; }
+      .muted { color: var(--muted); font-size: .9rem; }
+      .result { padding: .5rem .6rem; border: 1px dashed var(--border); border-radius: 8px; background: rgba(127,127,127,0.06); }
+      .date-input { display: inline-flex; align-items: center; gap: 6px; }
+      .date-input input[type="text"] { width: 14ch; }
+      .today-link { color: var(--accent); text-decoration: none; font-size: .9rem; }
+      .today-link:hover { text-decoration: underline; }
+      .invalid { border-color: #d93025 !important; box-shadow: 0 0 0 2px rgba(217,48,37,0.15) inset; }
+      @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Date Calculator</h1>
+      <div class="actions">
+        <a href="/" class="icon-btn" title="Home" aria-label="Home">🏠</a>
+        <button id="toggleTheme" class="icon-btn" title="Toggle theme">🌙</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel">
+        <header>Difference Between Dates</header>
+        <div class="content">
+          <div class="row">
+            <label for="diffStartTxt">Start Date</label>
+            <div class="date-input">
+              <input id="diffStartTxt" type="text" placeholder="MM/DD/YYYY" autocomplete="off" />
+              <input id="diffStartCal" type="date" />
+              <a id="diffStartToday" href="#" class="today-link">Today</a>
+            </div>
+          </div>
+          <div class="row">
+            <label for="diffEndTxt">End Date</label>
+            <div class="date-input">
+              <input id="diffEndTxt" type="text" placeholder="MM/DD/YYYY" autocomplete="off" />
+              <input id="diffEndCal" type="date" />
+              <a id="diffEndToday" href="#" class="today-link">Today</a>
+            </div>
+          </div>
+          <div class="result" id="diffResult">
+            <div class="muted">Enter both dates to see the difference.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header>Add or Subtract</header>
+        <div class="content">
+          <div class="row">
+            <label for="baseTxt">Base Date</label>
+            <div class="date-input">
+              <input id="baseTxt" type="text" placeholder="MM/DD/YYYY" autocomplete="off" />
+              <input id="baseCal" type="date" />
+              <a id="baseToday" href="#" class="today-link">Today</a>
+            </div>
+          </div>
+          <div class="row">
+            <label for="amount">Amount</label>
+            <input id="amount" type="number" step="1" value="1" />
+            <select id="unit">
+              <option value="days">Days</option>
+              <option value="weeks">Weeks</option>
+              <option value="months">Months</option>
+              <option value="years">Years</option>
+            </select>
+            <select id="op">
+              <option value="add">Add</option>
+              <option value="sub">Subtract</option>
+            </select>
+          </div>
+          <div class="result" id="calcResult">
+            <div class="muted">Set base date and amount to see the result.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (function() {
+        const THEME_KEY = 'date_theme';
+        const root = document.documentElement;
+        function preferredTheme() {
+          const saved = localStorage.getItem(THEME_KEY);
+          if (saved === 'light' || saved === 'dark') return saved;
+          return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        }
+        function applyTheme(theme) {
+          root.setAttribute('data-theme', theme);
+          localStorage.setItem(THEME_KEY, theme);
+          const btn = document.getElementById('toggleTheme');
+          if (btn) btn.textContent = (theme === 'dark') ? '☀️' : '🌙';
+        }
+
+        const ids = [
+          'diffStartTxt','diffStartCal','diffStartToday',
+          'diffEndTxt','diffEndCal','diffEndToday',
+          'baseTxt','baseCal','baseToday',
+          'amount','unit','op','diffResult','calcResult'
+        ];
+        const els = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
+
+        function pad2(n){ return String(n).padStart(2,'0'); }
+        function toISODateUTC(y,m,d) { return new Date(Date.UTC(y, m-1, d)); }
+        function fromISODateUTC(date){ return { y: date.getUTCFullYear(), m: date.getUTCMonth()+1, d: date.getUTCDate() }; }
+        function toYMD(val){ const y = val.getUTCFullYear(); const m = pad2(val.getUTCMonth()+1); const d = pad2(val.getUTCDate()); return `${y}-${m}-${d}`; }
+        function fmtMDY(date){ const {y,m,d} = fromISODateUTC(date); return `${pad2(m)}/${pad2(d)}/${y}`; }
+
+        function parseMDY(text){
+          if (!text) return null;
+          const t = String(text).trim();
+          const m = t.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+          if (!m) return null;
+          const mm = Number(m[1]);
+          const dd = Number(m[2]);
+          const yy = Number(m[3]);
+          if (yy < 100) return null; // require 4-digit years
+          if (mm < 1 || mm > 12) return null;
+          const maxd = daysInMonth(yy, mm);
+          if (dd < 1 || dd > maxd) return null;
+          return { y: yy, m: mm, d: dd };
+        }
+
+        function daysInMonth(y, m) { return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+
+        function setInvalid(el, isInvalid){ if (!el) return; el.classList.toggle('invalid', !!isInvalid); }
+
+        function syncPair(textEl, calEl, todayEl) {
+          function setBoth(date) {
+            calEl.value = toYMD(date);
+            textEl.value = fmtMDY(date);
+            setInvalid(textEl, false);
+            setInvalid(calEl, false);
+          }
+          textEl.addEventListener('input', () => {
+            const p = parseMDY(textEl.value);
+            if (!p) { setInvalid(textEl, textEl.value.trim().length > 0); return; }
+            const d = toISODateUTC(p.y, p.m, p.d);
+            setBoth(d);
+            onChange();
+          });
+          calEl.addEventListener('change', () => {
+            const v = calEl.value;
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { setInvalid(calEl, true); return; }
+            const [y,m,d] = v.split('-').map(Number);
+            const date = toISODateUTC(y,m,d);
+            setBoth(date);
+            onChange();
+          });
+          todayEl.addEventListener('click', (e) => {
+            e.preventDefault();
+            const now = new Date();
+            const date = toISODateUTC(now.getUTCFullYear(), now.getUTCMonth()+1, now.getUTCDate());
+            setBoth(date);
+            onChange();
+          });
+          return { setBoth };
+        }
+
+        function dateFromInputs(txtEl, calEl) {
+          const p = parseMDY(txtEl.value);
+          if (p) return toISODateUTC(p.y, p.m, p.d);
+          if (/^\d{4}-\d{2}-\d{2}$/.test(calEl.value)) {
+            const [y,m,d] = calEl.value.split('-').map(Number);
+            return toISODateUTC(y,m,d);
+          }
+          return null;
+        }
+
+        function diffAbsDays(a,b) {
+          const ms = Math.abs(a.getTime() - b.getTime());
+          return Math.round(ms / 86400000);
+        }
+
+        function calendarDiff(a, b) {
+          // Ensure a <= b
+          let start = a, end = b, sign = 1;
+          if (a.getTime() > b.getTime()) { start = b; end = a; sign = -1; }
+          const sa = fromISODateUTC(start);
+          const ea = fromISODateUTC(end);
+          let years = ea.y - sa.y;
+          let months = ea.m - sa.m;
+          let days = ea.d - sa.d;
+          if (days < 0) {
+            months -= 1;
+            const prevMonth = ea.m - 1 <= 0 ? 12 : (ea.m - 1);
+            const prevYear = prevMonth === 12 ? ea.y - 1 : ea.y;
+            days += daysInMonth(prevYear, prevMonth);
+          }
+          if (months < 0) { months += 12; years -= 1; }
+          return { years: years * sign, months: months * sign, days: days * sign };
+        }
+
+        function monthsBetween(start, end) {
+          // Whole calendar months difference, negative if end < start
+          const s = fromISODateUTC(start); const e = fromISODateUTC(end);
+          let months = (e.y - s.y) * 12 + (e.m - s.m);
+          // Adjust if end's day is before start's day
+          if (e.d < s.d) months -= 1;
+          return months;
+        }
+
+        function addCalendar(date, amount, unit) {
+          const {y,m,d} = fromISODateUTC(date);
+          if (unit === 'days') {
+            return new Date(Date.UTC(y, m-1, d + amount));
+          } else if (unit === 'weeks') {
+            return new Date(Date.UTC(y, m-1, d + amount * 7));
+          } else if (unit === 'months') {
+            const nm = m - 1 + amount;
+            const ny = y + Math.floor(nm / 12);
+            const mo = ((nm % 12) + 12) % 12; // 0-11
+            const maxd = daysInMonth(ny, mo+1);
+            const nd = Math.min(d, maxd);
+            return new Date(Date.UTC(ny, mo, nd));
+          } else if (unit === 'years') {
+            const ny = y + amount;
+            const maxd = daysInMonth(ny, m);
+            const nd = Math.min(d, maxd);
+            return new Date(Date.UTC(ny, m-1, nd));
+          }
+          return date;
+        }
+
+        function numberFmt(n) { return n.toLocaleString(); }
+
+        function renderDiff() {
+          const out = els.diffResult;
+          const a = dateFromInputs(els.diffStartTxt, els.diffStartCal);
+          const b = dateFromInputs(els.diffEndTxt, els.diffEndCal);
+          if (!a || !b) { out.innerHTML = '<div class="muted">Enter both dates to see the difference.</div>'; return; }
+          const days = diffAbsDays(a,b);
+          const weeks = Math.floor(days / 7);
+          const remDays = days % 7;
+          const cal = calendarDiff(a,b);
+          const totalMonths = Math.abs(monthsBetween(a,b));
+          const yearsFloat = (Math.abs(cal.years) + cal.months/12 + cal.days/365.2425) * (cal.years < 0 ? -1 : 1);
+          out.innerHTML = `
+            <div><strong>Calendar:</strong> ${Math.abs(cal.years)} year(s), ${Math.abs(cal.months)} month(s), ${Math.abs(cal.days)} day(s)</div>
+            <div><strong>Total days:</strong> ${numberFmt(days)}</div>
+            <div><strong>Weeks:</strong> ${numberFmt(weeks)} week(s) and ${numberFmt(remDays)} day(s)</div>
+            <div><strong>Total months:</strong> ${numberFmt(totalMonths)}</div>
+          `;
+        }
+
+        function renderCalc() {
+          const out = els.calcResult;
+          const base = dateFromInputs(els.baseTxt, els.baseCal);
+          const amt = Number(els.amount.value || '0');
+          const unit = els.unit.value;
+          const op = els.op.value;
+          if (!base) { out.innerHTML = '<div class="muted">Set base date and amount to see the result.</div>'; return; }
+          if (!Number.isFinite(amt)) { out.textContent = 'Amount must be a number.'; return; }
+          const signed = (op === 'sub') ? -amt : amt;
+          const result = addCalendar(base, signed, unit);
+          const deltaDays = diffAbsDays(base, result);
+          const cal = calendarDiff(base, result);
+          out.innerHTML = `
+            <div><strong>Result date:</strong> ${fmtMDY(result)} (<code>${toYMD(result)}</code>)</div>
+            <div><strong>Change (calendar):</strong> ${Math.abs(cal.years)} year(s), ${Math.abs(cal.months)} month(s), ${Math.abs(cal.days)} day(s)</div>
+            <div><strong>Total days moved:</strong> ${numberFmt(deltaDays)}</div>
+          `;
+        }
+
+        function onChange(){ renderDiff(); renderCalc(); }
+
+        // Wire pairs and seed defaults
+        const diffStart = syncPair(els.diffStartTxt, els.diffStartCal, els.diffStartToday);
+        const diffEnd = syncPair(els.diffEndTxt, els.diffEndCal, els.diffEndToday);
+        const basePair = syncPair(els.baseTxt, els.baseCal, els.baseToday);
+
+        // Default both diff dates to today; base to today
+        const now = new Date();
+        const todayUTC = toISODateUTC(now.getUTCFullYear(), now.getUTCMonth()+1, now.getUTCDate());
+        diffStart.setBoth(todayUTC);
+        diffEnd.setBoth(todayUTC);
+        basePair.setBoth(todayUTC);
+
+        ['amount','unit','op'].forEach(id => { const e = els[id]; if (e) e.addEventListener('input', onChange); if (e) e.addEventListener('change', onChange); });
+
+        applyTheme(preferredTheme());
+        const toggleBtn = document.getElementById('toggleTheme');
+        if (toggleBtn) {
+          toggleBtn.addEventListener('click', () => {
+            const current = root.getAttribute('data-theme') || preferredTheme();
+            applyTheme(current === 'dark' ? 'light' : 'dark');
+          });
+        }
+
+        onChange();
+      })();
+    </script>
+  </body>
+  </html>
+
