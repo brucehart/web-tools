@@ -56,10 +56,12 @@
 
       /* Custom date picker */
       .datepicker { position: absolute; z-index: 9999; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); width: 288px; overflow: hidden; }
-      .datepicker .dp-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid var(--border); font-weight: 600; }
-      .datepicker .dp-title { font-size: 0.95rem; }
+      .datepicker .dp-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid var(--border); font-weight: 600; gap: 6px; }
+      .datepicker .dp-title { display: inline-flex; align-items: center; gap: 6px; }
       .datepicker .dp-nav { border: 1px solid var(--border); background: transparent; color: inherit; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
       .datepicker .dp-nav:hover { background: rgba(127,127,127,0.1); }
+      .datepicker .dp-month, .datepicker .dp-year { border: 1px solid var(--border); background: transparent; color: inherit; padding: 4px 6px; border-radius: 6px; font: inherit; height: 28px; }
+      .datepicker .dp-year { width: 6.5ch; }
       .datepicker .dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; padding: 8px; }
       .datepicker .dp-dow { text-align: center; font-size: 0.8rem; color: var(--muted); padding: 4px 0; }
       .datepicker .dp-day { appearance: none; border: none; background: transparent; color: inherit; width: 36px; height: 32px; line-height: 32px; text-align: center; border-radius: 6px; cursor: pointer; }
@@ -196,7 +198,7 @@
           dp.innerHTML = `
             <div class="dp-header">
               <button type="button" class="dp-nav dp-prev" aria-label="Previous Month">▲</button>
-              <div class="dp-title"></div>
+              <div class="dp-title"><select class="dp-month"></select><input class="dp-year" type="number" min="1" max="9999" inputmode="numeric" /></div>
               <button type="button" class="dp-nav dp-next" aria-label="Next Month">▼</button>
             </div>
             <div class="dp-grid"></div>
@@ -210,6 +212,8 @@
           const gridEl = dp.querySelector('.dp-grid');
           const prevBtn = dp.querySelector('.dp-prev');
           const nextBtn = dp.querySelector('.dp-next');
+          const monthSel = dp.querySelector('.dp-month');
+          const yearInput = dp.querySelector('.dp-year');
           const clearBtn = dp.querySelector('.dp-clear');
           const todayBtn = dp.querySelector('.dp-today');
 
@@ -218,6 +222,9 @@
           function monthLabel(y,m){
             return new Date(Date.UTC(y, m-1, 1)).toLocaleString(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' });
           }
+          const monthNames = Array.from({length:12}, (_,i) => new Date(Date.UTC(2000, i, 1)).toLocaleString(undefined, { month: 'long', timeZone: 'UTC' }));
+          if (monthSel) monthSel.innerHTML = monthNames.map((n, i) => `<option value="${i+1}">${n}</option>`).join('');
+          function clampYear(y){ return Math.min(9999, Math.max(1, (y|0))); }
           function sameUTC(a,b){ return a && b && a.getUTCFullYear()===b.getUTCFullYear() && a.getUTCMonth()===b.getUTCMonth() && a.getUTCDate()===b.getUTCDate(); }
 
           function addMonths(y,m,delta){ // m: 1-12
@@ -229,7 +236,9 @@
 
           function render(){
             if (!gridEl || !titleEl) return;
-            titleEl.textContent = monthLabel(state.viewY, state.viewM);
+            // Update dropdowns instead of overwriting title content
+            if (monthSel) monthSel.value = String(state.viewM);
+            if (yearInput) yearInput.value = String(state.viewY);
             gridEl.innerHTML = '';
             const dows = ['Su','Mo','Tu','We','Th','Fr','Sa'];
             for (let i=0;i<7;i++){ const el = document.createElement('div'); el.className='dp-dow'; el.textContent=dows[i]; gridEl.appendChild(el);}            
@@ -297,6 +306,8 @@
 
           prevBtn.addEventListener('click', () => { const nm = addMonths(state.viewY, state.viewM, -1); state.viewY = nm.y; state.viewM = nm.m; render(); position(); });
           nextBtn.addEventListener('click', () => { const nm = addMonths(state.viewY, state.viewM, +1); state.viewY = nm.y; state.viewM = nm.m; render(); position(); });
+          if (monthSel) monthSel.addEventListener('change', () => { const v = parseInt(monthSel.value, 10); if (v>=1 && v<=12){ state.viewM = v; render(); position(); }});
+          if (yearInput) yearInput.addEventListener('change', () => { const v = clampYear(parseInt(yearInput.value, 10) || state.viewY); state.viewY = v; render(); position(); });
           clearBtn.addEventListener('click', () => { pick(null); });
           todayBtn.addEventListener('click', () => { const n = new Date(); const d = toISODateUTC(n.getUTCFullYear(), n.getUTCMonth()+1, n.getUTCDate()); pick(d); });
 
