@@ -47,10 +47,29 @@
       .result { padding: .5rem .6rem; border: 1px dashed var(--border); border-radius: 8px; background: rgba(127,127,127,0.06); }
       .date-input { display: inline-flex; align-items: center; gap: 6px; }
       .date-input input[type="text"] { width: 14ch; }
+      /* Hide native date inputs; we render a custom calendar */
+      .date-input input[type="date"] { display: none; }
       .today-link { color: var(--accent); text-decoration: none; font-size: .9rem; }
       .today-link:hover { text-decoration: underline; }
       .invalid { border-color: #d93025 !important; box-shadow: 0 0 0 2px rgba(217,48,37,0.15) inset; }
       @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+
+      /* Custom date picker */
+      .datepicker { position: absolute; z-index: 9999; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); width: 288px; overflow: hidden; }
+      .datepicker .dp-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid var(--border); font-weight: 600; }
+      .datepicker .dp-title { font-size: 0.95rem; }
+      .datepicker .dp-nav { border: 1px solid var(--border); background: transparent; color: inherit; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
+      .datepicker .dp-nav:hover { background: rgba(127,127,127,0.1); }
+      .datepicker .dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; padding: 8px; }
+      .datepicker .dp-dow { text-align: center; font-size: 0.8rem; color: var(--muted); padding: 4px 0; }
+      .datepicker .dp-day { appearance: none; border: none; background: transparent; color: inherit; width: 36px; height: 32px; line-height: 32px; text-align: center; border-radius: 6px; cursor: pointer; }
+      .datepicker .dp-day:hover { background: rgba(127,127,127,0.12); }
+      .datepicker .dp-day.outside { color: var(--muted); }
+      .datepicker .dp-day.today { outline: 1px dashed var(--border); }
+      .datepicker .dp-day.selected { background: var(--accent); color: white; }
+      .datepicker .dp-footer { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-top: 1px solid var(--border); }
+      .datepicker .dp-link { color: var(--accent); background: transparent; border: none; padding: 4px 6px; cursor: pointer; font: inherit; }
+      .datepicker .dp-link:hover { text-decoration: underline; }
     </style>
   </head>
   <body>
@@ -169,6 +188,123 @@
 
         function setInvalid(el, isInvalid){ if (!el) return; el.classList.toggle('invalid', !!isInvalid); }
 
+        // Lightweight custom date picker (UTC-based)
+        function buildDatePicker(){
+          const dp = document.createElement('div');
+          dp.className = 'datepicker';
+          dp.style.display = 'none';
+          dp.innerHTML = `
+            <div class="dp-header">
+              <button type="button" class="dp-nav dp-prev" aria-label="Previous Month">▲</button>
+              <div class="dp-title"></div>
+              <button type="button" class="dp-nav dp-next" aria-label="Next Month">▼</button>
+            </div>
+            <div class="dp-grid"></div>
+            <div class="dp-footer">
+              <button type="button" class="dp-link dp-clear">Clear</button>
+              <button type="button" class="dp-link dp-today">Today</button>
+            </div>`;
+          document.body.appendChild(dp);
+
+          const titleEl = dp.querySelector('.dp-title');
+          const gridEl = dp.querySelector('.dp-grid');
+          const prevBtn = dp.querySelector('.dp-prev');
+          const nextBtn = dp.querySelector('.dp-next');
+          const clearBtn = dp.querySelector('.dp-clear');
+          const todayBtn = dp.querySelector('.dp-today');
+
+          const state = { visible: false, anchor: null, viewY: 0, viewM: 0, selected: null, onPick: null };
+
+          function monthLabel(y,m){
+            return new Date(Date.UTC(y, m-1, 1)).toLocaleString(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' });
+          }
+          function sameUTC(a,b){ return a && b && a.getUTCFullYear()===b.getUTCFullYear() && a.getUTCMonth()===b.getUTCMonth() && a.getUTCDate()===b.getUTCDate(); }
+
+          function addMonths(y,m,delta){ // m: 1-12
+            const nm = m-1 + delta;
+            const ny = y + Math.floor(nm/12);
+            const mo = ((nm%12)+12)%12 + 1; // back to 1-12
+            return { y: ny, m: mo };
+          }
+
+          function render(){
+            if (!gridEl || !titleEl) return;
+            titleEl.textContent = monthLabel(state.viewY, state.viewM);
+            gridEl.innerHTML = '';
+            const dows = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+            for (let i=0;i<7;i++){ const el = document.createElement('div'); el.className='dp-dow'; el.textContent=dows[i]; gridEl.appendChild(el);}            
+            const first = new Date(Date.UTC(state.viewY, state.viewM-1, 1));
+            const start = new Date(Date.UTC(state.viewY, state.viewM-1, 1 - first.getUTCDay()));
+            const today = new Date(); const todayUTC = toISODateUTC(today.getUTCFullYear(), today.getUTCMonth()+1, today.getUTCDate());
+            for (let i=0;i<42;i++){
+              const cur = new Date(start.getTime() + i*86400000);
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'dp-day';
+              if ((cur.getUTCMonth()+1) !== state.viewM) btn.classList.add('outside');
+              if (sameUTC(cur, todayUTC)) btn.classList.add('today');
+              if (state.selected && sameUTC(cur, state.selected)) btn.classList.add('selected');
+              btn.textContent = String(cur.getUTCDate());
+              btn.addEventListener('click', () => pick(new Date(cur.getTime())));
+              gridEl.appendChild(btn);
+            }
+          }
+
+          function position(){
+            if (!state.anchor) return;
+            const r = state.anchor.getBoundingClientRect();
+            const top = window.scrollY + r.bottom + 4;
+            let left = window.scrollX + r.left;
+            const width = 288; // matches CSS
+            if (left + width > window.scrollX + window.innerWidth - 8) {
+              left = window.scrollX + Math.max(8, window.innerWidth - width - 8);
+            }
+            dp.style.top = top + 'px';
+            dp.style.left = left + 'px';
+          }
+
+          function open(anchor, initial, onPick){
+            state.anchor = anchor;
+            state.onPick = onPick;
+            state.selected = initial || null;
+            const base = state.selected || (function(){ const n=new Date(); return toISODateUTC(n.getUTCFullYear(), n.getUTCMonth()+1, n.getUTCDate());})();
+            state.viewY = base.getUTCFullYear();
+            state.viewM = base.getUTCMonth()+1;
+            render();
+            position();
+            dp.style.display = 'block';
+            state.visible = true;
+            setTimeout(() => { document.addEventListener('mousedown', onDocDown, true); window.addEventListener('resize', position); window.addEventListener('scroll', position, true); }, 0);
+          }
+
+          function close(){
+            if (!state.visible) return;
+            state.visible = false;
+            dp.style.display = 'none';
+            document.removeEventListener('mousedown', onDocDown, true);
+            window.removeEventListener('resize', position);
+            window.removeEventListener('scroll', position, true);
+          }
+
+          function onDocDown(e){
+            if (!state.visible) return;
+            const t = e.target;
+            if (dp.contains(t) || (state.anchor && state.anchor.contains(t))) return;
+            close();
+          }
+
+          function pick(date){ if (state.onPick) state.onPick(date); close(); }
+
+          prevBtn.addEventListener('click', () => { const nm = addMonths(state.viewY, state.viewM, -1); state.viewY = nm.y; state.viewM = nm.m; render(); position(); });
+          nextBtn.addEventListener('click', () => { const nm = addMonths(state.viewY, state.viewM, +1); state.viewY = nm.y; state.viewM = nm.m; render(); position(); });
+          clearBtn.addEventListener('click', () => { pick(null); });
+          todayBtn.addEventListener('click', () => { const n = new Date(); const d = toISODateUTC(n.getUTCFullYear(), n.getUTCMonth()+1, n.getUTCDate()); pick(d); });
+
+          return { open, close };
+        }
+
+        const datePicker = buildDatePicker();
+
         function syncPair(textEl, calEl, todayEl) {
           function setBoth(date) {
             calEl.value = toYMD(date);
@@ -183,6 +319,15 @@
             setBoth(d);
             onChange();
           });
+          function openPicker(){
+            const existing = dateFromInputs(textEl, calEl);
+            datePicker.open(textEl, existing, (picked) => {
+              if (picked) setBoth(picked); else { textEl.value=''; calEl.value=''; }
+              onChange();
+            });
+          }
+          textEl.addEventListener('focus', openPicker);
+          textEl.addEventListener('click', openPicker);
           calEl.addEventListener('change', () => {
             const v = calEl.value;
             if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { setInvalid(calEl, true); return; }
@@ -336,4 +481,3 @@
     </script>
   </body>
   </html>
-
