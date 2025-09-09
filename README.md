@@ -37,6 +37,7 @@ Both tools include a Home button in the header to return to `/`.
  - `/pastebin` — Pastebin UI (create, list, login).
  - `/pastebin/p/:id` — View a specific paste (public or unlisted).
  - API: `/api/pastebin/*`, `/api/auth/*`, OAuth: `/auth/google/*`.
+ - `/llm-cost` — LLM Cost Calculator.
 
 ## Project Structure
 - `src/index.ts` — Worker entry; routes and serves static assets from `public` via the `ASSETS` binding. Falls back to bundled reads in tests/dev.
@@ -44,6 +45,7 @@ Both tools include a Home button in the header to return to `/`.
 - `public/markdown.html` — Markdown Preview page (Marked + DOMPurify + MathJax, tabs, Highlight.js with theme swap, copy button).
 - `public/euler.html` — Euler Preview page (BBCode → HTML, MathJax, tabs, Highlight.js with theme swap).
  - `public/pastebin.html` — Pastebin UI.
+ - `public/llm-cost.html` — LLM Cost Calculator UI (usage parsing, pricing library in localStorage).
 - `wrangler.jsonc` — Wrangler config with assets binding enabled.
  - `migrations/0001_pastebin.sql` — D1 tables for users, sessions, pastes.
 - `test/index.spec.ts` — Basic unit/integration tests.
@@ -78,5 +80,10 @@ Security notes:
 - MathJax inline delimiters are restricted to `$...$` to avoid conflicts with literal parentheses in text and links; display math supports `$$...$$` and `\[...\]`.
 - Output HTML is sanitized before insertion. Be cautious if you change the sanitization step.
 
+ - LLM Cost Calculator (`/llm-cost`)
+  - Enter or paste token usage like: `Token usage: total=17771 input=16418 (+ 61312 cached) output=1353` or `Token usage: total=82603 input=71947 (+ 331776 cached) output=10656 (reasoning 4480)`.
+  - Enter pricing per token, per 1K, or per 1M for input, cached input, output, and reasoning tokens.
+ - Save multiple model pricings and load them from a dropdown; stored locally in your browser.
+  - Seeded defaults include common models (e.g., gpt-5, gpt-5 mini, gpt-4o, Claude 3.5). Prices are placeholders — update to your provider's current rates.
 ## License
 MIT — see [LICENSE.md](LICENSE.md).

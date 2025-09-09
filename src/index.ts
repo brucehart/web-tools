@@ -252,6 +252,7 @@ export default {
     else if (path === '/euler' || path === '/euler/') path = '/euler.html';
     else if (path === '/pastebin' || path === '/pastebin/') path = '/pastebin.html';
     else if (path === '/date' || path === '/date/') path = '/date.html';
+    else if (path === '/llm-cost' || path === '/llm-cost/') path = '/llm-cost.html';
     else if (path.startsWith('/pastebin/p/')) {
       // Serve pastebin page with the ID injected for robust client rendering
       const id = path.replace(/^\/pastebin\/p\//, '').replace(/\/$/, '');
@@ -293,6 +294,7 @@ export default {
     if (path.endsWith('euler.html')) return loadHtml('euler.html');
     if (path.endsWith('pastebin.html')) return loadHtml('pastebin.html');
     if (path.endsWith('date.html')) return loadHtml('date.html');
+    if (path.endsWith('llm-cost.html')) return loadHtml('llm-cost.html');
     if (path.endsWith('index.html')) return loadHtml('index.html');
 
     return new Response('Not found', { status: 404 });
