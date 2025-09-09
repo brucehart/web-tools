@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LLM Cost Calculator</title>
+    <style>
+      :root { color-scheme: light dark; }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; }
+      header { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0.75rem 1rem; border-bottom:1px solid #ddd; }
+      header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+      main { padding: 12px; display:grid; gap:12px; grid-template-columns: 1fr 1fr; }
+      @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+      .card { border:1px solid #ddd; border-radius:10px; background: rgba(127,127,127,0.06); padding:12px; }
+      .card h2 { margin:0 0 .5rem; font-size:1rem; }
+      .row { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+      .row3 { display:grid; grid-template-columns: 1fr auto auto; gap:10px; align-items:end; }
+      label { display:block; font-size:.9rem; margin:.25rem 0; }
+      input[type="number"], input[type="text"], select, textarea { width:100%; padding:8px; border:1px solid #ccc; border-radius:8px; font:inherit; background:transparent; color:inherit; }
+      textarea { resize: vertical; min-height: 88px; }
+      .actions { display:flex; gap:8px; flex-wrap: wrap; }
+      button { appearance:none; border:1px solid #ccc; background:transparent; color:inherit; padding:8px 10px; border-radius:8px; cursor:pointer; }
+      button:hover { background: rgba(127,127,127,0.12); }
+      .muted { color:#666; font-size:.9rem; }
+      .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+      .breakdown { width:100%; border-collapse: collapse; }
+      .breakdown th, .breakdown td { border:1px solid #ddd; padding:6px 8px; text-align:right; }
+      .breakdown th:nth-child(1), .breakdown td:nth-child(1) { text-align:left; }
+      .right { text-align: right; }
+      .top-actions { display:flex; gap:8px; align-items:center; }
+      .pill { padding: 2px 8px; border:1px solid #ccc; border-radius:999px; font-size:.85rem; }
+      .inline { display:inline-flex; gap:6px; align-items:center; }
+      .nowrap { white-space: nowrap; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>LLM Cost Calculator</h1>
+      <div class="top-actions">
+        <a href="/" class="pill" title="Home" aria-label="Home">🏠 Home</a>
+      </div>
+    </header>
+    <main>
+      <section class="card" id="usageCard">
+        <h2>Token Usage</h2>
+        <div class="row">
+          <div>
+            <label>Paste usage string</label>
+            <textarea id="usageText" placeholder="e.g. Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></textarea>
+            <div class="muted">Also supports: "Token usage: total=82603 input=71947 (+ 331776 cached) output=10656 (reasoning 4480)"</div>
+          </div>
+          <div>
+            <div class="grid-2">
+              <div>
+                <label for="inTok">Input tokens</label>
+                <input id="inTok" type="number" min="0" step="1" value="0" />
+              </div>
+              <div>
+                <label for="cacheTok">Cached input</label>
+                <input id="cacheTok" type="number" min="0" step="1" value="0" />
+              </div>
+              <div>
+                <label for="outTok">Output tokens</label>
+                <input id="outTok" type="number" min="0" step="1" value="0" />
+              </div>
+              <div>
+                <label for="reasonTok">Reasoning tokens</label>
+                <input id="reasonTok" type="number" min="0" step="1" value="0" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="pricingCard">
+        <h2>Pricing</h2>
+        <div class="row">
+          <div>
+            <label for="modelSelect">Saved models</label>
+            <div class="actions">
+              <select id="modelSelect"></select>
+              <button id="loadModel">Load</button>
+              <button id="deleteModel" title="Delete selected model">Delete</button>
+              <button id="addDefaults" title="Add common defaults">Add defaults</button>
+              <button id="exportModels" title="Export all pricing as JSON">Export</button>
+              <button id="importModels" title="Import pricing from JSON">Import</button>
+            </div>
+            <div style="margin-top:8px;" class="inline">
+              <label for="modelName" style="margin:0;">Name</label>
+              <input id="modelName" type="text" placeholder="e.g. o4-mini 2024-xx-xx" style="min-width:220px;" />
+              <button id="saveModel">Save/Update</button>
+            </div>
+          </div>
+          <div>
+            <div class="row3">
+              <div>
+                <label>Input price</label>
+                <input id="inPrice" type="number" step="0.0000001" min="0" value="0" />
+              </div>
+              <div>
+                <label>Unit</label>
+                <select id="inUnit">
+                  <option value="per">per token</option>
+                  <option value="k">per 1K</option>
+                  <option value="m">per 1M</option>
+                </select>
+              </div>
+              <div class="nowrap">&nbsp;</div>
+            </div>
+            <div class="row3">
+              <div>
+                <label>Cached input price</label>
+                <input id="cachePrice" type="number" step="0.0000001" min="0" value="0" />
+              </div>
+              <div>
+                <label>Unit</label>
+                <select id="cacheUnit">
+                  <option value="per">per token</option>
+                  <option value="k">per 1K</option>
+                  <option value="m">per 1M</option>
+                </select>
+              </div>
+              <div class="nowrap">&nbsp;</div>
+            </div>
+            <div class="row3">
+              <div>
+                <label>Output price</label>
+                <input id="outPrice" type="number" step="0.0000001" min="0" value="0" />
+              </div>
+              <div>
+                <label>Unit</label>
+                <select id="outUnit">
+                  <option value="per">per token</option>
+                  <option value="k">per 1K</option>
+                  <option value="m">per 1M</option>
+                </select>
+              </div>
+              <div class="nowrap">&nbsp;</div>
+            </div>
+            <div class="row3">
+              <div>
+                <label>Reasoning price</label>
+                <input id="reasonPrice" type="number" step="0.0000001" min="0" value="0" />
+              </div>
+              <div>
+                <label>Unit</label>
+                <select id="reasonUnit">
+                  <option value="per">per token</option>
+                  <option value="k">per 1K</option>
+                  <option value="m">per 1M</option>
+                </select>
+              </div>
+              <div class="nowrap">&nbsp;</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="resultCard" style="grid-column: 1 / -1;">
+        <h2>Result</h2>
+        <div class="actions" style="margin-bottom:8px;">
+          <span id="summary" class="pill"></span>
+          <button id="copySummary">Copy summary</button>
+        </div>
+        <table class="breakdown">
+          <thead>
+            <tr><th>Category</th><th>Tokens</th><th>Unit price</th><th>Cost</th></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+          <tfoot>
+            <tr><th colspan="3" class="right">Total</th><th id="totalCell">$0.00</th></tr>
+          </tfoot>
+        </table>
+        <div class="muted" style="margin-top:8px;">
+          Unit price shown normalized per token. Change units in Pricing to match vendor quotes (per token, per 1K, or per 1M).
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (function() {
+        const $ = (id) => document.getElementById(id);
+
+        const fields = {
+          usageText: $('usageText'), inTok: $('inTok'), cacheTok: $('cacheTok'), outTok: $('outTok'), reasonTok: $('reasonTok'),
+          modelSelect: $('modelSelect'), modelName: $('modelName'), loadModel: $('loadModel'), deleteModel: $('deleteModel'), saveModel: $('saveModel'), addDefaults: $('addDefaults'), exportModels: $('exportModels'), importModels: $('importModels'),
+          inPrice: $('inPrice'), inUnit: $('inUnit'), cachePrice: $('cachePrice'), cacheUnit: $('cacheUnit'), outPrice: $('outPrice'), outUnit: $('outUnit'), reasonPrice: $('reasonPrice'), reasonUnit: $('reasonUnit'),
+          rows: $('rows'), totalCell: $('totalCell'), summary: $('summary'), copySummary: $('copySummary')
+        };
+
+        const STORAGE_MODELS = 'llm_cost_models_v1';
+        const STORAGE_LAST = 'llm_cost_last_v1';
+
+        function loadModels() {
+          try { return JSON.parse(localStorage.getItem(STORAGE_MODELS) || '{}') || {}; } catch { return {}; }
+        }
+        function saveModels(models) {
+          localStorage.setItem(STORAGE_MODELS, JSON.stringify(models));
+        }
+        function refreshModelSelect() {
+          const models = loadModels();
+          const options = Object.keys(models).sort();
+          fields.modelSelect.innerHTML = '';
+          const ph = document.createElement('option');
+          ph.value = '';
+          ph.textContent = '-- select model --';
+          fields.modelSelect.appendChild(ph);
+          for (const name of options) {
+            const opt = document.createElement('option');
+            opt.value = name; opt.textContent = name;
+            fields.modelSelect.appendChild(opt);
+          }
+        }
+
+        function parseUsage(text) {
+          const s = String(text || '').trim();
+          const clean = s.replace(/[,\u00A0]/g, '');
+          const get = (re) => { const m = clean.match(re); return m ? Number(m[1]) || 0 : 0; };
+          // Known formats from Codex output
+          let input = get(/\binput\s*=\s*(\d+)/i);
+          let output = get(/\boutput\s*=\s*(\d+)/i);
+          let cached = get(/\(\+\s*(\d+)\s*cached\)/i);
+          // Optional explicit cached=... formats
+          if (!cached) cached = get(/\bcached\s*=\s*(\d+)/i);
+          // Reasoning tokens
+          let reasoning = get(/\breasoning\s*(?:tokens)?\s*(\d+)/i);
+          // Alternative formats: "input: 123" "output: 456" etc.
+          if (!input) input = get(/\binput\s*[:\-]\s*(\d+)/i);
+          if (!output) output = get(/\boutput\s*[:\-]\s*(\d+)/i);
+          if (!reasoning) reasoning = get(/\breasoning\s*[:\-]\s*(\d+)/i);
+          if (!cached) cached = get(/\bcached\s*[:\-]\s*(\d+)/i);
+          return { input, cached, output, reasoning };
+        }
+
+        function unitNorm(unit) {
+          return unit === 'k' ? 1/1000 : unit === 'm' ? 1/1000000 : 1; // multiply by this to normalize a per-K or per-M price to per-token
+        }
+
+        function toMoney(n) {
+          if (!isFinite(n)) return '$0.00';
+          const s = (Math.round(n * 100000) / 100000).toFixed(5); // 5 decimals for transparency
+          // Trim trailing zeros
+          return '$' + s.replace(/\.0+$/, '.00').replace(/(\.\d*[1-9])0+$/, '$1');
+        }
+
+        function readPricing() {
+          return {
+            in: { price: Number(fields.inPrice.value || '0'), unit: fields.inUnit.value },
+            cache: { price: Number(fields.cachePrice.value || '0'), unit: fields.cacheUnit.value },
+            out: { price: Number(fields.outPrice.value || '0'), unit: fields.outUnit.value },
+            reason: { price: Number(fields.reasonPrice.value || '0'), unit: fields.reasonUnit.value },
+          };
+        }
+
+        function applyPricing(p) {
+          fields.inPrice.value = String(p?.in?.price ?? 0);
+          fields.inUnit.value = String(p?.in?.unit ?? 'k');
+          fields.cachePrice.value = String(p?.cache?.price ?? 0);
+          fields.cacheUnit.value = String(p?.cache?.unit ?? 'k');
+          fields.outPrice.value = String(p?.out?.price ?? 0);
+          fields.outUnit.value = String(p?.out?.unit ?? 'k');
+          fields.reasonPrice.value = String(p?.reason?.price ?? 0);
+          fields.reasonUnit.value = String(p?.reason?.unit ?? 'k');
+        }
+
+        function calculate() {
+          const usage = {
+            input: Number(fields.inTok.value || '0'),
+            cached: Number(fields.cacheTok.value || '0'),
+            output: Number(fields.outTok.value || '0'),
+            reasoning: Number(fields.reasonTok.value || '0'),
+          };
+          const pricing = readPricing();
+          const perToken = {
+            in: pricing.in.price * unitNorm(pricing.in.unit),
+            cache: pricing.cache.price * unitNorm(pricing.cache.unit),
+            out: pricing.out.price * unitNorm(pricing.out.unit),
+            reason: pricing.reason.price * unitNorm(pricing.reason.unit),
+          };
+          const costs = {
+            in: usage.input * perToken.in,
+            cache: usage.cached * perToken.cache,
+            out: usage.output * perToken.out,
+            reason: usage.reasoning * perToken.reason,
+          };
+          const rows = [];
+          rows.push({ name: 'Input', tok: usage.input, unit: perToken.in, cost: costs.in });
+          rows.push({ name: 'Cached input', tok: usage.cached, unit: perToken.cache, cost: costs.cache });
+          rows.push({ name: 'Output', tok: usage.output, unit: perToken.out, cost: costs.out });
+          rows.push({ name: 'Reasoning', tok: usage.reasoning, unit: perToken.reason, cost: costs.reason });
+
+          // Render rows
+          fields.rows.innerHTML = '';
+          let total = 0;
+          for (const r of rows) {
+            if (!r.tok) continue;
+            total += r.cost;
+            const tr = document.createElement('tr');
+            const td1 = document.createElement('td'); td1.textContent = r.name;
+            const td2 = document.createElement('td'); td2.textContent = r.tok.toLocaleString();
+            const td3 = document.createElement('td'); td3.textContent = toMoney(r.unit) + ' / tok';
+            const td4 = document.createElement('td'); td4.textContent = toMoney(r.cost);
+            tr.append(td1, td2, td3, td4);
+            fields.rows.appendChild(tr);
+          }
+          fields.totalCell.textContent = toMoney(total);
+          fields.summary.textContent = `Total ${toMoney(total)} · in ${usage.input.toLocaleString()} | cached ${usage.cached.toLocaleString()} | out ${usage.output.toLocaleString()}${usage.reasoning? ' | reasoning ' + usage.reasoning.toLocaleString(): ''}`;
+
+          // Save last state
+          const last = { usage, pricing };
+          localStorage.setItem(STORAGE_LAST, JSON.stringify(last));
+        }
+
+        function applyUsage(u) {
+          fields.inTok.value = String(u?.input ?? 0);
+          fields.cacheTok.value = String(u?.cached ?? 0);
+          fields.outTok.value = String(u?.output ?? 0);
+          fields.reasonTok.value = String(u?.reasoning ?? 0);
+        }
+
+        // Wire events
+        fields.usageText.addEventListener('input', () => {
+          const u = parseUsage(fields.usageText.value);
+          applyUsage(u);
+          calculate();
+        });
+        for (const id of ['inTok','cacheTok','outTok','reasonTok','inPrice','cachePrice','outPrice','reasonPrice','inUnit','cacheUnit','outUnit','reasonUnit']) {
+          $(id).addEventListener('input', calculate);
+          $(id).addEventListener('change', calculate);
+        }
+
+        fields.copySummary.addEventListener('click', async () => {
+          const text = fields.summary.textContent || '';
+          try { await navigator.clipboard.writeText(text); fields.copySummary.textContent = 'Copied'; setTimeout(()=>fields.copySummary.textContent='Copy summary', 1200); } catch {}
+        });
+
+        fields.saveModel.addEventListener('click', () => {
+          const name = (fields.modelName.value || '').trim();
+          if (!name) { alert('Enter a model name to save.'); return; }
+          const models = loadModels();
+          models[name] = readPricing();
+          saveModels(models);
+          refreshModelSelect();
+          // Select newly saved
+          fields.modelSelect.value = name;
+        });
+
+        fields.loadModel.addEventListener('click', () => {
+          const name = fields.modelSelect.value || '';
+          if (!name) return;
+          const models = loadModels();
+          if (models[name]) {
+            applyPricing(models[name]);
+            fields.modelName.value = name;
+            calculate();
+          }
+        });
+
+        fields.deleteModel.addEventListener('click', () => {
+          const name = fields.modelSelect.value || '';
+          if (!name) return;
+          if (!confirm(`Delete pricing for "${name}"?`)) return;
+          const models = loadModels();
+          delete models[name];
+          saveModels(models);
+          refreshModelSelect();
+          if (fields.modelName.value === name) fields.modelName.value = '';
+        });
+
+        fields.addDefaults.addEventListener('click', () => {
+          const models = loadModels();
+          const changed = addDefaults(models);
+          if (changed) {
+            saveModels(models);
+            refreshModelSelect();
+            alert('Common defaults added.');
+          } else {
+            alert('Defaults already present.');
+          }
+        });
+
+        fields.exportModels.addEventListener('click', async () => {
+          const models = loadModels();
+          const text = JSON.stringify(models, null, 2);
+          try { await navigator.clipboard.writeText(text); alert('Pricing copied to clipboard.'); } catch { alert('Copy failed. Here is the JSON in a prompt.'); prompt('Copy pricing JSON:', text); }
+        });
+
+        fields.importModels.addEventListener('click', () => {
+          const input = prompt('Paste pricing JSON (will merge by model name):');
+          if (!input) return;
+          try {
+            const incoming = JSON.parse(input);
+            const models = loadModels();
+            let merged = 0;
+            for (const [name, cfg] of Object.entries(incoming || {})) {
+              if (cfg && typeof cfg === 'object') { models[name] = cfg; merged++; }
+            }
+            saveModels(models);
+            refreshModelSelect();
+            alert(`Imported ${merged} model(s).`);
+          } catch (e) {
+            alert('Invalid JSON.');
+          }
+        });
+
+        const DEFAULT_MODELS = {
+          // OpenAI — fill current pricing as needed (units default per 1M)
+          'gpt-5': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
+          'gpt-5 mini': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
+          'gpt-4o': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
+          'gpt-4o mini': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
+          'o4-mini (OpenAI)': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
+          'gpt-3.5-turbo': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
+          // Anthropic — update per provider
+          'claude-3.5-sonnet': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
+          'claude-3.5-haiku': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
+          // Meta / Mistral — hosted variants vary by provider
+          'llama-3.1-70b-instruct': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
+          'llama-3.1-8b-instruct': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
+          'mistral-large': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
+        };
+
+        function addDefaults(models) {
+          let updated = false;
+          for (const [name, cfg] of Object.entries(DEFAULT_MODELS)) {
+            if (!models[name]) { models[name] = cfg; updated = true; }
+          }
+          return updated;
+        }
+
+        function seedDefaultsOnce() {
+          const models = loadModels();
+          if (Object.keys(models).length === 0) {
+            // Start with defaults when empty
+            addDefaults(models);
+            // Include a simple per-1K template example too
+            models['Custom example (per 1K)'] = { in: { price: 0, unit: 'k' }, cache: { price: 0, unit: 'k' }, out: { price: 0, unit: 'k' }, reason: { price: 0, unit: 'k' } };
+            saveModels(models);
+          } else {
+            // Merge defaults if missing specific entries (idempotent)
+            if (addDefaults(models)) saveModels(models);
+          }
+          refreshModelSelect();
+        }
+
+        function restoreLast() {
+          try {
+            const last = JSON.parse(localStorage.getItem(STORAGE_LAST) || 'null');
+            if (last && last.usage) applyUsage(last.usage);
+            if (last && last.pricing) applyPricing(last.pricing);
+          } catch {}
+        }
+
+        // Init
+        seedDefaultsOnce();
+        restoreLast();
+        calculate();
+      })();
+    </script>
+  </body>
+</html>
