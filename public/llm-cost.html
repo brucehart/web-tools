@@ -174,7 +174,7 @@
           </tfoot>
         </table>
         <div class="muted" style="margin-top:8px;">
-          Unit price shown normalized per token. Change units in Pricing to match vendor quotes (per token, per 1K, or per 1M).
+          Unit price shown normalized per 1M tokens. Change units in Pricing to match vendor quotes (per token, per 1K, or per 1M).
         </div>
       </section>
     </main>
@@ -300,7 +300,7 @@
             const tr = document.createElement('tr');
             const td1 = document.createElement('td'); td1.textContent = r.name;
             const td2 = document.createElement('td'); td2.textContent = r.tok.toLocaleString();
-            const td3 = document.createElement('td'); td3.textContent = toMoney(r.unit) + ' / tok';
+            const td3 = document.createElement('td'); td3.textContent = toMoney(r.unit * 1_000_000) + ' / 1M tok';
             const td4 = document.createElement('td'); td4.textContent = toMoney(r.cost);
             tr.append(td1, td2, td3, td4);
             fields.rows.appendChild(tr);
