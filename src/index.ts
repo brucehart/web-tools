@@ -5,16 +5,6 @@
 
 // HTML templates moved to /public and served via ASSETS binding.
 
-import {
-  YoutubeTranscript,
-  YoutubeTranscriptDisabledError,
-  YoutubeTranscriptError,
-  YoutubeTranscriptNotAvailableError,
-  YoutubeTranscriptNotAvailableLanguageError,
-  YoutubeTranscriptTooManyRequestError,
-  YoutubeTranscriptVideoUnavailableError,
-} from 'youtube-transcript';
-
 type Bindings = Env & {
   DB: D1Database;
   ASSETS: Fetcher;
@@ -23,6 +13,18 @@ type Bindings = Env & {
   OAUTH_REDIRECT_URL?: string;
   SESSION_COOKIE_NAME?: string;
 };
+
+const YT_WATCH_URL = 'https://www.youtube.com/watch';
+const YT_PLAYER_URL = 'https://www.youtube.com/youtubei/v1/player';
+const YT_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36,gzip(gfe)';
+
+class TranscriptFetchError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
 
 async function loadHtml(filename: string): Promise<Response> {
   const url = new URL(`../public/${filename}`, import.meta.url);
@@ -88,6 +90,210 @@ function urlSafeRandom(len = 12): string {
   let out = '';
   for (let i = 0; i < len; i++) out += alph[bytes[i] % alph.length];
   return out;
+}
+
+function extractVideoId(input: string): string | null {
+  const trimmed = input.trim();
+  const idMatch = /^[a-zA-Z0-9_-]{11}$/;
+  if (idMatch.test(trimmed)) return trimmed;
+  try {
+    const url = new URL(trimmed);
+    if (url.hostname === 'youtu.be') {
+      const part = url.pathname.replace(/^\//, '').split('/')[0];
+      if (idMatch.test(part)) return part;
+    }
+    if (url.hostname.includes('youtube.com')) {
+      const v = url.searchParams.get('v');
+      if (v && idMatch.test(v)) return v;
+      const segments = url.pathname.split('/').filter(Boolean);
+      for (const seg of segments) {
+        if (idMatch.test(seg)) return seg;
+      }
+    }
+  } catch {
+    // fall through to regex extraction
+  }
+  const manual = trimmed.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})(?:[&?/]|$)/);
+  if (manual && manual[1]) return manual[1];
+  return null;
+}
+
+function decodeHtmlEntities(text: string): string {
+  if (!text) return '';
+  const map: Record<string, string> = {
+    amp: '&',
+    lt: '<',
+    gt: '>',
+    quot: '"',
+    apos: "'",
+    nbsp: ' ',
+  };
+  return text
+    .replace(/&#(x?[0-9a-fA-F]+);/g, (_, entity: string) => {
+      if (!entity) return '';
+      if (entity.startsWith('x') || entity.startsWith('X')) {
+        const code = Number.parseInt(entity.slice(1), 16);
+        return Number.isFinite(code) ? String.fromCharCode(code) : '';
+      }
+      const code = Number.parseInt(entity, 10);
+      return Number.isFinite(code) ? String.fromCharCode(code) : '';
+    })
+    .replace(/&([a-zA-Z]+);/g, (_, entity: string) => map[entity] ?? '');
+}
+
+function parseTranscriptXml(xml: string): { text: string; offset: number; duration: number }[] {
+  const results: { text: string; offset: number; duration: number }[] = [];
+  const regex = /<text start="([^"]*)"(?: dur="([^"]*)")?>(.*?)<\/text>/gs;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(xml)) !== null) {
+    const [, startRaw, durationRaw, payload] = match;
+    let text = payload || '';
+    text = text.replace(/<[^>]+>/g, ' ');
+    text = decodeHtmlEntities(text);
+    text = text.replace(/\s+/g, ' ').trim();
+    if (!text) continue;
+    const offset = Number.parseFloat(startRaw || '0');
+    const duration = Number.parseFloat(durationRaw || '0');
+    results.push({ text, offset: Number.isFinite(offset) ? offset : 0, duration: Number.isFinite(duration) ? duration : 0 });
+  }
+  return results;
+}
+
+function parseWatchConfig(html: string): { apiKey?: string; context?: any; clientVersion?: string } {
+  const cfg: Record<string, unknown> = {};
+  const matches = html.matchAll(/ytcfg\.set\(({.*?})\);/gs);
+  for (const match of matches) {
+    const blob = match[1];
+    try {
+      const parsed = JSON.parse(blob);
+      Object.assign(cfg, parsed);
+    } catch {
+      // ignore malformed blobs
+    }
+  }
+  let apiKey = typeof cfg['INNERTUBE_API_KEY'] === 'string' ? String(cfg['INNERTUBE_API_KEY']) : undefined;
+  if (!apiKey) {
+    const keyFallback = html.match(/"INNERTUBE_API_KEY":"([^"]+)"/);
+    if (keyFallback) apiKey = keyFallback[1];
+  }
+  const context = (typeof cfg['INNERTUBE_CONTEXT'] === 'object' && cfg['INNERTUBE_CONTEXT']) ? JSON.parse(JSON.stringify(cfg['INNERTUBE_CONTEXT'])) : undefined;
+  let clientVersion = typeof cfg['INNERTUBE_CLIENT_VERSION'] === 'string' ? String(cfg['INNERTUBE_CLIENT_VERSION']) : undefined;
+  if (!clientVersion && context && typeof (context as any).client?.clientVersion === 'string') {
+    clientVersion = String((context as any).client.clientVersion);
+  }
+  return { apiKey, context, clientVersion };
+}
+
+async function fetchYouTubeTranscript(source: string, language?: string): Promise<{ text: string; offset: number; duration: number }[]> {
+  const videoId = extractVideoId(source);
+  if (!videoId) throw new TranscriptFetchError(400, 'Unable to determine YouTube video ID.');
+  const lang = (language || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '') || undefined;
+
+  const watchUrl = new URL(YT_WATCH_URL);
+  watchUrl.searchParams.set('v', videoId);
+  if (lang) watchUrl.searchParams.set('hl', lang);
+
+  const acceptLang = lang ? `${lang},${lang.split('-')[0]};q=0.9,en;q=0.8` : 'en-US,en;q=0.9';
+  const watchRes = await fetch(watchUrl.toString(), {
+    headers: {
+      'user-agent': YT_USER_AGENT,
+      'accept-language': acceptLang,
+      accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    },
+  });
+  if (watchRes.status === 404) throw new TranscriptFetchError(404, 'Video not found.');
+  if (!watchRes.ok) throw new TranscriptFetchError(502, 'Failed to fetch video details from YouTube.');
+  const html = await watchRes.text();
+  const { apiKey, context, clientVersion } = parseWatchConfig(html);
+  if (!apiKey) throw new TranscriptFetchError(500, 'Unable to read YouTube API key.');
+
+  const ctx = context ? JSON.parse(JSON.stringify(context)) : { client: { clientName: 'WEB', clientVersion: clientVersion || '2.20250126.01.00', hl: 'en', gl: 'US' } };
+  if (!ctx.client || typeof ctx.client !== 'object') ctx.client = { clientName: 'WEB', clientVersion: clientVersion || '2.20250126.01.00', hl: 'en', gl: 'US' };
+  if (!ctx.client.clientName) ctx.client.clientName = 'WEB';
+  if (!ctx.client.clientVersion) ctx.client.clientVersion = clientVersion || '2.20250126.01.00';
+  if (lang) ctx.client.hl = lang;
+  else if (!ctx.client.hl) ctx.client.hl = 'en';
+  if (!ctx.client.gl) ctx.client.gl = 'US';
+
+  const playerRes = await fetch(`${YT_PLAYER_URL}?key=${encodeURIComponent(apiKey)}`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'user-agent': YT_USER_AGENT,
+      'accept-language': acceptLang,
+    },
+    body: JSON.stringify({
+      context: ctx,
+      videoId,
+    }),
+  });
+  if (!playerRes.ok) {
+    if (playerRes.status === 404) throw new TranscriptFetchError(404, 'Video not found.');
+    throw new TranscriptFetchError(502, 'Failed to load transcript metadata from YouTube.');
+  }
+  const playerData = await playerRes.json<any>();
+  const playability = playerData?.playabilityStatus?.status;
+  if (playability && playability !== 'OK') {
+    if (playability === 'LOGIN_REQUIRED') throw new TranscriptFetchError(403, 'This video requires sign-in to view transcripts.');
+    throw new TranscriptFetchError(403, playerData?.playabilityStatus?.reason || 'Transcripts unavailable for this video.');
+  }
+
+  const captionRenderer = playerData?.captions?.playerCaptionsTracklistRenderer;
+  const captionTracks = captionRenderer?.captionTracks as Array<any> | undefined;
+  if (!captionTracks || captionTracks.length === 0) throw new TranscriptFetchError(404, 'No transcripts are available for this video.');
+
+  const normalizedLang = lang;
+  const primaryMatch = normalizedLang ? captionTracks.find((track) => typeof track.languageCode === 'string' && track.languageCode.toLowerCase() === normalizedLang) : undefined;
+  const fallbackMatch = normalizedLang && !primaryMatch
+    ? captionTracks.find((track) => {
+        if (typeof track.languageCode !== 'string') return false;
+        const primary = track.languageCode.toLowerCase().split('-')[0];
+        return primary && primary === normalizedLang.split('-')[0];
+      })
+    : undefined;
+
+  let chosenTrack = primaryMatch || fallbackMatch || captionTracks[0];
+  if (!chosenTrack?.baseUrl) throw new TranscriptFetchError(404, 'Failed to resolve a valid transcript track.');
+
+  const availableLangs = captionTracks
+    .map((track) => (typeof track.languageCode === 'string' ? track.languageCode : ''))
+    .filter(Boolean);
+
+  let transcriptUrl = String(chosenTrack.baseUrl);
+  let usedTranslation = false;
+  if (normalizedLang && !primaryMatch && !fallbackMatch) {
+    const translations = Array.isArray(captionRenderer?.translationLanguages) ? captionRenderer.translationLanguages : [];
+    const desired = translations.find((entry: any) => {
+      const code = String(entry?.languageCode || '').toLowerCase();
+      if (!code) return false;
+      if (code === normalizedLang) return true;
+      return code.split('-')[0] === normalizedLang.split('-')[0];
+    });
+    if (!desired) {
+      throw new TranscriptFetchError(404, `Transcripts are not available in ${language}. Available languages: ${availableLangs.join(', ')}`);
+    }
+    const translatableTrack = captionTracks.find((track) => track?.isTranslatable) || chosenTrack;
+    transcriptUrl = String(translatableTrack.baseUrl);
+    transcriptUrl = transcriptUrl.replace(/&fmt=[^&]*/g, '');
+    transcriptUrl += `&tlang=${encodeURIComponent(String(desired.languageCode))}`;
+    usedTranslation = true;
+  }
+
+  if (!usedTranslation) {
+    transcriptUrl = transcriptUrl.replace(/&fmt=[^&]*/g, '');
+  }
+
+  const transcriptRes = await fetch(transcriptUrl, {
+    headers: {
+      'user-agent': YT_USER_AGENT,
+      'accept-language': acceptLang,
+    },
+  });
+  if (!transcriptRes.ok) throw new TranscriptFetchError(502, 'Failed to download transcript data from YouTube.');
+  const xml = await transcriptRes.text();
+  const segments = parseTranscriptXml(xml);
+  if (segments.length === 0) throw new TranscriptFetchError(404, 'Transcript data was empty for this video.');
+  return segments;
 }
 
 async function getSessionUser(req: Request, env: Bindings): Promise<{ id: string; email?: string; name?: string; picture?: string } | null> {
@@ -262,31 +468,14 @@ export default {
       const lang = (body.lang || '').toString().trim();
       if (!input) return json({ error: 'url required' }, { status: 400 });
       try {
-        const transcript = await YoutubeTranscript.fetchTranscript(input, lang ? { lang } : undefined);
+        const transcript = await fetchYouTubeTranscript(input, lang || undefined);
         return json({ transcript });
       } catch (err) {
-        let status = 500;
-        let message = 'Failed to fetch transcript';
-        if (err instanceof YoutubeTranscriptTooManyRequestError) {
-          status = 429;
-          message = err.message;
-        } else if (err instanceof YoutubeTranscriptVideoUnavailableError) {
-          status = 404;
-          message = err.message;
-        } else if (err instanceof YoutubeTranscriptDisabledError) {
-          status = 403;
-          message = err.message;
-        } else if (err instanceof YoutubeTranscriptNotAvailableLanguageError) {
-          status = 404;
-          message = err.message;
-        } else if (err instanceof YoutubeTranscriptNotAvailableError) {
-          status = 404;
-          message = err.message;
-        } else if (err instanceof YoutubeTranscriptError) {
-          status = 400;
-          message = err.message;
+        if (err instanceof TranscriptFetchError) {
+          return json({ error: err.message }, { status: err.status });
         }
-        return json({ error: message }, { status });
+        console.error('yt-transcript error', err);
+        return json({ error: 'Failed to fetch transcript' }, { status: 502 });
       }
     }
 
