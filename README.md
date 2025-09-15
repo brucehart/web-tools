@@ -4,10 +4,10 @@ A minimal Cloudflare Worker that serves a small suite of browser tools.
 
 ## Tools
 - Markdown Preview (`/markdown`)
-  - GitHub‑flavored Markdown via `marked`.
+  - GitHub-flavored Markdown via `marked`.
   - MathJax for inline `$...$` and block `$$...$$`.
   - Sanitized output with `DOMPurify`.
-  - Dual‑pane editor/preview, theme toggle with persistence.
+  - Dual-pane editor/preview, theme toggle with persistence.
   - Tabs with rename/new/delete stored in `localStorage`.
   - Syntax highlighting via Highlight.js (full build) with language alias normalization and dark/light theme swapping.
   - Copy rendered HTML to clipboard.
@@ -20,8 +20,6 @@ A minimal Cloudflare Worker that serves a small suite of browser tools.
   - Tabs with rename/new/delete stored in `localStorage`.
   - Syntax highlighting via Highlight.js with language alias normalization and dark/light theme swapping.
 
-Both tools include a Home button in the header to return to `/`.
-
 - Pastebin (`/pastebin`)
   - Create and share text snippets.
   - Visibility options: `public` (listed) or `unlisted` (hidden from lists, accessible by link).
@@ -30,24 +28,38 @@ Both tools include a Home button in the header to return to `/`.
   - Public listing at `/pastebin` shows recent public pastes; your pastes appear after sign-in.
   - Direct links like `/pastebin/p/abcd1234` open a read-only view.
 
+- LLM Cost Calculator (`/llm-cost`)
+  - Paste token usage dumps (supports cached and reasoning tokens) and see per-run totals.
+  - Enter pricing per token, per 1K, or per 1M for input, cached input, output, and reasoning tokens.
+  - Save multiple model pricing profiles locally (seeded with popular models; update the placeholders to match current rates).
+
+- YouTube Transcript (`/yt-transcript`)
+  - Fetch transcripts for public videos with optional translation by language code when available.
+  - View normalized segments alongside the full transcript text, toggle timestamps, and copy the result.
+  - Persist last-used URL/language and theme preference locally.
+
+All tools include a Home button in the header to return to `/`.
+
 ## Routes
 - `/` — Tools index page with tiles.
 - `/markdown` — Markdown Preview.
 - `/euler` — Euler Preview (Project Euler forum flavor).
- - `/pastebin` — Pastebin UI (create, list, login).
- - `/pastebin/p/:id` — View a specific paste (public or unlisted).
- - API: `/api/pastebin/*`, `/api/auth/*`, OAuth: `/auth/google/*`.
- - `/llm-cost` — LLM Cost Calculator.
+- `/pastebin` — Pastebin UI (create, list, login).
+- `/pastebin/p/:id` — View a specific paste (public or unlisted).
+- `/llm-cost` — LLM Cost Calculator.
+- `/yt-transcript` — YouTube Transcript fetcher.
+- API routes: `/api/pastebin/*`, `/api/auth/*`, OAuth `/auth/google/*`, `/api/yt-transcript`.
 
 ## Project Structure
 - `src/index.ts` — Worker entry; routes and serves static assets from `public` via the `ASSETS` binding. Falls back to bundled reads in tests/dev.
 - `public/index.html` — Index page.
 - `public/markdown.html` — Markdown Preview page (Marked + DOMPurify + MathJax, tabs, Highlight.js with theme swap, copy button).
 - `public/euler.html` — Euler Preview page (BBCode → HTML, MathJax, tabs, Highlight.js with theme swap).
- - `public/pastebin.html` — Pastebin UI.
- - `public/llm-cost.html` — LLM Cost Calculator UI (usage parsing, pricing library in localStorage).
+- `public/pastebin.html` — Pastebin UI.
+- `public/llm-cost.html` — LLM Cost Calculator UI (usage parsing, pricing library in localStorage).
+- `public/yt-transcript.html` — YouTube transcript viewer UI with segment list and API integration.
 - `wrangler.jsonc` — Wrangler config with assets binding enabled.
- - `migrations/0001_pastebin.sql` — D1 tables for users, sessions, pastes.
+- `migrations/0001_pastebin.sql` — D1 tables for users, sessions, pastes.
 - `test/index.spec.ts` — Basic unit/integration tests.
 
 ## Development
@@ -74,16 +86,10 @@ If you change static HTML in `public/`, no Worker code changes are required.
 Security notes:
 - Sessions use random tokens stored in D1 and set as HttpOnly, Secure, SameSite=Lax cookies.
 - Only `public` pastes appear in listings; `unlisted` require the direct link.
- - When not signed in or not allowed, pastes are saved to `localStorage` only and cannot be shared across devices. View a local paste by opening `/pastebin#local=<id>` on the same browser.
+- When not signed in or not allowed, pastes are saved to `localStorage` only and cannot be shared across devices. View a local paste by opening `/pastebin#local=<id>` on the same browser.
 
 ## Notes
 - MathJax inline delimiters are restricted to `$...$` to avoid conflicts with literal parentheses in text and links; display math supports `$$...$$` and `\[...\]`.
 - Output HTML is sanitized before insertion. Be cautious if you change the sanitization step.
-
- - LLM Cost Calculator (`/llm-cost`)
-  - Enter or paste token usage like: `Token usage: total=17771 input=16418 (+ 61312 cached) output=1353` or `Token usage: total=82603 input=71947 (+ 331776 cached) output=10656 (reasoning 4480)`.
-  - Enter pricing per token, per 1K, or per 1M for input, cached input, output, and reasoning tokens.
- - Save multiple model pricings and load them from a dropdown; stored locally in your browser.
-  - Seeded defaults include common models (e.g., gpt-5, gpt-5 mini, gpt-4o, Claude 3.5). Prices are placeholders — update to your provider's current rates.
 ## License
 MIT — see [LICENSE.md](LICENSE.md).
