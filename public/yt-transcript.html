@@ -62,7 +62,10 @@
       textarea { border: 1px solid var(--border); border-radius: 8px; padding: 10px; resize: vertical; min-height: 200px; font: 0.95rem/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: rgba(127,127,127,0.06); color: inherit; }
       .card-header { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
       .card-actions { display: flex; gap: 8px; align-items: center; }
+      .toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; cursor: pointer; }
+      .toggle input { width: 16px; height: 16px; accent-color: var(--accent); }
       .hidden { display: none !important; }
+      .segment { white-space: pre-wrap; line-height: 1.4; }
     </style>
   </head>
   <body>
@@ -97,6 +100,10 @@
         <div class="card-header">
           <h2>Transcript</h2>
           <div class="card-actions">
+            <label class="toggle">
+              <input id="toggleTimestamps" type="checkbox" checked />
+              <span>Show timestamps</span>
+            </label>
             <button id="copyText" type="button" class="icon-btn" title="Copy transcript">Copy</button>
           </div>
         </div>
@@ -124,6 +131,10 @@
         const toggleTheme = $('toggleTheme');
         const exampleBtn = $('useExample');
         const fetchBtn = $('fetchBtn');
+        const timestampToggle = $('toggleTimestamps');
+        let showTimestamps = timestampToggle ? timestampToggle.checked : true;
+        let currentTranscript = [];
+        const htmlDecoder = document.createElement('div');
 
         function preferredTheme() {
           const saved = localStorage.getItem(THEME_KEY);
@@ -139,6 +150,11 @@
         toggleTheme?.addEventListener('click', () => {
           const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
           applyTheme(next);
+        });
+
+        timestampToggle?.addEventListener('change', () => {
+          showTimestamps = Boolean(timestampToggle.checked);
+          applyTranscriptRendering();
         });
 
         const STORAGE_LAST = 'yt_transcript_last';
@@ -167,30 +183,46 @@
           return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
 
-        function renderTranscript(items) {
+        function decodeHtmlEntities(input) {
+          if (typeof input !== 'string') return '';
+          htmlDecoder.innerHTML = input;
+          return htmlDecoder.textContent || '';
+        }
+
+        function formatLine(item) {
+          const text = item.text;
+          if (!showTimestamps) return text;
+          return `[${formatTime(item.offset)}] ${text}`;
+        }
+
+        function applyTranscriptRendering() {
           if (!view || !list || !raw) return;
-          view.classList.toggle('hidden', !items.length);
+          view.classList.toggle('hidden', !currentTranscript.length);
           list.innerHTML = '';
-          if (!items.length) {
+          if (!currentTranscript.length) {
             raw.value = '';
             return;
           }
           const lines = [];
-          for (const item of items) {
+          for (const item of currentTranscript) {
+            const line = formatLine(item);
             const seg = document.createElement('div');
             seg.className = 'segment';
-            const time = document.createElement('div');
-            time.className = 'timestamp';
-            time.textContent = formatTime(item.offset);
-            const text = document.createElement('div');
-            text.className = 'segment-text';
-            text.textContent = item.text;
-            seg.appendChild(time);
-            seg.appendChild(text);
+            seg.textContent = line;
             list.appendChild(seg);
-            lines.push(item.text.trim());
+            lines.push(line);
           }
           raw.value = lines.join('\n');
+        }
+
+        function renderTranscript(items) {
+          currentTranscript = Array.isArray(items)
+            ? items.map((item) => ({
+                offset: Number(item?.offset ?? item?.start ?? 0) || 0,
+                text: decodeHtmlEntities(item && typeof item.text === 'string' ? item.text : '').trim(),
+              }))
+            : [];
+          applyTranscriptRendering();
         }
 
         async function fetchTranscript(url, language) {
@@ -198,6 +230,7 @@
           view?.classList.add('hidden');
           list?.replaceChildren();
           raw.value = '';
+          currentTranscript = [];
           fetchBtn.disabled = true;
           try {
             const res = await fetch('/api/yt-transcript', {
