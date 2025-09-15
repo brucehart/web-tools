@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>YouTube Transcript</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --fg: #111111;
+        --header-bg: #2f2f2f;
+        --header-fg: #f3f3f3;
+        --border: #cfcfcf;
+        --pane-bg: #f6f6f6;
+        --muted: #666666;
+        --accent: #7aa2f7;
+      }
+      [data-theme="dark"] {
+        --bg: #121212;
+        --fg: #eaeaea;
+        --header-bg: #2f2f2f;
+        --header-fg: #f3f3f3;
+        --border: #3a3a3a;
+        --pane-bg: #191919;
+        --muted: #9aa0a6;
+        --accent: #7aa2f7;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body { background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; }
+      header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); background: var(--header-bg); color: var(--header-fg); position: sticky; top: 0; z-index: 10; }
+      header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+      header .actions { display: flex; gap: 8px; align-items: center; }
+      .icon-btn { appearance: none; border: 1px solid var(--border); background: transparent; color: inherit; padding: 6px 10px; border-radius: 8px; font-size: 0.9rem; line-height: 1; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; text-decoration: none; }
+      .icon-btn:hover { background: rgba(127,127,127,0.12); }
+      main { padding: 12px; margin: 0 auto; max-width: 960px; display: flex; flex-direction: column; gap: 14px; }
+      .card { border: 1px solid var(--border); border-radius: 10px; background: var(--pane-bg); padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+      .card h2 { margin: 0; font-size: 1rem; }
+      form { display: grid; gap: 10px; }
+      label { font-weight: 600; font-size: 0.95rem; }
+      input[type="text"] { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: inherit; font: inherit; }
+      input[type="text"]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .form-row { display: grid; grid-template-columns: minmax(0,1fr); gap: 10px; }
+      .form-row.split { grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); }
+      @media (max-width: 700px) { .form-row.split { grid-template-columns: 1fr; } }
+      button { appearance: none; border: 1px solid var(--border); background: transparent; color: inherit; padding: 8px 12px; border-radius: 8px; font: inherit; cursor: pointer; }
+      button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+      button:hover { background: rgba(127,127,127,0.12); }
+      button.primary:hover { background: #638cf2; }
+      .muted { color: var(--muted); font-size: 0.9rem; }
+      .status { padding: 0.5rem 0.6rem; border-radius: 8px; border: 1px dashed var(--border); background: rgba(127,127,127,0.08); }
+      .status.error { border-color: #d93025; color: #d93025; background: rgba(217,48,37,0.08); }
+      .status.success { border-color: #4caf50; color: #1b5e20; background: rgba(76,175,80,0.12); }
+      .transcript-container { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; }
+      @media (max-width: 900px) { .transcript-container { grid-template-columns: 1fr; } }
+      .segments { border: 1px solid var(--border); border-radius: 8px; background: rgba(127,127,127,0.06); max-height: 420px; overflow-y: auto; display: flex; flex-direction: column; padding: 10px; gap: 10px; }
+      .segment { border-bottom: 1px solid rgba(127,127,127,0.2); padding-bottom: 8px; }
+      .segment:last-child { border-bottom: 0; padding-bottom: 0; }
+      .timestamp { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 0.85rem; color: var(--muted); }
+      .segment-text { margin-top: 4px; white-space: pre-wrap; line-height: 1.4; }
+      textarea { border: 1px solid var(--border); border-radius: 8px; padding: 10px; resize: vertical; min-height: 200px; font: 0.95rem/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: rgba(127,127,127,0.06); color: inherit; }
+      .card-header { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+      .card-actions { display: flex; gap: 8px; align-items: center; }
+      .hidden { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>YouTube Transcript</h1>
+      <div class="actions">
+        <a href="/" class="icon-btn" title="Home" aria-label="Home">🏠 Home</a>
+        <button id="toggleTheme" class="icon-btn" type="button" title="Toggle theme">🌙</button>
+      </div>
+    </header>
+    <main>
+      <section class="card">
+        <h2>Video</h2>
+        <form id="transcriptForm">
+          <div class="form-row split">
+            <label for="videoUrl">YouTube URL or ID</label>
+            <label for="lang">Language (optional)</label>
+          </div>
+          <div class="form-row split">
+            <input id="videoUrl" name="videoUrl" type="text" placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ" required />
+            <input id="lang" name="lang" type="text" placeholder="auto" maxlength="8" />
+          </div>
+          <div class="form-row">
+            <button id="fetchBtn" type="submit" class="primary">Fetch transcript</button>
+            <button id="useExample" type="button">Load example</button>
+          </div>
+        </form>
+        <p class="muted">Transcripts are pulled directly from YouTube. Availability depends on the video and selected language.</p>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2>Transcript</h2>
+          <div class="card-actions">
+            <button id="copyText" type="button" class="icon-btn" title="Copy transcript">Copy</button>
+          </div>
+        </div>
+        <div id="status" class="status muted">Paste a YouTube link and fetch the transcript.</div>
+        <div id="transcriptView" class="transcript-container hidden">
+          <div id="transcriptList" class="segments" aria-live="polite"></div>
+          <textarea id="rawText" readonly placeholder="Full transcript text will appear here."></textarea>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (function() {
+        const root = document.documentElement;
+        const THEME_KEY = 'yt_transcript_theme';
+        const $ = (id) => document.getElementById(id);
+        const videoUrl = $('videoUrl');
+        const lang = $('lang');
+        const form = $('transcriptForm');
+        const statusEl = $('status');
+        const view = $('transcriptView');
+        const list = $('transcriptList');
+        const raw = $('rawText');
+        const copyBtn = $('copyText');
+        const toggleTheme = $('toggleTheme');
+        const exampleBtn = $('useExample');
+        const fetchBtn = $('fetchBtn');
+
+        function preferredTheme() {
+          const saved = localStorage.getItem(THEME_KEY);
+          if (saved === 'light' || saved === 'dark') return saved;
+          return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        function applyTheme(theme) {
+          root.setAttribute('data-theme', theme);
+          localStorage.setItem(THEME_KEY, theme);
+          if (toggleTheme) toggleTheme.textContent = theme === 'dark' ? '☀️' : '🌙';
+        }
+        applyTheme(preferredTheme());
+        toggleTheme?.addEventListener('click', () => {
+          const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+          applyTheme(next);
+        });
+
+        const STORAGE_LAST = 'yt_transcript_last';
+        try {
+          const last = JSON.parse(localStorage.getItem(STORAGE_LAST) || 'null');
+          if (last && typeof last === 'object') {
+            if (videoUrl && typeof last.url === 'string') videoUrl.value = last.url;
+            if (lang && typeof last.lang === 'string') lang.value = last.lang;
+          }
+        } catch {}
+
+        function setStatus(text, mode) {
+          if (!statusEl) return;
+          statusEl.textContent = text;
+          statusEl.className = 'status' + (mode ? ' ' + mode : '');
+        }
+
+        function formatTime(seconds) {
+          const s = Math.floor(Number(seconds) || 0);
+          const hrs = Math.floor(s / 3600);
+          const mins = Math.floor((s % 3600) / 60);
+          const secs = s % 60;
+          if (hrs > 0) {
+            return [hrs, mins.toString().padStart(2, '0'), secs.toString().padStart(2, '0')].join(':');
+          }
+          return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function renderTranscript(items) {
+          if (!view || !list || !raw) return;
+          view.classList.toggle('hidden', !items.length);
+          list.innerHTML = '';
+          if (!items.length) {
+            raw.value = '';
+            return;
+          }
+          const lines = [];
+          for (const item of items) {
+            const seg = document.createElement('div');
+            seg.className = 'segment';
+            const time = document.createElement('div');
+            time.className = 'timestamp';
+            time.textContent = formatTime(item.offset);
+            const text = document.createElement('div');
+            text.className = 'segment-text';
+            text.textContent = item.text;
+            seg.appendChild(time);
+            seg.appendChild(text);
+            list.appendChild(seg);
+            lines.push(item.text.trim());
+          }
+          raw.value = lines.join('\n');
+        }
+
+        async function fetchTranscript(url, language) {
+          setStatus('Fetching transcript…', '');
+          view?.classList.add('hidden');
+          list?.replaceChildren();
+          raw.value = '';
+          fetchBtn.disabled = true;
+          try {
+            const res = await fetch('/api/yt-transcript', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ url, lang: language || undefined }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+              const msg = data && typeof data.error === 'string' ? data.error : 'Failed to fetch transcript';
+              throw new Error(msg);
+            }
+            const items = Array.isArray(data.transcript) ? data.transcript : [];
+            if (!items.length) {
+              setStatus('No transcript data was returned for this video.', '');
+              view?.classList.add('hidden');
+              return;
+            }
+            renderTranscript(items);
+            setStatus(`Loaded ${items.length} lines of transcript.`, 'success');
+            try { localStorage.setItem(STORAGE_LAST, JSON.stringify({ url, lang: language || '' })); } catch {}
+          } catch (err) {
+            console.error(err);
+            const message = err instanceof Error ? err.message : 'Failed to fetch transcript';
+            setStatus(message, 'error');
+          } finally {
+            fetchBtn.disabled = false;
+          }
+        }
+
+        form?.addEventListener('submit', (event) => {
+          event.preventDefault();
+          const url = videoUrl?.value.trim();
+          if (!url) {
+            setStatus('Enter a YouTube video link or ID.', 'error');
+            return;
+          }
+          const language = lang?.value.trim();
+          fetchTranscript(url, language);
+        });
+
+        copyBtn?.addEventListener('click', async () => {
+          if (!raw || !raw.value) return;
+          try {
+            await navigator.clipboard.writeText(raw.value);
+            setStatus('Transcript copied to clipboard.', 'success');
+          } catch {
+            setStatus('Unable to copy transcript automatically.', 'error');
+          }
+        });
+
+        exampleBtn?.addEventListener('click', () => {
+          if (videoUrl) videoUrl.value = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+          if (lang) lang.value = '';
+          videoUrl?.focus();
+        });
+      })();
+    </script>
+  </body>
+</html>

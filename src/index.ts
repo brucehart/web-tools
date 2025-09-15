@@ -5,6 +5,16 @@
 
 // HTML templates moved to /public and served via ASSETS binding.
 
+import {
+  YoutubeTranscript,
+  YoutubeTranscriptDisabledError,
+  YoutubeTranscriptError,
+  YoutubeTranscriptNotAvailableError,
+  YoutubeTranscriptNotAvailableLanguageError,
+  YoutubeTranscriptTooManyRequestError,
+  YoutubeTranscriptVideoUnavailableError,
+} from 'youtube-transcript';
+
 type Bindings = Env & {
   DB: D1Database;
   ASSETS: Fetcher;
@@ -246,6 +256,40 @@ export default {
       return json({ ok: true });
     }
 
+    if (path === '/api/yt-transcript' && request.method === 'POST') {
+      const body = await readJson<{ url?: string; lang?: string }>(request);
+      const input = (body.url || '').toString().trim();
+      const lang = (body.lang || '').toString().trim();
+      if (!input) return json({ error: 'url required' }, { status: 400 });
+      try {
+        const transcript = await YoutubeTranscript.fetchTranscript(input, lang ? { lang } : undefined);
+        return json({ transcript });
+      } catch (err) {
+        let status = 500;
+        let message = 'Failed to fetch transcript';
+        if (err instanceof YoutubeTranscriptTooManyRequestError) {
+          status = 429;
+          message = err.message;
+        } else if (err instanceof YoutubeTranscriptVideoUnavailableError) {
+          status = 404;
+          message = err.message;
+        } else if (err instanceof YoutubeTranscriptDisabledError) {
+          status = 403;
+          message = err.message;
+        } else if (err instanceof YoutubeTranscriptNotAvailableLanguageError) {
+          status = 404;
+          message = err.message;
+        } else if (err instanceof YoutubeTranscriptNotAvailableError) {
+          status = 404;
+          message = err.message;
+        } else if (err instanceof YoutubeTranscriptError) {
+          status = 400;
+          message = err.message;
+        }
+        return json({ error: message }, { status });
+      }
+    }
+
     // -------- Static/HTML routing --------
     if (path === '/' || path === '') path = '/index.html';
     else if (path === '/markdown' || path === '/markdown/') path = '/markdown.html';
@@ -253,6 +297,7 @@ export default {
     else if (path === '/pastebin' || path === '/pastebin/') path = '/pastebin.html';
     else if (path === '/date' || path === '/date/') path = '/date.html';
     else if (path === '/llm-cost' || path === '/llm-cost/') path = '/llm-cost.html';
+    else if (path === '/yt-transcript' || path === '/yt-transcript/') path = '/yt-transcript.html';
     else if (path.startsWith('/pastebin/p/')) {
       // Serve pastebin page with the ID injected for robust client rendering
       const id = path.replace(/^\/pastebin\/p\//, '').replace(/\/$/, '');
@@ -295,6 +340,7 @@ export default {
     if (path.endsWith('pastebin.html')) return loadHtml('pastebin.html');
     if (path.endsWith('date.html')) return loadHtml('date.html');
     if (path.endsWith('llm-cost.html')) return loadHtml('llm-cost.html');
+    if (path.endsWith('yt-transcript.html')) return loadHtml('yt-transcript.html');
     if (path.endsWith('index.html')) return loadHtml('index.html');
 
     return new Response('Not found', { status: 404 });
