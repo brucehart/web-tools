@@ -17,6 +17,16 @@ type Bindings = Env & {
 const YT_WATCH_URL = 'https://www.youtube.com/watch';
 const YT_PLAYER_URL = 'https://www.youtube.com/youtubei/v1/player';
 const YT_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36,gzip(gfe)';
+const ANDROID_CONTEXT = Object.freeze({
+  client: {
+    clientName: 'ANDROID',
+    clientVersion: '20.10.38',
+    androidSdkVersion: 30,
+    gl: 'US',
+    hl: 'en',
+  },
+  user: { lockedSafetyMode: false },
+});
 
 class TranscriptFetchError extends Error {
   status: number;
@@ -191,7 +201,8 @@ async function fetchYouTubeTranscript(source: string, language?: string): Promis
 
   const watchUrl = new URL(YT_WATCH_URL);
   watchUrl.searchParams.set('v', videoId);
-  if (lang) watchUrl.searchParams.set('hl', lang);
+  const watchLang = lang ? lang.split('-')[0] || lang : undefined;
+  if (watchLang) watchUrl.searchParams.set('hl', watchLang);
 
   const acceptLang = lang ? `${lang},${lang.split('-')[0]};q=0.9,en;q=0.8` : 'en-US,en;q=0.9';
   const watchRes = await fetch(watchUrl.toString(), {
@@ -204,14 +215,12 @@ async function fetchYouTubeTranscript(source: string, language?: string): Promis
   if (watchRes.status === 404) throw new TranscriptFetchError(404, 'Video not found.');
   if (!watchRes.ok) throw new TranscriptFetchError(502, 'Failed to fetch video details from YouTube.');
   const html = await watchRes.text();
-  const { apiKey, context, clientVersion } = parseWatchConfig(html);
+  const { apiKey } = parseWatchConfig(html);
   if (!apiKey) throw new TranscriptFetchError(500, 'Unable to read YouTube API key.');
 
-  const ctx = context ? JSON.parse(JSON.stringify(context)) : { client: { clientName: 'WEB', clientVersion: clientVersion || '2.20250126.01.00', hl: 'en', gl: 'US' } };
-  if (!ctx.client || typeof ctx.client !== 'object') ctx.client = { clientName: 'WEB', clientVersion: clientVersion || '2.20250126.01.00', hl: 'en', gl: 'US' };
-  if (!ctx.client.clientName) ctx.client.clientName = 'WEB';
-  if (!ctx.client.clientVersion) ctx.client.clientVersion = clientVersion || '2.20250126.01.00';
-  if (lang) ctx.client.hl = lang;
+  const ctx = JSON.parse(JSON.stringify(ANDROID_CONTEXT));
+  const langPrimary = lang ? lang.split('-')[0] || lang : undefined;
+  if (langPrimary) ctx.client.hl = langPrimary;
   else if (!ctx.client.hl) ctx.client.hl = 'en';
   if (!ctx.client.gl) ctx.client.gl = 'US';
 
@@ -225,6 +234,8 @@ async function fetchYouTubeTranscript(source: string, language?: string): Promis
     body: JSON.stringify({
       context: ctx,
       videoId,
+      contentCheckOk: true,
+      racyCheckOk: true,
     }),
   });
   if (!playerRes.ok) {
