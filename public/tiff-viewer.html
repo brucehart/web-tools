@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TIFF Viewer</title>
+    <style>
+      :root { color-scheme: light dark; }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; background: #f7f7f7; color: #111; }
+      @media (prefers-color-scheme: dark) { body { background: #0b0b0b; color: #eee; } }
+      header { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:0.8rem 1rem; border-bottom:1px solid #ddd; }
+      header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+      main { padding: 12px; display:grid; grid-template-columns: 360px 1fr; gap: 12px; }
+      @media (max-width: 960px) { main { grid-template-columns: 1fr; } }
+      .card { border:1px solid #ddd; border-radius:10px; background: rgba(127,127,127,0.06); padding:12px; }
+      .card h2 { margin:0 0 .5rem; font-size:1rem; }
+      label { display:block; font-size:.9rem; margin:.35rem 0; }
+      input[type="file"], input[type="text"], textarea { width:100%; }
+      textarea { min-height: 120px; resize: vertical; font:inherit; padding:8px; border-radius:8px; border:1px solid #ccc; background:transparent; color:inherit; }
+      input[type="color"] { width: 48px; height: 32px; padding: 0; border: 1px solid #ccc; border-radius: 6px; background: transparent; }
+      input[type="checkbox"] { width: 18px; height: 18px; }
+      button, .pill { appearance:none; border:1px solid #ccc; background:transparent; color:inherit; padding:8px 10px; border-radius:8px; cursor:pointer; font:inherit; }
+      button:hover, .pill:hover { background: rgba(127,127,127,0.12); }
+      .actions { display:flex; gap:8px; flex-wrap: wrap; }
+      .muted { color:#666; font-size:.9rem; }
+      .pill { text-decoration: none; display:inline-flex; align-items:center; gap:6px; }
+      .meta { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:8px; margin-top:8px; font-size:.9rem; }
+      .channel-grid { display:flex; flex-direction:column; gap:8px; }
+      .channel-row { display:grid; grid-template-columns: 1fr auto auto; align-items:center; gap:8px; padding:8px; border:1px solid #ccc; border-radius:8px; background: rgba(127,127,127,0.08); }
+      canvas { width:100%; max-height: 80vh; border:1px solid #ccc; border-radius:10px; background: linear-gradient(45deg, #ddd 25%, transparent 25%), linear-gradient(-45deg, #ddd 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ddd 75%), linear-gradient(-45deg, transparent 75%, #ddd 75%); background-size:20px 20px; background-position:0 0, 0 10px, 10px -10px, -10px 0px; }
+      #status { margin-top: 6px; font-size: .9rem; }
+      .error { color: #b00020; }
+    </style>
+    <script src="https://unpkg.com/utif@3.1.0/UTIF.min.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>TIFF Viewer</h1>
+      <a href="/" class="pill" title="Home" aria-label="Home">🏠 Home</a>
+    </header>
+    <main>
+      <section class="card">
+        <h2>Load TIFF</h2>
+        <label>Upload file</label>
+        <input type="file" id="fileInput" accept=".tif,.tiff" />
+        <label style="margin-top:10px;">Base64-encoded TIFF (data URL or raw)</label>
+        <textarea id="base64Input" placeholder="Paste data:image/tiff;base64,... or raw base64"></textarea>
+        <div class="actions" style="margin-top:8px;">
+          <button id="loadBase64">Load base64</button>
+          <button id="clearBase64">Clear</button>
+        </div>
+        <div id="status" class="muted">Pick a TIFF file or paste a base64 string to begin.</div>
+        <div class="meta" id="meta">
+          <div><strong>Size:</strong> <span id="metaSize">–</span></div>
+          <div><strong>Channels:</strong> <span id="metaChannels">–</span></div>
+          <div><strong>Bit depth:</strong> <span id="metaBits">–</span></div>
+          <div><strong>Layout:</strong> <span id="metaLayout">–</span></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Channels</h2>
+        <div id="channelContainer" class="channel-grid">
+          <div class="muted">Load a TIFF to configure channels.</div>
+        </div>
+      </section>
+
+      <section class="card" style="grid-column: 1 / -1;">
+        <h2>Viewer</h2>
+        <canvas id="viewer" width="600" height="400"></canvas>
+      </section>
+    </main>
+
+    <script>
+      (function() {
+        const fileInput = document.getElementById('fileInput');
+        const base64Input = document.getElementById('base64Input');
+        const loadBase64Btn = document.getElementById('loadBase64');
+        const clearBase64Btn = document.getElementById('clearBase64');
+        const channelContainer = document.getElementById('channelContainer');
+        const canvas = document.getElementById('viewer');
+        const statusEl = document.getElementById('status');
+        const metaSize = document.getElementById('metaSize');
+        const metaChannels = document.getElementById('metaChannels');
+        const metaBits = document.getElementById('metaBits');
+        const metaLayout = document.getElementById('metaLayout');
+
+        const colorDefaults = [
+          [255, 0, 0],
+          [0, 255, 0],
+          [0, 0, 255],
+          [255, 255, 0],
+          [255, 0, 255],
+          [0, 255, 255],
+        ];
+
+        let channelConfig = [];
+        const state = {
+          samples: null,
+          width: 0,
+          height: 0,
+          sampleCount: 0,
+          bitsPerSample: [],
+          planar: false,
+        };
+
+        fileInput.addEventListener('change', async (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          try {
+            setStatus('Reading file...');
+            const buffer = await file.arrayBuffer();
+            await loadTiff(buffer);
+          } catch (err) {
+            setStatus(err.message || 'Failed to read file', true);
+          }
+        });
+
+        loadBase64Btn.addEventListener('click', async () => {
+          const raw = base64Input.value.trim();
+          if (!raw) {
+            setStatus('Paste a base64 string first.', true);
+            return;
+          }
+          try {
+            const buffer = base64ToArrayBuffer(raw);
+            await loadTiff(buffer);
+          } catch (err) {
+            setStatus(err.message || 'Failed to decode base64', true);
+          }
+        });
+
+        clearBase64Btn.addEventListener('click', () => {
+          base64Input.value = '';
+          setStatus('Cleared input.');
+        });
+
+        function setStatus(message, isError) {
+          statusEl.textContent = message;
+          statusEl.classList.toggle('error', !!isError);
+        }
+
+        function base64ToArrayBuffer(input) {
+          const trimmed = input.trim();
+          const base64 = trimmed.includes(',') && trimmed.startsWith('data:')
+            ? trimmed.split(',')[1]
+            : trimmed;
+          if (!base64) throw new Error('No base64 data found');
+          const binaryString = atob(base64);
+          const len = binaryString.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+          return bytes.buffer;
+        }
+
+        async function loadTiff(buffer) {
+          setStatus('Decoding TIFF...');
+          const ifds = UTIF.decode(buffer);
+          if (!ifds || ifds.length === 0) throw new Error('No images found in TIFF.');
+          UTIF.decodeImages(buffer, ifds);
+          const img = ifds[0];
+          const { width, height } = img;
+          const data = img.data;
+          if (!data || !width || !height) throw new Error('Missing image data.');
+          const bits = Array.isArray(img.bitsPerSample) ? img.bitsPerSample : [img.bitsPerSample || 8];
+          const sampleCount = bits.length || img.samplesPerPixel || 1;
+          if (data.length < width * height) throw new Error('Unexpected TIFF layout; not enough data.');
+          state.samples = data;
+          state.width = width;
+          state.height = height;
+          state.sampleCount = sampleCount;
+          state.bitsPerSample = bits;
+          state.planar = img.planarConfiguration === 2;
+          if (!channelConfig.length || channelConfig.length !== sampleCount) {
+            channelConfig = Array.from({ length: sampleCount }, (_, i) => ({
+              enabled: true,
+              color: colorDefaults[i] ? colorDefaults[i].slice() : [255, 255, 255],
+            }));
+          } else if (channelConfig.length > sampleCount) {
+            channelConfig = channelConfig.slice(0, sampleCount);
+          }
+          updateMeta();
+          buildChannelUI();
+          redraw();
+          setStatus(`Loaded ${width}×${height} with ${sampleCount} channel${sampleCount === 1 ? '' : 's'}.`);
+        }
+
+        function rgbToHex([r, g, b]) {
+          return '#' + [r, g, b].map((x) => Math.max(0, Math.min(255, x)).toString(16).padStart(2, '0')).join('');
+        }
+
+        function hexToRgb(hex) {
+          const m = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(hex);
+          if (!m) return [255, 255, 255];
+          return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
+        }
+
+        function buildChannelUI() {
+          channelContainer.innerHTML = '';
+          if (!state.samples) {
+            const empty = document.createElement('div');
+            empty.className = 'muted';
+            empty.textContent = 'Load a TIFF to configure channels.';
+            channelContainer.appendChild(empty);
+            return;
+          }
+          channelConfig.forEach((cfg, idx) => {
+            const row = document.createElement('div');
+            row.className = 'channel-row';
+            const label = document.createElement('div');
+            label.innerHTML = `<strong>Channel ${idx + 1}</strong> <span class="muted">(${state.bitsPerSample[idx] || state.bitsPerSample[0]}-bit)</span>`;
+            const toggle = document.createElement('input');
+            toggle.type = 'checkbox';
+            toggle.checked = cfg.enabled;
+            toggle.addEventListener('change', () => {
+              cfg.enabled = toggle.checked;
+              redraw();
+            });
+            const color = document.createElement('input');
+            color.type = 'color';
+            color.value = rgbToHex(cfg.color);
+            color.title = `Color for channel ${idx + 1}`;
+            color.addEventListener('input', () => {
+              cfg.color = hexToRgb(color.value);
+              redraw();
+            });
+            row.appendChild(label);
+            row.appendChild(toggle);
+            row.appendChild(color);
+            channelContainer.appendChild(row);
+          });
+        }
+
+        function mixChannels(samples, width, height, sampleCount, config, bits, planar) {
+          const out = new Uint8ClampedArray(width * height * 4);
+          const perChannelMax = bits.map((b) => {
+            const bitsNum = Number(b) || 8;
+            return Math.max(1, Math.pow(2, bitsNum) - 1);
+          });
+          const pxCount = width * height;
+          for (let px = 0; px < pxCount; px++) {
+            let r = 0;
+            let g = 0;
+            let b = 0;
+            for (let c = 0; c < sampleCount; c++) {
+              const cfg = config[c];
+              if (!cfg || !cfg.enabled) continue;
+              const offset = planar ? c * pxCount + px : px * sampleCount + c;
+              const sample = samples[offset];
+              const max = perChannelMax[c] || perChannelMax[0] || 255;
+              const value = sample === undefined ? 0 : sample / max;
+              r += value * cfg.color[0];
+              g += value * cfg.color[1];
+              b += value * cfg.color[2];
+            }
+            const outIdx = px * 4;
+            out[outIdx] = r > 255 ? 255 : r;
+            out[outIdx + 1] = g > 255 ? 255 : g;
+            out[outIdx + 2] = b > 255 ? 255 : b;
+            out[outIdx + 3] = 255;
+          }
+          return out;
+        }
+
+        function renderToCanvas(canvasEl, rgbaData, width, height) {
+          const ctx = canvasEl.getContext('2d');
+          canvasEl.width = width;
+          canvasEl.height = height;
+          const imageData = new ImageData(rgbaData, width, height);
+          ctx.putImageData(imageData, 0, 0);
+        }
+
+        function redraw() {
+          if (!state.samples) return;
+          const rgba = mixChannels(
+            state.samples,
+            state.width,
+            state.height,
+            state.sampleCount,
+            channelConfig,
+            state.bitsPerSample,
+            state.planar
+          );
+          renderToCanvas(canvas, rgba, state.width, state.height);
+        }
+
+        function updateMeta() {
+          metaSize.textContent = state.samples ? `${state.width} × ${state.height}` : '–';
+          metaChannels.textContent = state.samples ? String(state.sampleCount) : '–';
+          metaBits.textContent = state.samples ? state.bitsPerSample.join(', ') : '–';
+          metaLayout.textContent = state.samples ? (state.planar ? 'Planar (separate)' : 'Chunky (interleaved)') : '–';
+        }
+      })();
+    </script>
+  </body>
+</html>
