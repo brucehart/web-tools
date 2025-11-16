@@ -33,6 +33,11 @@ A minimal Cloudflare Worker that serves a small suite of browser tools.
   - Enter pricing per token, per 1K, or per 1M for input, cached input, output, and reasoning tokens.
   - Save multiple model pricing profiles locally (seeded with popular models; update the placeholders to match current rates).
 
+- TIFF Viewer (`/tiff-viewer`)
+  - Load TIFFs from file or base64 (data URL or raw) and decode locally using bundled `UTIF.js` (no external CDN dependency).
+  - Toggle channels on/off and assign per-channel colors; supports planar and interleaved layouts with automatic channel count detection.
+  - Zoom controls (in/out buttons, slider, Fit width) with default fit-to-width scaling; viewer scrolls when the image exceeds the viewport.
+
 - YouTube Transcript (`/yt-transcript`)
   - Fetch transcripts for public videos with optional translation by language code when available.
   - View normalized segments alongside the full transcript text, toggle timestamps, and copy the result.
@@ -47,6 +52,7 @@ All tools include a Home button in the header to return to `/`.
 - `/pastebin` — Pastebin UI (create, list, login).
 - `/pastebin/p/:id` — View a specific paste (public or unlisted).
 - `/llm-cost` — LLM Cost Calculator.
+- `/tiff-viewer` — Multi-channel TIFF viewer (local UTIF decode, channel mixing, zoom).
 - `/yt-transcript` — YouTube Transcript fetcher.
 - API routes: `/api/pastebin/*`, `/api/auth/*`, OAuth `/auth/google/*`, `/api/yt-transcript`.
 
@@ -57,6 +63,8 @@ All tools include a Home button in the header to return to `/`.
 - `public/euler.html` — Euler Preview page (BBCode → HTML, MathJax, tabs, Highlight.js with theme swap).
 - `public/pastebin.html` — Pastebin UI.
 - `public/llm-cost.html` — LLM Cost Calculator UI (usage parsing, pricing library in localStorage).
+- `public/tiff-viewer.html` — TIFF viewer UI with channel toggles/colors, fit-to-width zoom, and local `UTIF.js` loader.
+- `public/vendor/utif.js` — Bundled TIFF decoder used by the viewer; served locally for offline/CSP-friendly usage.
 - `public/yt-transcript.html` — YouTube transcript viewer UI with segment list and API integration.
 - `wrangler.jsonc` — Wrangler config with assets binding enabled.
 - `migrations/0001_pastebin.sql` — D1 tables for users, sessions, pastes.
