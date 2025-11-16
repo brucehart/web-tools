@@ -12,8 +12,9 @@
       @media (prefers-color-scheme: dark) { body { background: #0b0b0b; color: #eee; } }
       header { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:0.8rem 1rem; border-bottom:1px solid #ddd; }
       header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
-      main { padding: 12px; display:grid; grid-template-columns: 360px 1fr; gap: 12px; }
-      @media (max-width: 960px) { main { grid-template-columns: 1fr; } }
+      main.layout { padding: 12px; display:grid; grid-template-columns: minmax(260px, 320px) 1fr; gap: 12px; align-items:start; }
+      @media (max-width: 960px) { main.layout { grid-template-columns: 1fr; } }
+      .sidebar { display:flex; flex-direction:column; gap:12px; }
       .card { border:1px solid #ddd; border-radius:10px; background: rgba(127,127,127,0.06); padding:12px; }
       .card h2 { margin:0 0 .5rem; font-size:1rem; }
       label { display:block; font-size:.9rem; margin:.35rem 0; }
@@ -29,7 +30,12 @@
       .meta { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:8px; margin-top:8px; font-size:.9rem; }
       .channel-grid { display:flex; flex-direction:column; gap:8px; }
       .channel-row { display:grid; grid-template-columns: 1fr auto auto; align-items:center; gap:8px; padding:8px; border:1px solid #ccc; border-radius:8px; background: rgba(127,127,127,0.08); }
-      canvas { width:100%; max-height: 80vh; border:1px solid #ccc; border-radius:10px; background: linear-gradient(45deg, #ddd 25%, transparent 25%), linear-gradient(-45deg, #ddd 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ddd 75%), linear-gradient(-45deg, transparent 75%, #ddd 75%); background-size:20px 20px; background-position:0 0, 0 10px, 10px -10px, -10px 0px; }
+      .viewer-card { height:100%; display:flex; flex-direction:column; gap:10px; min-width:0; }
+      .zoom-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+      .zoom-controls .spacer { flex:1 1 auto; }
+      input[type="range"] { width: 180px; }
+      .viewer-wrap { border:1px solid #ccc; border-radius:10px; padding:10px; background: linear-gradient(45deg, #ddd 25%, transparent 25%), linear-gradient(-45deg, #ddd 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ddd 75%), linear-gradient(-45deg, transparent 75%, #ddd 75%); background-size:20px 20px; background-position:0 0, 0 10px, 10px -10px, -10px 0px; display:flex; justify-content:flex-start; align-items:flex-start; overflow:auto; min-height: 360px; max-height: 80vh; width:100%; min-width:0; box-sizing:border-box; }
+      canvas { display:block; border:1px solid #ccc; border-radius:10px; background: transparent; }
       #status { margin-top: 6px; font-size: .9rem; }
       .error { color: #b00020; }
     </style>
@@ -39,36 +45,50 @@
       <h1>TIFF Viewer</h1>
       <a href="/" class="pill" title="Home" aria-label="Home">🏠 Home</a>
     </header>
-    <main>
-      <section class="card">
-        <h2>Load TIFF</h2>
-        <label>Upload file</label>
-        <input type="file" id="fileInput" accept=".tif,.tiff" />
-        <label style="margin-top:10px;">Base64-encoded TIFF (data URL or raw)</label>
-        <textarea id="base64Input" placeholder="Paste data:image/tiff;base64,... or raw base64"></textarea>
-        <div class="actions" style="margin-top:8px;">
-          <button id="loadBase64">Load base64</button>
-          <button id="clearBase64">Clear</button>
-        </div>
-        <div id="status" class="muted">Pick a TIFF file or paste a base64 string to begin.</div>
-        <div class="meta" id="meta">
-          <div><strong>Size:</strong> <span id="metaSize">–</span></div>
-          <div><strong>Channels:</strong> <span id="metaChannels">–</span></div>
-          <div><strong>Bit depth:</strong> <span id="metaBits">–</span></div>
-          <div><strong>Layout:</strong> <span id="metaLayout">–</span></div>
-        </div>
-      </section>
+    <main class="layout">
+      <div class="sidebar">
+        <section class="card">
+          <h2>Load TIFF</h2>
+          <label>Upload file</label>
+          <input type="file" id="fileInput" accept=".tif,.tiff" />
+          <label style="margin-top:10px;">Base64-encoded TIFF (data URL or raw)</label>
+          <textarea id="base64Input" placeholder="Paste data:image/tiff;base64,... or raw base64"></textarea>
+          <div class="actions" style="margin-top:8px;">
+            <button id="loadBase64">Load base64</button>
+            <button id="clearBase64">Clear</button>
+          </div>
+          <div id="status" class="muted">Pick a TIFF file or paste a base64 string to begin.</div>
+          <div class="meta" id="meta">
+            <div><strong>Size:</strong> <span id="metaSize">–</span></div>
+            <div><strong>Channels:</strong> <span id="metaChannels">–</span></div>
+            <div><strong>Bit depth:</strong> <span id="metaBits">–</span></div>
+            <div><strong>Layout:</strong> <span id="metaLayout">–</span></div>
+          </div>
+        </section>
 
-      <section class="card">
-        <h2>Channels</h2>
-        <div id="channelContainer" class="channel-grid">
-          <div class="muted">Load a TIFF to configure channels.</div>
-        </div>
-      </section>
+        <section class="card">
+          <h2>Channels</h2>
+          <div id="channelContainer" class="channel-grid">
+            <div class="muted">Load a TIFF to configure channels.</div>
+          </div>
+        </section>
+      </div>
 
-      <section class="card" style="grid-column: 1 / -1;">
+      <section class="card viewer-card">
         <h2>Viewer</h2>
-        <canvas id="viewer" width="600" height="400"></canvas>
+        <div class="zoom-controls">
+          <div class="inline">
+            <button id="zoomOut" title="Zoom out">−</button>
+            <input type="range" id="zoomSlider" min="10" max="400" value="100" />
+            <button id="zoomIn" title="Zoom in">+</button>
+          </div>
+          <span id="zoomLabel" class="muted">100%</span>
+          <span class="spacer"></span>
+          <button id="fitWidth">Fit width</button>
+        </div>
+        <div class="viewer-wrap" id="viewerWrap">
+          <canvas id="viewer" width="600" height="400"></canvas>
+        </div>
       </section>
     </main>
 
@@ -80,6 +100,12 @@
         const clearBase64Btn = document.getElementById('clearBase64');
         const channelContainer = document.getElementById('channelContainer');
         const canvas = document.getElementById('viewer');
+        const viewerWrap = document.getElementById('viewerWrap');
+        const zoomSlider = document.getElementById('zoomSlider');
+        const zoomOutBtn = document.getElementById('zoomOut');
+        const zoomInBtn = document.getElementById('zoomIn');
+        const fitWidthBtn = document.getElementById('fitWidth');
+        const zoomLabel = document.getElementById('zoomLabel');
         const statusEl = document.getElementById('status');
         const metaSize = document.getElementById('metaSize');
         const metaChannels = document.getElementById('metaChannels');
@@ -104,6 +130,9 @@
           bitsPerSample: [],
           planar: false,
         };
+        let lastRgba = null;
+        let zoom = 1;
+        let fitMode = true;
 
         fileInput.addEventListener('change', async (e) => {
           const file = e.target.files && e.target.files[0];
@@ -175,19 +204,28 @@
           const UTIF = await ensureUtif();
           const ifds = UTIF.decode(buffer);
           if (!ifds || ifds.length === 0) throw new Error('No images found in TIFF.');
-          UTIF.decodeImages(buffer, ifds);
-          const img = ifds[0];
+          const first = ifds[0];
+          if (typeof UTIF.decodeImages === 'function') {
+            UTIF.decodeImages(buffer, ifds);
+          } else if (typeof UTIF.decodeImage === 'function') {
+            UTIF.decodeImage(buffer, first);
+          } else {
+            throw new Error('Unsupported UTIF version: missing decode routine.');
+          }
+          const img = first;
           const { width, height } = img;
           const data = img.data;
           if (!data || !width || !height) throw new Error('Missing image data.');
           const bits = Array.isArray(img.bitsPerSample) ? img.bitsPerSample : [img.bitsPerSample || 8];
-          const sampleCount = bits.length || img.samplesPerPixel || 1;
+          const baseChannels = Math.max(bits.length || 0, img.samplesPerPixel || 0, 1);
+          const strideGuess = Math.max(baseChannels, Math.round(data.length / (width * height)) || 1);
+          const sampleCount = img.planarConfiguration === 2 ? baseChannels || strideGuess : strideGuess;
           if (data.length < width * height) throw new Error('Unexpected TIFF layout; not enough data.');
           state.samples = data;
           state.width = width;
           state.height = height;
           state.sampleCount = sampleCount;
-          state.bitsPerSample = bits;
+          state.bitsPerSample = Array.from({ length: sampleCount }, (_, i) => bits[i] ?? bits[bits.length - 1] ?? bits[0] ?? 8);
           state.planar = img.planarConfiguration === 2;
           if (!channelConfig.length || channelConfig.length !== sampleCount) {
             channelConfig = Array.from({ length: sampleCount }, (_, i) => ({
@@ -199,7 +237,9 @@
           }
           updateMeta();
           buildChannelUI();
+          fitMode = true;
           redraw();
+          applyZoom(true);
           setStatus(`Loaded ${width}×${height} with ${sampleCount} channel${sampleCount === 1 ? '' : 's'}.`);
         }
 
@@ -286,11 +326,12 @@
           canvasEl.height = height;
           const imageData = new ImageData(rgbaData, width, height);
           ctx.putImageData(imageData, 0, 0);
+          applyZoom();
         }
 
         function redraw() {
           if (!state.samples) return;
-          const rgba = mixChannels(
+          lastRgba = mixChannels(
             state.samples,
             state.width,
             state.height,
@@ -299,7 +340,7 @@
             state.bitsPerSample,
             state.planar
           );
-          renderToCanvas(canvas, rgba, state.width, state.height);
+          renderToCanvas(canvas, lastRgba, state.width, state.height);
         }
 
         function updateMeta() {
@@ -308,6 +349,42 @@
           metaBits.textContent = state.samples ? state.bitsPerSample.join(', ') : '–';
           metaLayout.textContent = state.samples ? (state.planar ? 'Planar (separate)' : 'Chunky (interleaved)') : '–';
         }
+
+        function applyZoom(forceFit = false) {
+          if (!state.width || !state.height) return;
+          if (fitMode || forceFit) {
+            const wrapWidth = viewerWrap?.clientWidth ? Math.max(1, viewerWrap.clientWidth - 20) : state.width;
+            zoom = Math.max(0.05, wrapWidth / state.width);
+          }
+          const scaledW = state.width * zoom;
+          const scaledH = state.height * zoom;
+          canvas.style.width = `${scaledW}px`;
+          canvas.style.height = `${scaledH}px`;
+          if (zoomSlider) zoomSlider.value = String(Math.round(zoom * 100));
+          if (zoomLabel) zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
+        }
+
+        function setZoom(newZoom, markManual = true) {
+          const clamped = Math.max(0.05, Math.min(newZoom, 8));
+          zoom = clamped;
+          if (markManual) fitMode = false;
+          applyZoom();
+        }
+
+        zoomInBtn?.addEventListener('click', () => setZoom(zoom * 1.25));
+        zoomOutBtn?.addEventListener('click', () => setZoom(zoom / 1.25));
+        zoomSlider?.addEventListener('input', (e) => {
+          const val = Number(e.target.value) || 100;
+          setZoom(val / 100);
+        });
+        fitWidthBtn?.addEventListener('click', () => {
+          fitMode = true;
+          applyZoom(true);
+        });
+
+        window.addEventListener('resize', () => {
+          if (fitMode) applyZoom(true);
+        });
       })();
     </script>
   </body>
