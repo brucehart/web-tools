@@ -33,7 +33,6 @@
       #status { margin-top: 6px; font-size: .9rem; }
       .error { color: #b00020; }
     </style>
-    <script src="https://unpkg.com/utif@3.1.0/UTIF.min.js"></script>
   </head>
   <body>
     <header>
@@ -142,6 +141,22 @@
           statusEl.classList.toggle('error', !!isError);
         }
 
+        let utifPromise = null;
+        function ensureUtif() {
+          if (typeof window.UTIF !== 'undefined') return Promise.resolve(window.UTIF);
+          if (!utifPromise) {
+            utifPromise = new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = 'https://unpkg.com/utif@3.1.0/UTIF.min.js';
+              script.async = true;
+              script.onload = () => resolve(window.UTIF);
+              script.onerror = () => reject(new Error('Failed to load UTIF library.'));
+              document.head.appendChild(script);
+            });
+          }
+          return utifPromise;
+        }
+
         function base64ToArrayBuffer(input) {
           const trimmed = input.trim();
           const base64 = trimmed.includes(',') && trimmed.startsWith('data:')
@@ -157,6 +172,7 @@
 
         async function loadTiff(buffer) {
           setStatus('Decoding TIFF...');
+          const UTIF = await ensureUtif();
           const ifds = UTIF.decode(buffer);
           if (!ifds || ifds.length === 0) throw new Error('No images found in TIFF.');
           UTIF.decodeImages(buffer, ifds);
