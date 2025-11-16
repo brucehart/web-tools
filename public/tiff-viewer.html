@@ -175,8 +175,15 @@
           const UTIF = await ensureUtif();
           const ifds = UTIF.decode(buffer);
           if (!ifds || ifds.length === 0) throw new Error('No images found in TIFF.');
-          UTIF.decodeImages(buffer, ifds);
-          const img = ifds[0];
+          const first = ifds[0];
+          if (typeof UTIF.decodeImages === 'function') {
+            UTIF.decodeImages(buffer, ifds);
+          } else if (typeof UTIF.decodeImage === 'function') {
+            UTIF.decodeImage(buffer, first);
+          } else {
+            throw new Error('Unsupported UTIF version: missing decode routine.');
+          }
+          const img = first;
           const { width, height } = img;
           const data = img.data;
           if (!data || !width || !height) throw new Error('Missing image data.');
