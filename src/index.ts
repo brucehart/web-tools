@@ -45,6 +45,19 @@ async function loadHtml(filename: string): Promise<Response> {
   });
 }
 
+async function loadStaticAsset(filename: string, contentType: string): Promise<Response> {
+  const url = new URL(`../public/${filename}`, import.meta.url);
+  const res = await fetch(url);
+  if (!res.ok) return new Response('Not found', { status: 404 });
+  const body = await res.arrayBuffer();
+  return new Response(body, {
+    headers: {
+      'content-type': contentType,
+      'cache-control': 'no-store',
+    },
+  });
+}
+
 function json(data: unknown, init: ResponseInit = {}): Response {
   return new Response(JSON.stringify(data), {
     headers: { 'content-type': 'application/json; charset=utf-8' },
@@ -714,6 +727,8 @@ export default {
       const res = await assets.fetch(assetRequest);
       if (res && res.status !== 404) return res;
     }
+
+    if (path.endsWith('vendor/utif.js')) return loadStaticAsset('vendor/utif.js', 'application/javascript; charset=utf-8');
 
     // Fallback to bundled HTML (tests/dev) if assets binding unavailable
     if (path.endsWith('markdown.html')) return loadHtml('markdown.html');
