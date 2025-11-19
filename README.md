@@ -33,6 +33,11 @@ A minimal Cloudflare Worker that serves a small suite of browser tools.
   - Enter pricing per token, per 1K, or per 1M for input, cached input, output, and reasoning tokens.
   - Save multiple model pricing profiles locally (seeded with popular models; update the placeholders to match current rates).
 
+- Actuary Calculator (`/actuary`)
+  - Enter ages with gender suffixes (e.g. `63m 75f`) and an optional horizon in years or an absolute year.
+  - Uses the XKCD `actuary.py` Social Security actuarial tables to compute the years until 5/50/95% odds that someone (or everyone) dies.
+  - Shows probability of a death within the requested window plus per-person probabilities for the horizon.
+
 - YouTube Transcript (`/yt-transcript`)
   - Fetch transcripts for public videos with optional translation by language code when available.
   - View normalized segments alongside the full transcript text, toggle timestamps, and copy the result.
@@ -47,6 +52,7 @@ All tools include a Home button in the header to return to `/`.
 - `/pastebin` — Pastebin UI (create, list, login).
 - `/pastebin/p/:id` — View a specific paste (public or unlisted).
 - `/llm-cost` — LLM Cost Calculator.
+- `/actuary` — Actuary Calculator.
 - `/yt-transcript` — YouTube Transcript fetcher.
 - API routes: `/api/pastebin/*`, `/api/auth/*`, OAuth `/auth/google/*`, `/api/yt-transcript`.
 
@@ -57,6 +63,7 @@ All tools include a Home button in the header to return to `/`.
 - `public/euler.html` — Euler Preview page (BBCode → HTML, MathJax, tabs, Highlight.js with theme swap).
 - `public/pastebin.html` — Pastebin UI.
 - `public/llm-cost.html` — LLM Cost Calculator UI (usage parsing, pricing library in localStorage).
+- `public/actuary.html` — Actuary Calculator UI (Social Security actuarial tables ported from `actuary.py`).
 - `public/yt-transcript.html` — YouTube transcript viewer UI with segment list and API integration.
 - `wrangler.jsonc` — Wrangler config with assets binding enabled.
 - `migrations/0001_pastebin.sql` — D1 tables for users, sessions, pastes.
