@@ -27,7 +27,7 @@ describe('Tools index and Markdown viewer', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('text/html');
     const body = await response.text();
-    expect(body).toContain('<title>Markdown to HTML Viewer</title>');
+    expect(body).toContain('<title>Markdown Preview</title>');
     expect(body).toContain('textarea id="input"');
   });
 
@@ -44,6 +44,26 @@ describe('Tools index and Markdown viewer', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('text/html');
     const body = await response.text();
-    expect(body).toContain('<title>Markdown to HTML Viewer</title>');
+    expect(body).toContain('<title>Markdown Preview</title>');
+  });
+
+  it('serves actuary calculator at /actuary (unit)', async () => {
+    const request = new IncomingRequest('http://example.com/actuary');
+    const ctx = createExecutionContext();
+    const response = await worker.fetch(request, env, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    const body = await response.text();
+    expect(body).toContain('<title>Actuary Calculator</title>');
+    expect(body).toContain('Actuary Calculator');
+  });
+
+  it('serves actuary calculator (integration)', async () => {
+    const response = await SELF.fetch('https://example.com/actuary');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    const body = await response.text();
+    expect(body).toContain('<title>Actuary Calculator</title>');
   });
 });

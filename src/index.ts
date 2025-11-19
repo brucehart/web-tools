@@ -691,6 +691,7 @@ export default {
     else if (path === '/llm-cost' || path === '/llm-cost/') path = '/llm-cost.html';
     else if (path === '/yt-transcript' || path === '/yt-transcript/') path = '/yt-transcript.html';
     else if (path === '/tiff-viewer' || path === '/tiff-viewer/') path = '/tiff-viewer.html';
+    else if (path === '/actuary' || path === '/actuary/') path = '/actuary.html';
     else if (path.startsWith('/pastebin/p/')) {
       // Serve pastebin page with the ID injected for robust client rendering
       const id = path.replace(/^\/pastebin\/p\//, '').replace(/\/$/, '');
@@ -737,6 +738,7 @@ export default {
     if (path.endsWith('llm-cost.html')) return loadHtml('llm-cost.html');
     if (path.endsWith('yt-transcript.html')) return loadHtml('yt-transcript.html');
     if (path.endsWith('tiff-viewer.html')) return loadHtml('tiff-viewer.html');
+    if (path.endsWith('actuary.html')) return loadHtml('actuary.html');
     if (path.endsWith('index.html')) return loadHtml('index.html');
 
     return new Response('Not found', { status: 404 });

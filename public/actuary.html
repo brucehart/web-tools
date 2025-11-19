@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Actuary Calculator</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500&display=swap');
+      :root {
+        color-scheme: light dark;
+        --bg: #0d1220;
+        --fg: #e6eef7;
+        --panel: rgba(255, 255, 255, 0.06);
+        --panel-border: rgba(255, 255, 255, 0.12);
+        --muted: #9fb1c7;
+        --accent: #7af2c1;
+        --accent-2: #f3bb62;
+        --danger: #ff8b8b;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f6f8fb;
+          --fg: #0c1320;
+          --panel: rgba(255, 255, 255, 0.9);
+          --panel-border: #d9e2ef;
+          --muted: #4a5568;
+          --accent: #1ca584;
+          --accent-2: #f2993a;
+          --danger: #c0392b;
+        }
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        font-family: 'Space Grotesk', 'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
+        background: radial-gradient(circle at 15% 20%, rgba(117, 184, 255, 0.15), transparent 38%),
+                    radial-gradient(circle at 85% 10%, rgba(255, 196, 104, 0.22), transparent 40%),
+                    radial-gradient(circle at 60% 70%, rgba(116, 255, 214, 0.14), transparent 40%),
+                    var(--bg);
+        color: var(--fg);
+        min-height: 100vh;
+      }
+      a { color: inherit; text-decoration: none; }
+      header.hero {
+        padding: 1.4rem 1rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .eyebrow {
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+        margin: 0;
+      }
+      h1 {
+        margin: 0.15rem 0 0.35rem;
+        font-size: clamp(1.6rem, 2.6vw, 2.2rem);
+        letter-spacing: -0.02em;
+      }
+      .lede {
+        margin: 0;
+        color: var(--muted);
+        max-width: 800px;
+        line-height: 1.5;
+      }
+      .hero-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.65rem 0.9rem;
+        border-radius: 999px;
+        border: 1px solid var(--panel-border);
+        background: var(--panel);
+        color: inherit;
+        font-weight: 600;
+      }
+      .pill:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+      main {
+        max-width: 1200px;
+        margin: 0 auto 2rem;
+        padding: 0 1rem 2rem;
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 1rem;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 16px;
+        padding: 1rem;
+        backdrop-filter: blur(6px);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+      }
+      .panel h2 {
+        margin: 0 0 0.5rem;
+        font-size: 1.2rem;
+      }
+      .panel p { margin-top: 0; color: var(--muted); }
+      .field { display: flex; flex-direction: column; gap: 0.35rem; }
+      label { font-weight: 600; }
+      input, select, button, textarea {
+        font: inherit;
+        border-radius: 10px;
+        border: 1px solid var(--panel-border);
+        background: rgba(255, 255, 255, 0.05);
+        color: inherit;
+        padding: 0.6rem 0.75rem;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      }
+      input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(122, 242, 193, 0.18);
+        background: rgba(255, 255, 255, 0.08);
+      }
+      textarea { min-height: 90px; resize: vertical; }
+      .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+      .row.inline { align-items: stretch; }
+      .row.inline input[type="text"] { flex: 1; min-width: 240px; }
+      button {
+        cursor: pointer;
+        border: 1px solid var(--panel-border);
+        background: linear-gradient(120deg, rgba(122, 242, 193, 0.15), rgba(243, 187, 98, 0.18));
+        color: inherit;
+        font-weight: 700;
+      }
+      button.secondary {
+        background: rgba(255, 255, 255, 0.04);
+        font-weight: 600;
+      }
+      button:hover { border-color: var(--accent); }
+      .chips { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.25rem; }
+      .chip {
+        padding: 0.4rem 0.65rem;
+        border: 1px solid var(--panel-border);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        color: inherit;
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+      .chip small { color: var(--muted); font-weight: 500; margin-left: 0.25rem; }
+      .muted { color: var(--muted); font-size: 0.95rem; }
+      .grid-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.75rem;
+      }
+      .stat {
+        border: 1px solid var(--panel-border);
+        border-radius: 14px;
+        padding: 0.9rem;
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .stat h3 { margin: 0 0 0.35rem; font-size: 1rem; }
+      .stat .value { font-size: 1.9rem; font-weight: 700; }
+      .stat .sub { color: var(--muted); margin-top: 0.25rem; }
+      .stat.accent { border-color: rgba(122, 242, 193, 0.5); }
+      .stat.warning { border-color: rgba(243, 187, 98, 0.45); }
+      .stat.danger { border-color: rgba(255, 139, 139, 0.55); }
+      .message { margin-top: 0.5rem; min-height: 1.1rem; }
+      .message.error { color: var(--danger); }
+      .list { display: grid; gap: 0.45rem; margin-top: 0.5rem; }
+      .list-item {
+        border: 1px dashed var(--panel-border);
+        border-radius: 10px;
+        padding: 0.7rem 0.8rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .list-item strong { font-size: 1rem; }
+      .badge { padding: 0.2rem 0.45rem; border-radius: 999px; border: 1px solid var(--panel-border); font-size: 0.85rem; }
+      @media (max-width: 980px) {
+        main { grid-template-columns: 1fr; }
+        header.hero { flex-direction: column; align-items: flex-start; }
+        .row.inline { flex-direction: column; align-items: flex-start; }
+        .row.inline input[type="text"] { width: 100%; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Actuary Calculator</p>
+        <h1>XKCD-style group mortality odds</h1>
+        <p class="lede">
+          Enter ages with gender tags (e.g. <code>63m</code> for a 63-year-old male or <code>75f</code> for a 75-year-old female),
+          optionally followed by a time span in years or an absolute year. Calculations use the same Social Security actuarial tables as the
+          original <code>actuary.py</code> script: probabilities for someone in the group, everyone in the group, and a specific horizon.
+        </p>
+      </div>
+      <div class="hero-actions">
+        <a class="pill" href="/" title="Home">🏠 Home</a>
+        <button id="exampleBtn" class="pill" type="button">Use comic example</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel">
+        <h2>Group setup</h2>
+        <div class="field">
+          <label for="groupInput">Ages + optional horizon</label>
+          <div class="row inline">
+            <input id="groupInput" type="text" placeholder="63m 80m 75f 73m 10" aria-label="Ages and optional horizon" />
+            <button id="calcBtn" type="button">Calculate</button>
+            <button id="clearBtn" class="secondary" type="button">Clear</button>
+          </div>
+          <p class="muted">
+            Format matches <code>actuary.py</code>: list ages with <code>m</code>/<code>f</code> suffixes (decimals ok). If you include a trailing number, it is treated
+            as the years to simulate; if that number exceeds the current calendar year, it is interpreted as an absolute year.
+            If you omit the number, the default horizon is 1 year.
+          </p>
+        </div>
+
+        <div class="row" style="margin-top: 0.5rem;">
+          <label for="quickAge" style="min-width: 120px;">Quick add person</label>
+          <input id="quickAge" type="number" step="0.1" min="0" placeholder="Age" />
+          <select id="quickGender">
+            <option value="m">Male</option>
+            <option value="f">Female</option>
+          </select>
+          <button id="addBtn" type="button" class="secondary">Add to group</button>
+        </div>
+
+        <div class="chips" id="groupChips" aria-live="polite"></div>
+        <div class="message" id="message"></div>
+
+        <div class="list" id="perPerson"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Probabilities</h2>
+        <p class="muted" id="horizonNote">Waiting for input.</p>
+        <div class="grid-cards" id="anyStats">
+          <!-- stats inserted dynamically -->
+        </div>
+        <div class="grid-cards" id="allStats" style="margin-top: 0.75rem;">
+          <!-- stats inserted dynamically -->
+        </div>
+        <div class="stat" id="windowStats" style="margin-top: 0.75rem;">
+          <h3>Within selected horizon</h3>
+          <div class="row" style="justify-content: space-between; align-items: baseline;">
+            <div>
+              <div class="value" id="probAnyHorizon">--</div>
+              <div class="sub">Chance someone dies</div>
+            </div>
+            <div>
+              <div class="value" id="probAllHorizon">--</div>
+              <div class="sub">Chance everyone dies</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (function() {
+        const maleRates = [0.00756, 0.00052, 0.00035, 0.00025, 0.0002, 0.00018, 0.00017, 0.00016, 0.00014, 0.00011, 0.00009, 0.0001, 0.00015, 0.00027, 0.00043, 0.00061, 0.00078, 0.00094, 0.00107, 0.00119, 0.00131, 0.00142, 0.00149, 0.00151, 0.00148, 0.00143, 0.0014, 0.00138, 0.00137, 0.00139, 0.00141, 0.00143, 0.00147, 0.00152, 0.00158, 0.00165, 0.00174, 0.00186, 0.00202, 0.00221, 0.00243, 0.00267, 0.00291, 0.00317, 0.00344, 0.00373, 0.00405, 0.00441, 0.0048, 0.00524, 0.00573, 0.00623, 0.00671, 0.00714, 0.00756, 0.008, 0.00853, 0.00917, 0.00995, 0.01086, 0.0119, 0.01301, 0.01413, 0.01522, 0.01635, 0.0176, 0.01906, 0.02073, 0.02265, 0.02482, 0.02729, 0.03001, 0.03289, 0.03592, 0.03918, 0.04292, 0.04715, 0.05173, 0.05665, 0.06206, 0.06821, 0.07522, 0.08302, 0.09163, 0.10119, 0.11183, 0.12367, 0.13679, 0.15124, 0.16702, 0.18414, 0.20255, 0.22224, 0.24314, 0.2652, 0.28709, 0.30846, 0.32891, 0.34803, 0.36544, 0.38371, 0.40289, 0.42304, 0.44419, 0.4664, 0.48972, 0.51421, 0.53992, 0.56691, 0.59526, 0.62502, 0.65628, 0.68909, 0.72354, 0.75972, 0.79771, 0.83759, 0.87947, 0.92345, 0.96962];
+        const femaleRates = [0.00615, 0.00041, 0.00025, 0.00018, 0.00015, 0.00014, 0.00014, 0.00013, 0.00012, 0.00011, 0.0001, 0.0001, 0.00012, 0.00016, 0.00021, 0.00028, 0.00034, 0.00039, 0.00042, 0.00043, 0.00045, 0.00047, 0.00048, 0.00049, 0.0005, 0.00051, 0.00052, 0.00053, 0.00056, 0.00059, 0.00063, 0.00068, 0.00073, 0.00078, 0.00084, 0.00091, 0.00098, 0.00108, 0.00118, 0.0013, 0.00144, 0.00158, 0.00173, 0.00189, 0.00206, 0.00225, 0.00244, 0.00264, 0.00285, 0.00306, 0.00329, 0.00355, 0.00382, 0.00409, 0.00437, 0.00468, 0.00505, 0.00549, 0.00603, 0.00665, 0.00736, 0.00813, 0.0089, 0.00967, 0.01047, 0.01136, 0.01239, 0.01357, 0.01491, 0.01641, 0.01816, 0.02008, 0.0221, 0.02418, 0.02641, 0.02902, 0.03206, 0.03538, 0.03899, 0.04301, 0.04766, 0.05307, 0.05922, 0.06618, 0.07403, 0.08285, 0.0927, 0.10365, 0.11574, 0.12899, 0.14343, 0.15907, 0.17591, 0.19393, 0.21312, 0.23254, 0.25193, 0.27097, 0.28933, 0.3067, 0.3251, 0.3446, 0.36528, 0.3872, 0.41043, 0.43505, 0.46116, 0.48883, 0.51816, 0.54925, 0.5822, 0.61714, 0.65416, 0.69341, 0.73502, 0.77912, 0.82587, 0.87542, 0.92345, 0.96962];
+
+        const DAY_MS = 24 * 60 * 60 * 1000;
+        const YEAR_DAYS = 365.242191;
+
+        const $ = (id) => document.getElementById(id);
+        const groupInput = $('groupInput');
+        const message = $('message');
+        const chips = $('groupChips');
+        const perPerson = $('perPerson');
+
+        const horizonNote = $('horizonNote');
+        const anyStats = $('anyStats');
+        const allStats = $('allStats');
+        const probAnyHorizon = $('probAnyHorizon');
+        const probAllHorizon = $('probAllHorizon');
+
+        function extendRates(base, needed) {
+          const rates = base.slice();
+          while (rates.length < needed + 2) {
+            const last = rates[rates.length - 1] || 0.999;
+            rates.push(Math.sqrt(last));
+          }
+          return rates;
+        }
+
+        function deathProb(age, years, gender) {
+          const female = gender === 'f';
+          const baseAge = Math.abs(age);
+          const table = extendRates(female ? femaleRates : maleRates, Math.floor(baseAge + years + 2));
+          const wholeAge = Math.floor(baseAge);
+          const fraction = baseAge % 1;
+          const fullYears = Math.floor(years);
+          let liveProb = 1;
+          for (let i = 0; i <= fullYears - 1; i++) {
+            const idx = wholeAge + i;
+            const thisYear = (1 - fraction) * table[idx] + fraction * table[idx + 1];
+            liveProb *= 1 - thisYear;
+          }
+          const remainder = years % 1;
+          if (remainder) {
+            const idx = wholeAge + fullYears;
+            const lastYear = (1 - fraction) * table[idx] + fraction * table[idx + 1];
+            const lastYearLive = Math.pow(1 - lastYear, remainder);
+            liveProb *= lastYearLive;
+          }
+          return 1 - liveProb;
+        }
+
+        function probAllDie(people, years) {
+          let prod = 1;
+          for (const p of people) {
+            const survive = 1 - deathProb(p.age, years, p.gender);
+            prod *= 1 - survive;
+          }
+          return prod;
+        }
+
+        function probAnyDie(people, years) {
+          let prod = 1;
+          for (const p of people) {
+            const survive = 1 - deathProb(p.age, years, p.gender);
+            prod *= survive;
+          }
+          return 1 - prod;
+        }
+
+        function calcExp(people, prob, mode) {
+          let years = 0;
+          const fn = mode === 'all' ? probAllDie : probAnyDie;
+          for (const interval of [10, 1, 0.1, 0.01]) {
+            let p = 0;
+            let safety = 0;
+            while (p < prob && safety < 10000) {
+              years += interval;
+              p = fn(people, years);
+              safety++;
+            }
+            years -= interval;
+          }
+          return years;
+        }
+
+        function parseInput(raw) {
+          const tokens = raw.trim().split(/\s+/).filter(Boolean);
+          const people = [];
+          const errors = [];
+          let years = undefined;
+          for (const token of tokens) {
+            const suffix = token.slice(-1).toLowerCase();
+            if ((suffix === 'm' || suffix === 'f') && token.length > 1) {
+              const ageVal = Number(token.slice(0, -1));
+              if (Number.isFinite(ageVal) && ageVal >= 0) {
+                people.push({ age: ageVal, gender: suffix });
+              } else {
+                errors.push(`Could not read age from "${token}".`);
+              }
+            } else {
+              const asNum = Number(token);
+              if (Number.isFinite(asNum)) {
+                if (years === undefined) years = asNum;
+              } else {
+                errors.push(`Ignoring "${token}" (not m/f tagged and not a number).`);
+              }
+            }
+          }
+          return { people, years: years ?? 1, providedYears: years !== undefined, errors };
+        }
+
+        function formatYears(yrs) {
+          if (!Number.isFinite(yrs)) return '--';
+          if (yrs >= 100) return yrs.toFixed(0);
+          if (yrs >= 10) return yrs.toFixed(1);
+          return yrs.toFixed(2);
+        }
+
+        function forecastYear(yearsFromNow) {
+          const now = Date.now();
+          const millis = yearsFromNow * YEAR_DAYS * DAY_MS;
+          return new Date(now + millis).getFullYear();
+        }
+
+        function formatPercent(prob) {
+          if (!Number.isFinite(prob)) return '--';
+          const pct = prob * 100;
+          if (pct < 0.001) return '<0.001%';
+          if (pct > 99.99) return '>99.99%';
+          return `${pct.toFixed(3)}%`;
+        }
+
+        function summarize(parsed) {
+          const nowYear = new Date().getFullYear();
+          const rawSpan = parsed.years > nowYear ? parsed.years - nowYear : parsed.years;
+          const spanYears = Math.max(0, rawSpan);
+          const displayHorizon = parsed.years > nowYear
+            ? `${formatYears(spanYears)} years (to ${parsed.years})`
+            : `${formatYears(spanYears)} year${spanYears === 1 ? '' : 's'}`;
+
+          if (!parsed.people.length) {
+            return {
+              parsed,
+              horizonYears: spanYears,
+              horizonLabel: displayHorizon,
+              anyStats: null,
+              allStats: null,
+              horizonProbs: null,
+            };
+          }
+
+          const thresholds = [0.05, 0.5, 0.95];
+          const anyYears = thresholds.map((t) => calcExp(parsed.people, t, 'any'));
+          const allYears = parsed.people.length > 1 ? thresholds.map((t) => calcExp(parsed.people, t, 'all')) : null;
+          const anyDates = anyYears.map((yrs) => forecastYear(yrs));
+          const allDates = allYears ? allYears.map((yrs) => forecastYear(yrs)) : null;
+
+          const horizonAny = probAnyDie(parsed.people, spanYears);
+          const horizonAll = parsed.people.length > 1 ? probAllDie(parsed.people, spanYears) : null;
+
+          const perPerson = parsed.people.map((p) => ({
+            label: `${formatYears(p.age)} ${p.gender === 'f' ? 'female' : 'male'}`,
+            prob: formatPercent(probAnyDie([p], spanYears)),
+          }));
+
+          return {
+            parsed,
+            horizonYears: spanYears,
+            horizonLabel: displayHorizon,
+            anyStats: thresholds.map((t, idx) => ({
+              percentile: `${(t * 100).toFixed(0)}%`,
+              years: anyYears[idx],
+              year: anyDates[idx],
+              target: 'someone in the group',
+            })),
+            allStats: allYears
+              ? thresholds.map((t, idx) => ({
+                  percentile: `${(t * 100).toFixed(0)}%`,
+                  years: allYears[idx],
+                  year: allDates ? allDates[idx] : null,
+                  target: 'everyone in the group',
+                }))
+              : null,
+            horizonProbs: {
+              any: horizonAny,
+              all: horizonAll,
+              perPerson,
+            },
+          };
+        }
+
+        function renderChips(people) {
+          chips.innerHTML = '';
+          if (!people.length) {
+            const span = document.createElement('span');
+            span.className = 'muted';
+            span.textContent = 'Add at least one age with m/f.';
+            chips.appendChild(span);
+            return;
+          }
+          for (const p of people) {
+            const chip = document.createElement('span');
+            chip.className = 'chip';
+            chip.textContent = `${formatYears(p.age)} ${p.gender === 'f' ? 'female' : 'male'}`;
+            chips.appendChild(chip);
+          }
+        }
+
+        function renderStats(stats) {
+          horizonNote.textContent = stats.horizonLabel;
+          anyStats.innerHTML = '';
+          allStats.innerHTML = '';
+
+          if (!stats.anyStats) {
+            anyStats.innerHTML = '<div class="muted">Enter a group to see probabilities.</div>';
+            probAnyHorizon.textContent = '--';
+            probAllHorizon.textContent = '--';
+            return;
+          }
+
+          for (const entry of stats.anyStats) {
+            const card = document.createElement('div');
+            card.className = 'stat accent';
+            card.innerHTML = `
+              <h3>${entry.percentile} chance someone dies</h3>
+              <div class="value">${formatYears(entry.years)} yrs</div>
+              <div class="sub">≈ by ${entry.year}</div>
+            `;
+            anyStats.appendChild(card);
+          }
+
+          if (stats.allStats) {
+            for (const entry of stats.allStats) {
+              const card = document.createElement('div');
+              card.className = 'stat warning';
+              card.innerHTML = `
+                <h3>${entry.percentile} chance everyone dies</h3>
+                <div class="value">${formatYears(entry.years)} yrs</div>
+                <div class="sub">≈ by ${entry.year}</div>
+              `;
+              allStats.appendChild(card);
+            }
+          } else {
+            const muted = document.createElement('div');
+            muted.className = 'muted';
+            muted.textContent = 'Add more than one person to see "everyone" probabilities.';
+            allStats.appendChild(muted);
+          }
+
+          if (stats.horizonProbs) {
+            probAnyHorizon.textContent = formatPercent(stats.horizonProbs.any);
+            probAllHorizon.textContent = stats.horizonProbs.all === null ? '—' : formatPercent(stats.horizonProbs.all);
+            renderPerPerson(stats.horizonProbs.perPerson);
+          }
+        }
+
+        function renderPerPerson(per) {
+          perPerson.innerHTML = '';
+          if (!per || !per.length) return;
+          for (const entry of per) {
+            const row = document.createElement('div');
+            row.className = 'list-item';
+            const label = document.createElement('div');
+            label.innerHTML = `<strong>${entry.label}</strong><div class="sub">Chance of death within horizon</div>`;
+            const badge = document.createElement('span');
+            badge.className = 'badge';
+            badge.textContent = entry.prob;
+            row.append(label, badge);
+            perPerson.appendChild(row);
+          }
+        }
+
+        function run() {
+          const parsed = parseInput(groupInput.value || '');
+          renderChips(parsed.people);
+          if (parsed.errors.length) {
+            message.textContent = parsed.errors.join(' ');
+            message.classList.add('error');
+          } else {
+            message.textContent = '';
+            message.classList.remove('error');
+          }
+          const stats = summarize(parsed);
+          renderStats(stats);
+        }
+
+        $('calcBtn').addEventListener('click', run);
+        groupInput.addEventListener('input', () => {
+          window.clearTimeout(groupInput._timer);
+          groupInput._timer = window.setTimeout(run, 120);
+        });
+        $('exampleBtn').addEventListener('click', () => {
+          groupInput.value = '63m 80m 75f 73m 10';
+          run();
+        });
+        $('clearBtn').addEventListener('click', () => {
+          groupInput.value = '';
+          perPerson.innerHTML = '';
+          anyStats.innerHTML = '';
+          allStats.innerHTML = '';
+          probAnyHorizon.textContent = '--';
+          probAllHorizon.textContent = '--';
+          chips.innerHTML = '';
+          message.textContent = '';
+          horizonNote.textContent = 'Waiting for input.';
+        });
+        $('addBtn').addEventListener('click', () => {
+          const ageRaw = Number($('quickAge').value);
+          const gender = $('quickGender').value || 'm';
+          if (!Number.isFinite(ageRaw) || ageRaw < 0) {
+            message.textContent = 'Provide a valid age to add.';
+            message.classList.add('error');
+            return;
+          }
+          const token = `${ageRaw}${gender}`;
+          const parts = groupInput.value.trim().split(/\s+/).filter(Boolean);
+          const numericIndex = parts.findIndex((p) => Number.isFinite(Number(p)) && !/[a-z]/i.test(p));
+          if (numericIndex >= 0) parts.splice(numericIndex, 0, token);
+          else parts.push(token);
+          groupInput.value = parts.join(' ');
+          message.textContent = '';
+          message.classList.remove('error');
+          run();
+        });
+
+        run();
+      })();
+    </script>
+  </body>
+</html>
