@@ -66,4 +66,18 @@ describe('Tools index and Markdown viewer', () => {
     const body = await response.text();
     expect(body).toContain('<title>Actuary Calculator</title>');
   });
+
+  it('rejects missing url for transcript API (unit)', async () => {
+    const request = new IncomingRequest('http://example.com/api/yt-transcript', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url: '' }),
+    });
+    const ctx = createExecutionContext();
+    const response = await worker.fetch(request, env, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(response.status).toBe(400);
+    const json = await response.json();
+    expect(json.error).toBe('url required');
+  });
 });

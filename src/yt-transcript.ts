@@ -1,22 +1,7 @@
-/**
- * Worker entry with static assets and a new /pastebin tool backed by D1.
- * Google OAuth is used for accounts; pastes can be public or unlisted.
- */
-
-// HTML templates moved to /public and served via ASSETS binding.
-
-type Bindings = Env & {
-  DB: D1Database;
-  ASSETS: Fetcher;
-  GOOGLE_CLIENT_ID?: string;
-  GOOGLE_CLIENT_SECRET?: string; // set as secret via wrangler
-  OAUTH_REDIRECT_URL?: string;
-  SESSION_COOKIE_NAME?: string;
-};
-
 const YT_WATCH_URL = 'https://www.youtube.com/watch';
 const YT_PLAYER_URL = 'https://www.youtube.com/youtubei/v1/player';
-const YT_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36,gzip(gfe)';
+const YT_USER_AGENT =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36,gzip(gfe)';
 const INNERTUBE_CONTEXT = Object.freeze({
   client: {
     clientName: 'ANDROID',
@@ -24,91 +9,12 @@ const INNERTUBE_CONTEXT = Object.freeze({
   },
 });
 
-class TranscriptFetchError extends Error {
+export class TranscriptFetchError extends Error {
   status: number;
   constructor(status: number, message: string) {
     super(message);
     this.status = status;
   }
-}
-
-async function loadHtml(filename: string): Promise<Response> {
-  const url = new URL(`../public/${filename}`, import.meta.url);
-  const res = await fetch(url);
-  if (!res.ok) return new Response('Not found', { status: 404 });
-  const body = await res.text();
-  return new Response(body, {
-    headers: {
-      'content-type': 'text/html; charset=utf-8',
-      'cache-control': 'no-store',
-    },
-  });
-}
-
-async function loadStaticAsset(filename: string, contentType: string): Promise<Response> {
-  const url = new URL(`../public/${filename}`, import.meta.url);
-  const res = await fetch(url);
-  if (!res.ok) return new Response('Not found', { status: 404 });
-  const body = await res.arrayBuffer();
-  return new Response(body, {
-    headers: {
-      'content-type': contentType,
-      'cache-control': 'no-store',
-    },
-  });
-}
-
-function json(data: unknown, init: ResponseInit = {}): Response {
-  return new Response(JSON.stringify(data), {
-    headers: { 'content-type': 'application/json; charset=utf-8' },
-    ...init,
-  });
-}
-
-function badRequest(message: string, status = 400): Response {
-  return new Response(message, { status });
-}
-
-function getCookies(req: Request): Record<string, string> {
-  const h = req.headers.get('cookie') || '';
-  const out: Record<string, string> = {};
-  h.split(/;\s*/).forEach((p) => {
-    if (!p) return;
-    const idx = p.indexOf('=');
-    if (idx === -1) return;
-    const k = decodeURIComponent(p.slice(0, idx).trim());
-    const v = decodeURIComponent(p.slice(idx + 1).trim());
-    out[k] = v;
-  });
-  return out;
-}
-
-function setCookie(res: Response, name: string, value: string, attrs: Record<string, string | number | boolean> = {}) {
-  const parts = [`${encodeURIComponent(name)}=${encodeURIComponent(value)}`];
-  if (attrs.path !== undefined) parts.push(`Path=${attrs.path}`);
-  if (attrs.httpOnly !== false) parts.push('HttpOnly');
-  if (attrs.sameSite !== undefined) parts.push(`SameSite=${attrs.sameSite}`);
-  if (attrs.secure !== false) parts.push('Secure');
-  if (attrs.maxAge !== undefined) parts.push(`Max-Age=${attrs.maxAge}`);
-  if (attrs.expires !== undefined) parts.push(`Expires=${attrs.expires}`);
-  // Important: append separate Set-Cookie headers; do not join with newlines
-  res.headers.append('Set-Cookie', parts.join('; '));
-}
-
-async function readJson<T = any>(req: Request): Promise<T> {
-  const ct = req.headers.get('content-type') || '';
-  if (ct.includes('application/json')) return await req.json<T>();
-  const text = await req.text();
-  try { return JSON.parse(text) as T; } catch { return {} as T; }
-}
-
-function urlSafeRandom(len = 12): string {
-  const bytes = new Uint8Array(len);
-  crypto.getRandomValues(bytes);
-  const alph = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let out = '';
-  for (let i = 0; i < len; i++) out += alph[bytes[i] % alph.length];
-  return out;
 }
 
 function extractVideoId(input: string): string | null {
@@ -173,7 +79,11 @@ function parseTranscriptXml(xml: string): { text: string; offset: number; durati
     if (!text) continue;
     const offset = Number.parseFloat(startRaw || '0');
     const duration = Number.parseFloat(durationRaw || '0');
-    results.push({ text, offset: Number.isFinite(offset) ? offset : 0, duration: Number.isFinite(duration) ? duration : 0 });
+    results.push({
+      text,
+      offset: Number.isFinite(offset) ? offset : 0,
+      duration: Number.isFinite(duration) ? duration : 0,
+    });
   }
   return results;
 }
@@ -357,13 +267,13 @@ function buildTranscriptCatalog(renderer: any): TranscriptCatalog {
 }
 
 function getAvailableLanguages(catalog: TranscriptCatalog): string[] {
-  return Array.from(new Set<string>([
-    ...catalog.manual.keys(),
-    ...catalog.generated.keys(),
-  ]));
+  return Array.from(new Set<string>([...catalog.manual.keys(), ...catalog.generated.keys()]));
 }
 
-function findTranscriptByPreference(catalog: TranscriptCatalog, preferences: string[]): TranscriptTrack | undefined {
+function findTranscriptByPreference(
+  catalog: TranscriptCatalog,
+  preferences: string[],
+): TranscriptTrack | undefined {
   for (const pref of preferences) {
     const code = pref.trim().toLowerCase();
     if (!code) continue;
@@ -375,13 +285,19 @@ function findTranscriptByPreference(catalog: TranscriptCatalog, preferences: str
   return undefined;
 }
 
-function selectTranslationTarget(catalog: TranscriptCatalog, desired: string): { track: TranscriptTrack; targetLanguageCode: string } | null {
+function selectTranslationTarget(
+  catalog: TranscriptCatalog,
+  desired: string,
+): { track: TranscriptTrack; targetLanguageCode: string } | null {
   const normalizedDesired = desired.toLowerCase();
   const languagePrimary = normalizedDesired.split('-')[0] || normalizedDesired;
-  const translation = catalog.translationLanguages.find((entry) => entry.languageCode === normalizedDesired)
-    || catalog.translationLanguages.find((entry) => entry.languageCode.split('-')[0] === languagePrimary);
+  const translation =
+    catalog.translationLanguages.find((entry) => entry.languageCode === normalizedDesired) ||
+    catalog.translationLanguages.find((entry) => entry.languageCode.split('-')[0] === languagePrimary);
   if (!translation) return null;
-  const translatableSource = [...catalog.manual.values(), ...catalog.generated.values()].find((track) => track.isTranslatable);
+  const translatableSource = [...catalog.manual.values(), ...catalog.generated.values()].find(
+    (track) => track.isTranslatable,
+  );
   if (!translatableSource) return null;
   return { track: translatableSource, targetLanguageCode: translation.languageCode };
 }
@@ -416,16 +332,18 @@ function assertPlayability(status: any, videoId: string): void {
   throw new TranscriptFetchError(403, message);
 }
 
-async function fetchYouTubeTranscript(source: string, language?: string): Promise<{ text: string; offset: number; duration: number }[]> {
+export async function fetchYouTubeTranscript(
+  source: string,
+  language?: string,
+): Promise<{ text: string; offset: number; duration: number }[]> {
   const videoId = extractVideoId(source);
   if (!videoId) throw new TranscriptFetchError(400, 'Unable to determine YouTube video ID.');
   const normalizedLang = (language || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '') || undefined;
   const requestedLanguageLabel = (language || '').trim() || normalizedLang || 'the requested language';
   const cookieJar: CookieJar = new Map<string, string>();
   const langPrimary = normalizedLang ? normalizedLang.split('-')[0] || normalizedLang : undefined;
-  const acceptLang = normalizedLang && langPrimary
-    ? `${normalizedLang},${langPrimary};q=0.9,en;q=0.8`
-    : 'en-US,en;q=0.9';
+  const acceptLang =
+    normalizedLang && langPrimary ? `${normalizedLang},${langPrimary};q=0.9,en;q=0.8` : 'en-US,en;q=0.9';
 
   const html = await fetchWatchHtml(videoId, acceptLang, cookieJar);
   const apiKey = extractInnertubeApiKey(html);
@@ -469,7 +387,10 @@ async function fetchYouTubeTranscript(source: string, language?: string): Promis
     if (!translation) {
       const available = getAvailableLanguages(catalog);
       const details = available.length > 0 ? available.join(', ') : 'none';
-      throw new TranscriptFetchError(404, `Transcripts are not available in ${requestedLanguageLabel}. Available languages: ${details}`);
+      throw new TranscriptFetchError(
+        404,
+        `Transcripts are not available in ${requestedLanguageLabel}. Available languages: ${details}`,
+      );
     }
     chosenTrack = translation.track;
     translationTarget = translation.targetLanguageCode;
@@ -498,66 +419,3 @@ async function fetchYouTubeTranscript(source: string, language?: string): Promis
   if (segments.length === 0) throw new TranscriptFetchError(404, 'Transcript data was empty for this video.');
   return segments;
 }
-
-async function getSessionUser(req: Request, env: Bindings): Promise<{ id: string; email?: string; name?: string; picture?: string } | null> {
-  const cookieName = env.SESSION_COOKIE_NAME || 'wt_session';
-  const cookies = getCookies(req);
-  const token = cookies[cookieName];
-  if (!token) return null;
-  const row = await env.DB.prepare('SELECT u.id, u.email, u.name, u.picture FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ?').bind(token).first();
-  if (!row) return null;
-  return row as any;
-}
-
-async function requireUser(req: Request, env: Bindings): Promise<{ id: string; email?: string } | Response> {
-  const user = await getSessionUser(req, env);
-  if (!user) return new Response('Unauthorized', { status: 401 });
-  return user;
-}
-
-function isAllowedEmail(email?: string | null): boolean {
-  return (email || '').toLowerCase() === 'bruce.hart@gmail.com';
-}
-
-async function requireAllowedUser(req: Request, env: Bindings): Promise<{ id: string; email?: string } | Response> {
-  const u = await getSessionUser(req, env);
-  if (!u) return new Response('Unauthorized', { status: 401 });
-  if (!isAllowedEmail(u.email || '')) return new Response('Forbidden', { status: 403 });
-  return u;
-}
-
-export default {
-  async fetch(request, env, _ctx): Promise<Response> {
-    const b = env as unknown as Bindings;
-    const url = new URL(request.url);
-
-    const authResponse = await handleAuthRoutes(request, bindings, url);
-    if (authResponse) return authResponse;
-
-    const pastebinApiResponse = await handlePastebinApi(request, bindings, url);
-    if (pastebinApiResponse) return pastebinApiResponse;
-
-    const transcriptResponse = await handleTranscriptApi(request, bindings, url);
-    if (transcriptResponse) return transcriptResponse;
-
-    const pastebinPageResponse = await handlePastebinPage(request, bindings, url);
-    if (pastebinPageResponse) return pastebinPageResponse;
-
-    if (path.endsWith('vendor/utif.js')) return loadStaticAsset('vendor/utif.js', 'application/javascript; charset=utf-8');
-
-    // Fallback to bundled HTML (tests/dev) if assets binding unavailable
-    if (path.endsWith('markdown.html')) return loadHtml('markdown.html');
-    if (path.endsWith('euler.html')) return loadHtml('euler.html');
-    if (path.endsWith('pastebin.html')) return loadHtml('pastebin.html');
-    if (path.endsWith('date.html')) return loadHtml('date.html');
-    if (path.endsWith('llm-cost.html')) return loadHtml('llm-cost.html');
-    if (path.endsWith('yt-transcript.html')) return loadHtml('yt-transcript.html');
-    if (path.endsWith('tiff-viewer.html')) return loadHtml('tiff-viewer.html');
-    if (path.endsWith('actuary.html')) return loadHtml('actuary.html');
-    if (path.endsWith('index.html')) return loadHtml('index.html');
-
-    return new Response('Not found', { status: 404 });
-  },
-};
-
-export default handler;
