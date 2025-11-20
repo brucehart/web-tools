@@ -1,62 +1,347 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Web Tools</title>
-    <style>
-      :root { color-scheme: light dark; }
-      * { box-sizing: border-box; }
-      html, body { height: 100%; margin: 0; }
-      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; }
-      header { padding: 1rem; border-bottom: 1px solid #ddd; }
-      h1 { margin: 0; font-size: 1.25rem; }
-      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; padding: 1rem; }
-      .tile { display: block; border: 1px solid #ddd; border-radius: 10px; padding: 1rem; text-decoration: none; color: inherit; background: rgba(127,127,127,0.06); }
-      .tile:hover { background: rgba(127,127,127,0.12); }
-      .tile h2 { margin: 0 0 .5rem; font-size: 1.05rem; }
-      .tile p { margin: 0; color: #555; }
-      footer { padding: .75rem 1rem; border-top: 1px solid #ddd; font-size: .9rem; color: #666; }
-    </style>
-  </head>
-  <body>
-    <header>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Web Tools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #f8f9fa;
+      --card-bg: #ffffff;
+      --text-primary: #1a1a1a;
+      --text-secondary: #666666;
+      --accent-color: #2563eb;
+      --accent-hover: #1d4ed8;
+      --border-color: #e5e7eb;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #0f172a;
+        --card-bg: #1e293b;
+        --text-primary: #f1f5f9;
+        --text-secondary: #94a3b8;
+        --accent-color: #3b82f6;
+        --accent-hover: #60a5fa;
+        --border-color: #334155;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+      width: 100%;
+    }
+
+    h1 {
+      margin: 0 0 0.5rem;
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.025em;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+    }
+
+    .search-container {
+      max-width: 500px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 1rem 1.5rem;
+      padding-left: 3rem;
+      border-radius: 9999px;
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      color: var(--text-primary);
+      font-size: 1rem;
+      box-shadow: var(--shadow-md);
+      transition: var(--transition);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      pointer-events: none;
+    }
+
+    main {
+      flex: 1;
+      padding: 3rem 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .tile {
+      display: flex;
+      flex-direction: column;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      text-decoration: none;
+      color: inherit;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tile:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--accent-color);
+    }
+
+    .tile-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(37, 99, 235, 0.1);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      color: var(--accent-color);
+      transition: var(--transition);
+    }
+
+    .tile:hover .tile-icon {
+      background: var(--accent-color);
+      color: white;
+    }
+
+    .tile h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .tile p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .tile.hidden {
+      display: none;
+    }
+
+    footer {
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border-color);
+      background: var(--card-bg);
+    }
+
+    /* SVG Icons */
+    svg {
+      width: 24px;
+      height: 24px;
+      stroke-width: 2;
+      stroke: currentColor;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="container">
       <h1>Web Tools</h1>
-    </header>
-    <main class="grid">
-      <a class="tile" href="/markdown">
+      <p class="subtitle">A collection of useful developer and utility tools</p>
+      <div class="search-container">
+        <div class="search-icon">
+          <svg viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+        <input type="text" class="search-input" placeholder="Search tools..." id="searchInput" autofocus>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="grid" id="toolsGrid">
+      <a class="tile" href="/markdown" data-keywords="markdown md preview mathjax latex">
+        <div class="tile-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </div>
         <h2>Markdown Viewer</h2>
-        <p>Paste Markdown and view formatted HTML with MathJax.</p>
+        <p>Paste Markdown and view formatted HTML with MathJax support.</p>
       </a>
-      <a class="tile" href="/euler">
+
+      <a class="tile" href="/euler" data-keywords="euler math project forum bbcode tex latex">
+        <div class="tile-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+        </div>
         <h2>Euler Preview</h2>
-        <p>Preview Project Euler forum posts (BBCode + TeX).</p>
+        <p>Preview Project Euler forum posts with BBCode and TeX support.</p>
       </a>
-      <a class="tile" href="/pastebin">
+
+      <a class="tile" href="/pastebin" data-keywords="pastebin text share code">
+        <div class="tile-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+          </svg>
+        </div>
         <h2>Pastebin</h2>
-        <p>Share text snippets; public or unlisted links.</p>
+        <p>Share text snippets with public or unlisted links.</p>
       </a>
-      <a class="tile" href="/date">
+
+      <a class="tile" href="/date" data-keywords="date time calculator calendar diff add subtract">
+        <div class="tile-icon">
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+        </div>
         <h2>Date Calculator</h2>
-        <p>Compute differences and add/subtract days, weeks, months, years.</p>
+        <p>Compute differences and manipulate dates (add/subtract days, months, years).</p>
       </a>
-      <a class="tile" href="/llm-cost">
+
+      <a class="tile" href="/llm-cost" data-keywords="llm ai cost token calculator price">
+        <div class="tile-icon">
+          <svg viewBox="0 0 24 24">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a4.5 4.5 0 0 0 0 9H14.5a4.5 4.5 0 0 1 0 9H5"></path>
+          </svg>
+        </div>
         <h2>LLM Cost Calculator</h2>
-        <p>Compute costs from token usage with saved model pricing.</p>
+        <p>Estimate costs based on token usage with customizable model pricing.</p>
       </a>
-      <a class="tile" href="/actuary">
+
+      <a class="tile" href="/actuary" data-keywords="actuary mortality life expectancy odds death xkcd">
+        <div class="tile-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+          </svg>
+        </div>
         <h2>Actuary Calculator</h2>
-        <p>Estimate mortality odds from Social Security tables (XKCD-style).</p>
+        <p>Estimate mortality odds based on Social Security tables.</p>
       </a>
-      <a class="tile" href="/yt-transcript">
+
+      <a class="tile" href="/yt-transcript" data-keywords="youtube video transcript subtitles caption">
+        <div class="tile-icon">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z">
+            </path>
+            <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon>
+          </svg>
+        </div>
         <h2>YouTube Transcript</h2>
-        <p>Extract transcripts from YouTube videos with optional language selection.</p>
+        <p>Extract and download transcripts from YouTube videos.</p>
       </a>
-      <a class="tile" href="/tiff-viewer">
+
+      <a class="tile" href="/tiff-viewer" data-keywords="tiff image viewer medical microscopy">
+        <div class="tile-icon">
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+        </div>
         <h2>TIFF Viewer</h2>
-        <p>Load multi-channel TIFFs, toggle channels, and assign custom colors.</p>
+        <p>View multi-channel TIFF images with channel toggling and custom colors.</p>
       </a>
-    </main>
-    <footer>More tools coming soon.</footer>
-  </body>
-  </html>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Web Tools. Built for developers.</p>
+  </footer>
+
+  <script>
+    const searchInput = document.getElementById('searchInput');
+    const toolsGrid = document.getElementById('toolsGrid');
+    const tiles = toolsGrid.getElementsByClassName('tile');
+
+    searchInput.addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase();
+
+      Array.from(tiles).forEach(tile => {
+        const title = tile.querySelector('h2').textContent.toLowerCase();
+        const desc = tile.querySelector('p').textContent.toLowerCase();
+        const keywords = tile.dataset.keywords || '';
+
+        if (title.includes(term) || desc.includes(term) || keywords.includes(term)) {
+          tile.classList.remove('hidden');
+        } else {
+          tile.classList.add('hidden');
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>
