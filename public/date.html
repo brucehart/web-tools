@@ -4,139 +4,506 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Date Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
       :root {
-        color-scheme: light dark;
-        --bg: #ffffff;
-        --fg: #111111;
-        --header-bg: #2f2f2f;
-        --header-fg: #f3f3f3;
-        --border: #cfcfcf;
-        --pane-bg: #f6f6f6;
-        --muted: #666666;
-        --accent: #7aa2f7;
+        /* Light Theme */
+        --hue: 220;
+        --bg-body: hsl(var(--hue), 20%, 97%);
+        --bg-card: hsl(0, 0%, 100%);
+        --fg-primary: hsl(var(--hue), 40%, 15%);
+        --fg-secondary: hsl(var(--hue), 20%, 40%);
+        --accent: hsl(217, 91%, 60%);
+        --accent-hover: hsl(217, 91%, 50%);
+        --border: hsl(var(--hue), 20%, 90%);
+        --input-bg: hsl(var(--hue), 20%, 98%);
+        --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+        --radius: 12px;
+        --header-bg: hsl(0, 0%, 100%);
       }
-      [data-theme="dark"] {
-        --bg: #121212;
-        --fg: #eaeaea;
-        --header-bg: #2f2f2f;
-        --header-fg: #f3f3f3;
-        --border: #3a3a3a;
-        --pane-bg: #1a1a1a;
-        --muted: #9aa0a6;
-        --accent: #7aa2f7;
-      }
-      * { box-sizing: border-box; }
-      html, body { height: 100%; margin: 0; }
-      body { background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; }
-      header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); background: var(--header-bg); color: var(--header-fg); position: sticky; top: 0; z-index: 10; }
-      header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
-      header .actions { display: flex; gap: 8px; align-items: center; }
-      .icon-btn { appearance: none; border: 1px solid var(--border); background: transparent; color: inherit; padding: 6px 10px; border-radius: 8px; font-size: 0.9rem; line-height: 1; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-      .icon-btn:hover { background: rgba(127,127,127,0.12); }
-      main { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; }
-      .panel { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; background: var(--pane-bg); }
-      .panel header { border-bottom: 1px solid var(--border); padding: .6rem .8rem; font-weight: 600; }
-      .panel .content { padding: .75rem; display: flex; gap: 10px; flex-direction: column; }
-      .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-      label { min-width: 120px; }
-      input, select, button { font: inherit; padding: .5rem .6rem; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: inherit; }
-      input[type="number"] { width: 8ch; }
-      .grow { flex: 1; }
-      .muted { color: var(--muted); font-size: .9rem; }
-      .result { padding: .5rem .6rem; border: 1px dashed var(--border); border-radius: 8px; background: rgba(127,127,127,0.06); }
-      .date-input { display: inline-flex; align-items: center; gap: 6px; }
-      .date-input input[type="text"] { width: 14ch; }
-      /* Hide native date inputs; we render a custom calendar */
-      .date-input input[type="date"] { display: none; }
-      .today-link { color: var(--accent); text-decoration: none; font-size: .9rem; }
-      .today-link:hover { text-decoration: underline; }
-      .invalid { border-color: #d93025 !important; box-shadow: 0 0 0 2px rgba(217,48,37,0.15) inset; }
-      @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
 
-      /* Custom date picker */
-      .datepicker { position: absolute; z-index: 9999; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); width: 288px; overflow: hidden; }
-      .datepicker .dp-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid var(--border); font-weight: 600; gap: 6px; }
-      .datepicker .dp-title { display: inline-flex; align-items: center; gap: 6px; }
-      .datepicker .dp-nav { border: 1px solid var(--border); background: transparent; color: inherit; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
-      .datepicker .dp-nav:hover { background: rgba(127,127,127,0.1); }
-      .datepicker .dp-month, .datepicker .dp-year { border: 1px solid var(--border); background: transparent; color: inherit; padding: 4px 10px; border-radius: 6px; font: inherit; height: 32px; }
-      .datepicker .dp-month { min-width: 11ch; }
-      .datepicker .dp-year { width: 8ch; }
-      .datepicker .dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; padding: 8px; }
-      .datepicker .dp-dow { text-align: center; font-size: 0.8rem; color: var(--muted); padding: 4px 0; }
-      .datepicker .dp-day { appearance: none; border: none; background: transparent; color: inherit; width: 36px; height: 32px; line-height: 32px; text-align: center; border-radius: 6px; cursor: pointer; }
-      .datepicker .dp-day:hover { background: rgba(127,127,127,0.12); }
-      .datepicker .dp-day.outside { color: var(--muted); }
-      .datepicker .dp-day.today { outline: 1px dashed var(--border); }
-      .datepicker .dp-day.selected { background: var(--accent); color: white; }
-      .datepicker .dp-footer { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-top: 1px solid var(--border); }
-      .datepicker .dp-link { color: var(--accent); background: transparent; border: none; padding: 4px 6px; cursor: pointer; font: inherit; }
-      .datepicker .dp-link:hover { text-decoration: underline; }
+      [data-theme="dark"] {
+        --bg-body: hsl(var(--hue), 20%, 10%);
+        --bg-card: hsl(var(--hue), 20%, 14%);
+        --fg-primary: hsl(var(--hue), 20%, 90%);
+        --fg-secondary: hsl(var(--hue), 20%, 60%);
+        --accent: hsl(217, 91%, 65%);
+        --accent-hover: hsl(217, 91%, 75%);
+        --border: hsl(var(--hue), 20%, 20%);
+        --input-bg: hsl(var(--hue), 20%, 18%);
+        --header-bg: hsl(var(--hue), 20%, 14%);
+      }
+
+      * { box-sizing: border-box; }
+      
+      body {
+        margin: 0;
+        font-family: 'Inter', system-ui, sans-serif;
+        background: var(--bg-body);
+        color: var(--fg-primary);
+        line-height: 1.5;
+        transition: background-color 0.3s ease, color 0.3s ease;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Header */
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 2rem;
+        background: var(--header-bg);
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--fg-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      header .actions {
+        display: flex;
+        gap: 0.75rem;
+      }
+
+      .icon-btn {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: var(--bg-card);
+        color: var(--fg-secondary);
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 1.1rem;
+        text-decoration: none;
+      }
+
+      .icon-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: var(--input-bg);
+      }
+
+      /* Main Layout */
+      main {
+        flex: 1;
+        max-width: 1000px;
+        margin: 0 auto;
+        width: 100%;
+        padding: 2rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 2rem;
+        align-items: start;
+      }
+
+      /* Cards */
+      .card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+      }
+
+      .card-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: var(--fg-primary);
+        background: linear-gradient(to right, var(--bg-card), var(--input-bg));
+      }
+
+      .card-content {
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      /* Form Elements */
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      label {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--fg-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+      }
+
+      .input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+
+      input[type="text"],
+      input[type="number"],
+      select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--input-bg);
+        color: var(--fg-primary);
+        font-family: inherit;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+        appearance: none;
+      }
+
+      input[type="text"]:focus,
+      input[type="number"]:focus,
+      select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px hsla(217, 91%, 60%, 0.15);
+      }
+
+      .input-icon {
+        position: absolute;
+        right: 1rem;
+        color: var(--fg-secondary);
+        pointer-events: none;
+      }
+
+      .row {
+        display: flex;
+        gap: 1rem;
+      }
+      
+      .grow { flex: 1; }
+
+      /* Custom Select Arrow */
+      select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        padding-right: 2.5rem;
+      }
+
+      /* Results */
+      .result-box {
+        background: var(--input-bg);
+        border-radius: 8px;
+        padding: 1.25rem;
+        border: 1px solid var(--border);
+      }
+
+      .result-empty {
+        color: var(--fg-secondary);
+        font-size: 0.9rem;
+        text-align: center;
+        font-style: italic;
+      }
+
+      .result-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border);
+      }
+      
+      .result-item:last-child { border-bottom: none; }
+
+      .result-label {
+        font-size: 0.9rem;
+        color: var(--fg-secondary);
+      }
+
+      .result-value {
+        font-weight: 600;
+        color: var(--fg-primary);
+        text-align: right;
+      }
+      
+      .result-highlight {
+        font-size: 1.1rem;
+        color: var(--accent);
+      }
+
+      /* Utilities */
+      .today-btn {
+        font-size: 0.8rem;
+        color: var(--accent);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        margin-left: auto;
+        font-weight: 500;
+      }
+      
+      .today-btn:hover { text-decoration: underline; }
+
+      .invalid {
+        border-color: #ef4444 !important;
+        background-color: #fef2f2 !important;
+      }
+      [data-theme="dark"] .invalid {
+        background-color: #450a0a !important;
+      }
+
+      /* Date Picker */
+      .datepicker {
+        position: absolute;
+        z-index: 100;
+        background: var(--bg-card);
+        color: var(--fg-primary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+        width: 300px;
+        padding: 1rem;
+        display: none;
+        animation: fadeIn 0.2s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .dp-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+
+      .dp-nav {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--fg-secondary);
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+
+      .dp-nav:hover {
+        background: var(--input-bg);
+        color: var(--fg-primary);
+      }
+
+      .dp-title {
+        display: flex;
+        gap: 0.5rem;
+        font-weight: 600;
+      }
+
+      .dp-month-sel, .dp-year-input {
+        border: none;
+        background: transparent;
+        color: var(--fg-primary);
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        padding: 0;
+      }
+      
+      .dp-year-input { width: 60px; text-align: center; }
+
+      .dp-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+        margin-bottom: 1rem;
+      }
+
+      .dp-dow {
+        text-align: center;
+        font-size: 0.75rem;
+        color: var(--fg-secondary);
+        font-weight: 500;
+        padding-bottom: 0.5rem;
+      }
+
+      .dp-day {
+        width: 100%;
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background: transparent;
+        color: var(--fg-primary);
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.1s;
+      }
+
+      .dp-day:hover {
+        background: var(--input-bg);
+      }
+
+      .dp-day.outside {
+        color: var(--fg-secondary);
+        opacity: 0.5;
+      }
+
+      .dp-day.today {
+        border: 1px solid var(--accent);
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .dp-day.selected {
+        background: var(--accent);
+        color: white;
+      }
+
+      .dp-footer {
+        display: flex;
+        justify-content: space-between;
+        border-top: 1px solid var(--border);
+        padding-top: 0.75rem;
+      }
+
+      .dp-link {
+        background: transparent;
+        border: none;
+        color: var(--accent);
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+      }
+      
+      .dp-link:hover { text-decoration: underline; }
+
+      @media (max-width: 768px) {
+        main { padding: 1rem; }
+        header { padding: 0.75rem 1rem; }
+      }
     </style>
   </head>
   <body>
     <header>
-      <h1>Date Calculator</h1>
+      <h1>📅 Date Calculator</h1>
       <div class="actions">
-        <a href="/" class="icon-btn" title="Home" aria-label="Home">🏠</a>
-        <button id="toggleTheme" class="icon-btn" title="Toggle theme">🌙</button>
+        <a href="/" class="icon-btn" title="Home" aria-label="Home">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </a>
+        <button id="toggleTheme" class="icon-btn" title="Toggle theme">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
       </div>
     </header>
 
     <main>
-      <section class="panel">
-        <header>Difference Between Dates</header>
-        <div class="content">
-          <div class="row">
-            <label for="diffStartTxt">Start Date</label>
-            <div class="date-input">
+      <!-- Difference Section -->
+      <section class="card">
+        <div class="card-header">Date Difference</div>
+        <div class="card-content">
+          <div class="form-group">
+            <div style="display:flex; justify-content:space-between; align-items:baseline;">
+              <label for="diffStartTxt">Start Date</label>
+              <button id="diffStartToday" class="today-btn">Set to Today</button>
+            </div>
+            <div class="input-wrapper">
               <input id="diffStartTxt" type="text" placeholder="MM/DD/YYYY" autocomplete="off" />
-              <input id="diffStartCal" type="date" />
-              <a id="diffStartToday" href="#" class="today-link">Today</a>
+              <input id="diffStartCal" type="date" style="display:none" /> <!-- Hidden native picker -->
+              <div class="input-icon">📅</div>
             </div>
           </div>
-          <div class="row">
-            <label for="diffEndTxt">End Date</label>
-            <div class="date-input">
+
+          <div class="form-group">
+            <div style="display:flex; justify-content:space-between; align-items:baseline;">
+              <label for="diffEndTxt">End Date</label>
+              <button id="diffEndToday" class="today-btn">Set to Today</button>
+            </div>
+            <div class="input-wrapper">
               <input id="diffEndTxt" type="text" placeholder="MM/DD/YYYY" autocomplete="off" />
-              <input id="diffEndCal" type="date" />
-              <a id="diffEndToday" href="#" class="today-link">Today</a>
+              <input id="diffEndCal" type="date" style="display:none" />
+              <div class="input-icon">📅</div>
             </div>
           </div>
-          <div class="result" id="diffResult">
-            <div class="muted">Enter both dates to see the difference.</div>
+
+          <div class="result-box" id="diffResult">
+            <div class="result-empty">Enter both dates to see the difference.</div>
           </div>
         </div>
       </section>
 
-      <section class="panel">
-        <header>Add or Subtract</header>
-        <div class="content">
-          <div class="row">
-            <label for="baseTxt">Base Date</label>
-            <div class="date-input">
+      <!-- Calculator Section -->
+      <section class="card">
+        <div class="card-header">Add or Subtract</div>
+        <div class="card-content">
+          <div class="form-group">
+            <div style="display:flex; justify-content:space-between; align-items:baseline;">
+              <label for="baseTxt">Base Date</label>
+              <button id="baseToday" class="today-btn">Set to Today</button>
+            </div>
+            <div class="input-wrapper">
               <input id="baseTxt" type="text" placeholder="MM/DD/YYYY" autocomplete="off" />
-              <input id="baseCal" type="date" />
-              <a id="baseToday" href="#" class="today-link">Today</a>
+              <input id="baseCal" type="date" style="display:none" />
+              <div class="input-icon">📅</div>
             </div>
           </div>
+
           <div class="row">
-            <label for="amount">Amount</label>
-            <input id="amount" type="number" step="1" value="1" />
+            <div class="form-group grow">
+              <label for="op">Operation</label>
+              <select id="op">
+                <option value="add">Add (+)</option>
+                <option value="sub">Subtract (-)</option>
+              </select>
+            </div>
+            <div class="form-group grow">
+              <label for="amount">Amount</label>
+              <input id="amount" type="number" step="1" value="1" min="0" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="unit">Unit</label>
             <select id="unit">
               <option value="days">Days</option>
               <option value="weeks">Weeks</option>
               <option value="months">Months</option>
               <option value="years">Years</option>
             </select>
-            <select id="op">
-              <option value="add">Add</option>
-              <option value="sub">Subtract</option>
-            </select>
           </div>
-          <div class="result" id="calcResult">
-            <div class="muted">Set base date and amount to see the result.</div>
+
+          <div class="result-box" id="calcResult">
+            <div class="result-empty">Set base date and amount to see the result.</div>
           </div>
         </div>
       </section>
@@ -146,18 +513,29 @@
       (function() {
         const THEME_KEY = 'date_theme';
         const root = document.documentElement;
+        
+        // Theme Logic
         function preferredTheme() {
           const saved = localStorage.getItem(THEME_KEY);
           if (saved === 'light' || saved === 'dark') return saved;
           return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
         }
+
         function applyTheme(theme) {
           root.setAttribute('data-theme', theme);
           localStorage.setItem(THEME_KEY, theme);
           const btn = document.getElementById('toggleTheme');
-          if (btn) btn.textContent = (theme === 'dark') ? '☀️' : '🌙';
+          if (btn) {
+             // Simple SVG swap or icon change could go here, but we'll stick to the SVG in HTML
+             // Maybe toggle the icon content if we wanted specific moon/sun icons
+             const isDark = theme === 'dark';
+             btn.innerHTML = isDark 
+               ? '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+               : '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+          }
         }
 
+        // Element References
         const ids = [
           'diffStartTxt','diffStartCal','diffStartToday',
           'diffEndTxt','diffEndCal','diffEndToday',
@@ -166,6 +544,7 @@
         ];
         const els = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 
+        // Date Utils
         function pad2(n){ return String(n).padStart(2,'0'); }
         function toISODateUTC(y,m,d) { return new Date(Date.UTC(y, m-1, d)); }
         function fromISODateUTC(date){ return { y: date.getUTCFullYear(), m: date.getUTCMonth()+1, d: date.getUTCDate() }; }
@@ -180,7 +559,7 @@
           const mm = Number(m[1]);
           const dd = Number(m[2]);
           const yy = Number(m[3]);
-          if (yy < 100) return null; // require 4-digit years
+          if (yy < 100) return null; 
           if (mm < 1 || mm > 12) return null;
           const maxd = daysInMonth(yy, mm);
           if (dd < 1 || dd > maxd) return null;
@@ -191,16 +570,22 @@
 
         function setInvalid(el, isInvalid){ if (!el) return; el.classList.toggle('invalid', !!isInvalid); }
 
-        // Lightweight custom date picker (UTC-based)
+        // Custom Date Picker
         function buildDatePicker(){
           const dp = document.createElement('div');
           dp.className = 'datepicker';
-          dp.style.display = 'none';
           dp.innerHTML = `
             <div class="dp-header">
-              <button type="button" class="dp-nav dp-prev" aria-label="Previous Month">▲</button>
-              <div class="dp-title"><select class="dp-month"></select><input class="dp-year" type="number" min="1" max="9999" inputmode="numeric" /></div>
-              <button type="button" class="dp-nav dp-next" aria-label="Next Month">▼</button>
+              <button type="button" class="dp-nav dp-prev" aria-label="Previous Month">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <div class="dp-title">
+                <select class="dp-month-sel"></select>
+                <input class="dp-year-input" type="number" min="1" max="9999" />
+              </div>
+              <button type="button" class="dp-nav dp-next" aria-label="Next Month">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
             </div>
             <div class="dp-grid"></div>
             <div class="dp-footer">
@@ -209,35 +594,30 @@
             </div>`;
           document.body.appendChild(dp);
 
-          const titleEl = dp.querySelector('.dp-title');
           const gridEl = dp.querySelector('.dp-grid');
           const prevBtn = dp.querySelector('.dp-prev');
           const nextBtn = dp.querySelector('.dp-next');
-          const monthSel = dp.querySelector('.dp-month');
-          const yearInput = dp.querySelector('.dp-year');
+          const monthSel = dp.querySelector('.dp-month-sel');
+          const yearInput = dp.querySelector('.dp-year-input');
           const clearBtn = dp.querySelector('.dp-clear');
           const todayBtn = dp.querySelector('.dp-today');
 
           const state = { visible: false, anchor: null, viewY: 0, viewM: 0, selected: null, onPick: null };
 
-          function monthLabel(y,m){
-            return new Date(Date.UTC(y, m-1, 1)).toLocaleString(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' });
-          }
           const monthNames = Array.from({length:12}, (_,i) => new Date(Date.UTC(2000, i, 1)).toLocaleString(undefined, { month: 'long', timeZone: 'UTC' }));
           if (monthSel) monthSel.innerHTML = monthNames.map((n, i) => `<option value="${i+1}">${n}</option>`).join('');
+
           function clampYear(y){ return Math.min(9999, Math.max(1, (y|0))); }
           function sameUTC(a,b){ return a && b && a.getUTCFullYear()===b.getUTCFullYear() && a.getUTCMonth()===b.getUTCMonth() && a.getUTCDate()===b.getUTCDate(); }
-
-          function addMonths(y,m,delta){ // m: 1-12
+          function addMonths(y,m,delta){ 
             const nm = m-1 + delta;
             const ny = y + Math.floor(nm/12);
-            const mo = ((nm%12)+12)%12 + 1; // back to 1-12
+            const mo = ((nm%12)+12)%12 + 1; 
             return { y: ny, m: mo };
           }
 
           function render(){
-            if (!gridEl || !titleEl) return;
-            // Update dropdowns instead of overwriting title content
+            if (!gridEl) return;
             if (monthSel) monthSel.value = String(state.viewM);
             if (yearInput) yearInput.value = String(state.viewY);
             gridEl.innerHTML = '';
@@ -246,6 +626,7 @@
             const first = new Date(Date.UTC(state.viewY, state.viewM-1, 1));
             const start = new Date(Date.UTC(state.viewY, state.viewM-1, 1 - first.getUTCDay()));
             const today = new Date(); const todayUTC = toISODateUTC(today.getUTCFullYear(), today.getUTCMonth()+1, today.getUTCDate());
+            
             for (let i=0;i<42;i++){
               const cur = new Date(start.getTime() + i*86400000);
               const btn = document.createElement('button');
@@ -255,7 +636,7 @@
               if (sameUTC(cur, todayUTC)) btn.classList.add('today');
               if (state.selected && sameUTC(cur, state.selected)) btn.classList.add('selected');
               btn.textContent = String(cur.getUTCDate());
-              btn.addEventListener('click', () => pick(new Date(cur.getTime())));
+              btn.addEventListener('click', (e) => { e.stopPropagation(); pick(new Date(cur.getTime())); });
               gridEl.appendChild(btn);
             }
           }
@@ -263,17 +644,18 @@
           function position(){
             if (!state.anchor) return;
             const r = state.anchor.getBoundingClientRect();
-            const top = window.scrollY + r.bottom + 4;
+            const top = window.scrollY + r.bottom + 8;
             let left = window.scrollX + r.left;
-            const width = 288; // matches CSS
-            if (left + width > window.scrollX + window.innerWidth - 8) {
-              left = window.scrollX + Math.max(8, window.innerWidth - width - 8);
+            const width = 300; 
+            if (left + width > window.scrollX + window.innerWidth - 16) {
+              left = window.scrollX + Math.max(16, window.innerWidth - width - 16);
             }
             dp.style.top = top + 'px';
             dp.style.left = left + 'px';
           }
 
           function open(anchor, initial, onPick){
+            if (state.visible && state.anchor === anchor) return; // already open
             state.anchor = anchor;
             state.onPick = onPick;
             state.selected = initial || null;
@@ -284,7 +666,12 @@
             position();
             dp.style.display = 'block';
             state.visible = true;
-            setTimeout(() => { document.addEventListener('mousedown', onDocDown, true); window.addEventListener('resize', position); window.addEventListener('scroll', position, true); }, 0);
+            // Delay listener to avoid immediate close from the click that opened it
+            setTimeout(() => { 
+              document.addEventListener('mousedown', onDocDown, true); 
+              window.addEventListener('resize', position); 
+              window.addEventListener('scroll', position, true); 
+            }, 50);
           }
 
           function close(){
@@ -305,12 +692,15 @@
 
           function pick(date){ if (state.onPick) state.onPick(date); close(); }
 
-          prevBtn.addEventListener('click', () => { const nm = addMonths(state.viewY, state.viewM, -1); state.viewY = nm.y; state.viewM = nm.m; render(); position(); });
-          nextBtn.addEventListener('click', () => { const nm = addMonths(state.viewY, state.viewM, +1); state.viewY = nm.y; state.viewM = nm.m; render(); position(); });
-          if (monthSel) monthSel.addEventListener('change', () => { const v = parseInt(monthSel.value, 10); if (v>=1 && v<=12){ state.viewM = v; render(); position(); }});
-          if (yearInput) yearInput.addEventListener('change', () => { const v = clampYear(parseInt(yearInput.value, 10) || state.viewY); state.viewY = v; render(); position(); });
-          clearBtn.addEventListener('click', () => { pick(null); });
-          todayBtn.addEventListener('click', () => { const n = new Date(); const d = toISODateUTC(n.getUTCFullYear(), n.getUTCMonth()+1, n.getUTCDate()); pick(d); });
+          prevBtn.addEventListener('click', (e) => { e.stopPropagation(); const nm = addMonths(state.viewY, state.viewM, -1); state.viewY = nm.y; state.viewM = nm.m; render(); });
+          nextBtn.addEventListener('click', (e) => { e.stopPropagation(); const nm = addMonths(state.viewY, state.viewM, +1); state.viewY = nm.y; state.viewM = nm.m; render(); });
+          if (monthSel) monthSel.addEventListener('change', (e) => { e.stopPropagation(); const v = parseInt(monthSel.value, 10); if (v>=1 && v<=12){ state.viewM = v; render(); }});
+          if (yearInput) yearInput.addEventListener('change', (e) => { e.stopPropagation(); const v = clampYear(parseInt(yearInput.value, 10) || state.viewY); state.viewY = v; render(); });
+          yearInput.addEventListener('click', (e) => e.stopPropagation());
+          monthSel.addEventListener('click', (e) => e.stopPropagation());
+          
+          clearBtn.addEventListener('click', (e) => { e.stopPropagation(); pick(null); });
+          todayBtn.addEventListener('click', (e) => { e.stopPropagation(); const n = new Date(); const d = toISODateUTC(n.getUTCFullYear(), n.getUTCMonth()+1, n.getUTCDate()); pick(d); });
 
           return { open, close };
         }
@@ -324,6 +714,7 @@
             setInvalid(textEl, false);
             setInvalid(calEl, false);
           }
+          
           textEl.addEventListener('input', () => {
             const p = parseMDY(textEl.value);
             if (!p) { setInvalid(textEl, textEl.value.trim().length > 0); return; }
@@ -331,15 +722,20 @@
             setBoth(d);
             onChange();
           });
+
           function openPicker(){
             const existing = dateFromInputs(textEl, calEl);
-            datePicker.open(textEl, existing, (picked) => {
+            // Use the input wrapper as anchor if possible, else the input
+            const anchor = textEl.parentElement.classList.contains('input-wrapper') ? textEl.parentElement : textEl;
+            datePicker.open(anchor, existing, (picked) => {
               if (picked) setBoth(picked); else { textEl.value=''; calEl.value=''; }
               onChange();
             });
           }
+
           textEl.addEventListener('focus', openPicker);
           textEl.addEventListener('click', openPicker);
+          
           calEl.addEventListener('change', () => {
             const v = calEl.value;
             if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { setInvalid(calEl, true); return; }
@@ -348,6 +744,7 @@
             setBoth(date);
             onChange();
           });
+
           todayEl.addEventListener('click', (e) => {
             e.preventDefault();
             const now = new Date();
@@ -374,7 +771,6 @@
         }
 
         function calendarDiff(a, b) {
-          // Ensure a <= b
           let start = a, end = b, sign = 1;
           if (a.getTime() > b.getTime()) { start = b; end = a; sign = -1; }
           const sa = fromISODateUTC(start);
@@ -393,10 +789,8 @@
         }
 
         function monthsBetween(start, end) {
-          // Whole calendar months difference, negative if end < start
           const s = fromISODateUTC(start); const e = fromISODateUTC(end);
           let months = (e.y - s.y) * 12 + (e.m - s.m);
-          // Adjust if end's day is before start's day
           if (e.d < s.d) months -= 1;
           return months;
         }
@@ -410,7 +804,7 @@
           } else if (unit === 'months') {
             const nm = m - 1 + amount;
             const ny = y + Math.floor(nm / 12);
-            const mo = ((nm % 12) + 12) % 12; // 0-11
+            const mo = ((nm % 12) + 12) % 12; 
             const maxd = daysInMonth(ny, mo+1);
             const nd = Math.min(d, maxd);
             return new Date(Date.UTC(ny, mo, nd));
@@ -429,18 +823,31 @@
           const out = els.diffResult;
           const a = dateFromInputs(els.diffStartTxt, els.diffStartCal);
           const b = dateFromInputs(els.diffEndTxt, els.diffEndCal);
-          if (!a || !b) { out.innerHTML = '<div class="muted">Enter both dates to see the difference.</div>'; return; }
+          if (!a || !b) { out.innerHTML = '<div class="result-empty">Enter both dates to see the difference.</div>'; return; }
+          
           const days = diffAbsDays(a,b);
           const weeks = Math.floor(days / 7);
           const remDays = days % 7;
           const cal = calendarDiff(a,b);
           const totalMonths = Math.abs(monthsBetween(a,b));
-          const yearsFloat = (Math.abs(cal.years) + cal.months/12 + cal.days/365.2425) * (cal.years < 0 ? -1 : 1);
+          
           out.innerHTML = `
-            <div><strong>Calendar:</strong> ${Math.abs(cal.years)} year(s), ${Math.abs(cal.months)} month(s), ${Math.abs(cal.days)} day(s)</div>
-            <div><strong>Total days:</strong> ${numberFmt(days)}</div>
-            <div><strong>Weeks:</strong> ${numberFmt(weeks)} week(s) and ${numberFmt(remDays)} day(s)</div>
-            <div><strong>Total months:</strong> ${numberFmt(totalMonths)}</div>
+            <div class="result-item">
+              <div class="result-label">Calendar Difference</div>
+              <div class="result-value result-highlight">${Math.abs(cal.years)}y ${Math.abs(cal.months)}m ${Math.abs(cal.days)}d</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Total Days</div>
+              <div class="result-value">${numberFmt(days)}</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Weeks</div>
+              <div class="result-value">${numberFmt(weeks)}w ${remDays}d</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Total Months</div>
+              <div class="result-value">${numberFmt(totalMonths)}</div>
+            </div>
           `;
         }
 
@@ -450,27 +857,41 @@
           const amt = Number(els.amount.value || '0');
           const unit = els.unit.value;
           const op = els.op.value;
-          if (!base) { out.innerHTML = '<div class="muted">Set base date and amount to see the result.</div>'; return; }
+          
+          if (!base) { out.innerHTML = '<div class="result-empty">Set base date and amount to see the result.</div>'; return; }
           if (!Number.isFinite(amt)) { out.textContent = 'Amount must be a number.'; return; }
+          
           const signed = (op === 'sub') ? -amt : amt;
           const result = addCalendar(base, signed, unit);
           const deltaDays = diffAbsDays(base, result);
           const cal = calendarDiff(base, result);
+          
           out.innerHTML = `
-            <div><strong>Result date:</strong> ${fmtMDY(result)} (<code>${toYMD(result)}</code>)</div>
-            <div><strong>Change (calendar):</strong> ${Math.abs(cal.years)} year(s), ${Math.abs(cal.months)} month(s), ${Math.abs(cal.days)} day(s)</div>
-            <div><strong>Total days moved:</strong> ${numberFmt(deltaDays)}</div>
+            <div class="result-item">
+              <div class="result-label">Result Date</div>
+              <div class="result-value result-highlight">${fmtMDY(result)}</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">ISO Date</div>
+              <div class="result-value"><code>${toYMD(result)}</code></div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Change</div>
+              <div class="result-value">${Math.abs(cal.years)}y ${Math.abs(cal.months)}m ${Math.abs(cal.days)}d</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Total Days Moved</div>
+              <div class="result-value">${numberFmt(deltaDays)}</div>
+            </div>
           `;
         }
 
         function onChange(){ renderDiff(); renderCalc(); }
 
-        // Wire pairs and seed defaults
         const diffStart = syncPair(els.diffStartTxt, els.diffStartCal, els.diffStartToday);
         const diffEnd = syncPair(els.diffEndTxt, els.diffEndCal, els.diffEndToday);
         const basePair = syncPair(els.baseTxt, els.baseCal, els.baseToday);
 
-        // Default both diff dates to today; base to today
         const now = new Date();
         const todayUTC = toISODateUTC(now.getUTCFullYear(), now.getUTCMonth()+1, now.getUTCDate());
         diffStart.setBoth(todayUTC);
@@ -492,4 +913,4 @@
       })();
     </script>
   </body>
-  </html>
+</html>
