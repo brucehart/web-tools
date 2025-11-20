@@ -1,391 +1,919 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TIFF Viewer</title>
-    <style>
-      :root { color-scheme: light dark; }
-      * { box-sizing: border-box; }
-      html, body { height: 100%; margin: 0; }
-      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; background: #f7f7f7; color: #111; }
-      @media (prefers-color-scheme: dark) { body { background: #0b0b0b; color: #eee; } }
-      header { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:0.8rem 1rem; border-bottom:1px solid #ddd; }
-      header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
-      main.layout { padding: 12px; display:grid; grid-template-columns: minmax(260px, 320px) 1fr; gap: 12px; align-items:start; }
-      @media (max-width: 960px) { main.layout { grid-template-columns: 1fr; } }
-      .sidebar { display:flex; flex-direction:column; gap:12px; }
-      .card { border:1px solid #ddd; border-radius:10px; background: rgba(127,127,127,0.06); padding:12px; }
-      .card h2 { margin:0 0 .5rem; font-size:1rem; }
-      label { display:block; font-size:.9rem; margin:.35rem 0; }
-      input[type="file"], input[type="text"], textarea { width:100%; }
-      textarea { min-height: 120px; resize: vertical; font:inherit; padding:8px; border-radius:8px; border:1px solid #ccc; background:transparent; color:inherit; }
-      input[type="color"] { width: 48px; height: 32px; padding: 0; border: 1px solid #ccc; border-radius: 6px; background: transparent; }
-      input[type="checkbox"] { width: 18px; height: 18px; }
-      button, .pill { appearance:none; border:1px solid #ccc; background:transparent; color:inherit; padding:8px 10px; border-radius:8px; cursor:pointer; font:inherit; }
-      button:hover, .pill:hover { background: rgba(127,127,127,0.12); }
-      .actions { display:flex; gap:8px; flex-wrap: wrap; }
-      .muted { color:#666; font-size:.9rem; }
-      .pill { text-decoration: none; display:inline-flex; align-items:center; gap:6px; }
-      .meta { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:8px; margin-top:8px; font-size:.9rem; }
-      .channel-grid { display:flex; flex-direction:column; gap:8px; }
-      .channel-row { display:grid; grid-template-columns: 1fr auto auto; align-items:center; gap:8px; padding:8px; border:1px solid #ccc; border-radius:8px; background: rgba(127,127,127,0.08); }
-      .viewer-card { height:100%; display:flex; flex-direction:column; gap:10px; min-width:0; }
-      .zoom-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-      .zoom-controls .spacer { flex:1 1 auto; }
-      input[type="range"] { width: 180px; }
-      .viewer-wrap { border:1px solid #ccc; border-radius:10px; padding:10px; background: linear-gradient(45deg, #ddd 25%, transparent 25%), linear-gradient(-45deg, #ddd 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ddd 75%), linear-gradient(-45deg, transparent 75%, #ddd 75%); background-size:20px 20px; background-position:0 0, 0 10px, 10px -10px, -10px 0px; display:flex; justify-content:flex-start; align-items:flex-start; overflow:auto; min-height: 360px; max-height: 80vh; width:100%; min-width:0; box-sizing:border-box; }
-      canvas { display:block; border:1px solid #ccc; border-radius:10px; background: transparent; }
-      #status { margin-top: 6px; font-size: .9rem; }
-      .error { color: #b00020; }
-    </style>
-  </head>
-  <body>
-    <header>
-      <h1>TIFF Viewer</h1>
-      <a href="/" class="pill" title="Home" aria-label="Home">🏠 Home</a>
-    </header>
-    <main class="layout">
-      <div class="sidebar">
-        <section class="card">
-          <h2>Load TIFF</h2>
-          <label>Upload file</label>
-          <input type="file" id="fileInput" accept=".tif,.tiff" />
-          <label style="margin-top:10px;">Base64-encoded TIFF (data URL or raw)</label>
-          <textarea id="base64Input" placeholder="Paste data:image/tiff;base64,... or raw base64"></textarea>
-          <div class="actions" style="margin-top:8px;">
-            <button id="loadBase64">Load base64</button>
-            <button id="clearBase64">Clear</button>
-          </div>
-          <div id="status" class="muted">Pick a TIFF file or paste a base64 string to begin.</div>
-          <div class="meta" id="meta">
-            <div><strong>Size:</strong> <span id="metaSize">–</span></div>
-            <div><strong>Channels:</strong> <span id="metaChannels">–</span></div>
-            <div><strong>Bit depth:</strong> <span id="metaBits">–</span></div>
-            <div><strong>Layout:</strong> <span id="metaLayout">–</span></div>
-          </div>
-        </section>
 
-        <section class="card">
-          <h2>Channels</h2>
-          <div id="channelContainer" class="channel-grid">
-            <div class="muted">Load a TIFF to configure channels.</div>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TIFF Viewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-app: #f8f9fa;
+      --bg-panel: #ffffff;
+      --border: #e2e8f0;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --danger: #ef4444;
+      --radius: 12px;
+      --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-app: #0f172a;
+        --bg-panel: #1e293b;
+        --border: #334155;
+        --text-main: #f1f5f9;
+        --text-muted: #94a3b8;
+        --primary: #60a5fa;
+        --primary-hover: #3b82f6;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-app);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      height: 60px;
+      padding: 0 1.5rem;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-icon {
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-main);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    .btn-icon:hover {
+      background: var(--bg-app);
+    }
+
+    /* Layout */
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 320px;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .sidebar-section {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-section h2 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin: 0 0 1rem 0;
+      font-weight: 600;
+    }
+
+    /* Controls */
+    .control-group {
+      margin-bottom: 1rem;
+    }
+
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    .file-drop-area {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 2rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .file-drop-area:hover,
+    .file-drop-area.drag-over {
+      border-color: var(--primary);
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .file-drop-area input[type="file"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .drop-msg {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
+      color: var(--text-main);
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      border-color: var(--text-muted);
+    }
+
+    .btn.primary {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .btn.primary:hover {
+      background: var(--primary-hover);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-app);
+      color: var(--text-main);
+      font-family: monospace;
+      font-size: 0.85rem;
+      resize: vertical;
+    }
+
+    /* Channel List */
+    .channel-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .channel-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      background: var(--bg-app);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .channel-info {
+      flex: 1;
+      font-size: 0.9rem;
+    }
+
+    .channel-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type="color"] {
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background: none;
+    }
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--primary);
+    }
+
+    .btn-sm {
+      padding: 2px 6px;
+      font-size: 0.75rem;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
+      cursor: pointer;
+    }
+
+    .btn-sm:hover {
+      background: var(--border);
+    }
+
+    /* Main Viewer */
+    .main-content {
+      flex: 1;
+      background: #e5e5e5;
+      /* Neutral gray for canvas bg */
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Checkerboard pattern */
+    .main-content::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(45deg, #ddd 25%, transparent 25%),
+        linear-gradient(-45deg, #ddd 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ddd 75%),
+        linear-gradient(-45deg, transparent 75%, #ddd 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .viewer-container {
+      overflow: auto;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    canvas {
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      background: transparent;
+      max-width: none;
+      /* Allow canvas to exceed container for zoom */
+    }
+
+    /* Floating Toolbar */
+    .toolbar {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-panel);
+      padding: 8px 12px;
+      border-radius: 50px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid var(--border);
+      z-index: 10;
+    }
+
+    .toolbar span {
+      font-variant-numeric: tabular-nums;
+      font-size: 0.9rem;
+      min-width: 4ch;
+      text-align: center;
+    }
+
+    .toolbar button {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-main);
+    }
+
+    .toolbar button:hover {
+      background: var(--bg-app);
+    }
+
+    /* Meta Info */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      font-size: 0.85rem;
+    }
+
+    .meta-item strong {
+      display: block;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: var(--bg-panel);
+      padding: 8px 16px;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      font-size: 0.85rem;
+      border: 1px solid var(--border);
+      max-width: 300px;
+      display: none;
+      z-index: 20;
+    }
+
+    .status-bar.show {
+      display: block;
+      animation: slideIn 0.3s ease;
+    }
+
+    .status-bar.error {
+      border-left: 4px solid var(--danger);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Drag Overlay */
+    .drag-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(59, 130, 246, 0.9);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 2rem;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .drag-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="drag-overlay" id="dragOverlay">Drop TIFF file here</div>
+
+  <header>
+    <h1>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <polyline points="21 15 16 10 5 21"></polyline>
+      </svg>
+      TIFF Viewer
+    </h1>
+    <a href="/" class="btn-icon" title="Home">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+    </a>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h2>Input</h2>
+        <div class="control-group">
+          <div class="file-drop-area" id="dropZone">
+            <input type="file" id="fileInput" accept=".tif,.tiff" />
+            <div class="drop-msg">
+              <strong>Click to upload</strong><br>
+              or drag and drop
+            </div>
           </div>
-        </section>
+        </div>
+        <div class="control-group">
+          <label>Base64 Data</label>
+          <textarea id="base64Input" placeholder="Paste base64 encoded TIFF..."></textarea>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="btn primary" id="loadBase64">Load</button>
+            <button class="btn" id="clearBase64">Clear</button>
+          </div>
+        </div>
       </div>
 
-      <section class="card viewer-card">
-        <h2>Viewer</h2>
-        <div class="zoom-controls">
-          <div class="inline">
-            <button id="zoomOut" title="Zoom out">−</button>
-            <input type="range" id="zoomSlider" min="10" max="400" value="100" />
-            <button id="zoomIn" title="Zoom in">+</button>
+      <div class="sidebar-section">
+        <h2>Image Info</h2>
+        <div class="meta-grid" id="metaGrid">
+          <div class="meta-item"><strong>Size</strong><span id="metaSize">–</span></div>
+          <div class="meta-item"><strong>Channels</strong><span id="metaChannels">–</span></div>
+          <div class="meta-item"><strong>Bit Depth</strong><span id="metaBits">–</span></div>
+          <div class="meta-item"><strong>Layout</strong><span id="metaLayout">–</span></div>
+        </div>
+      </div>
+
+      <div class="sidebar-section" style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+        <h2>Channels</h2>
+        <div id="channelContainer" class="channel-list" style="overflow-y: auto;">
+          <div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 1rem;">
+            No image loaded
           </div>
-          <span id="zoomLabel" class="muted">100%</span>
-          <span class="spacer"></span>
-          <button id="fitWidth">Fit width</button>
         </div>
-        <div class="viewer-wrap" id="viewerWrap">
-          <canvas id="viewer" width="600" height="400"></canvas>
-        </div>
-      </section>
+      </div>
+    </aside>
+
+    <main class="main-content" id="mainContent">
+      <div class="status-bar" id="statusBar"></div>
+
+      <div class="viewer-container" id="viewerContainer">
+        <canvas id="viewer"></canvas>
+      </div>
+
+      <div class="toolbar">
+        <button id="zoomOut" title="Zoom Out">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+        </button>
+        <span id="zoomLabel">100%</span>
+        <button id="zoomIn" title="Zoom In">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="11" y1="8" x2="11" y2="14"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+        </button>
+        <div style="width:1px; height:16px; background:var(--border); margin:0 4px;"></div>
+        <button id="fitScreen" title="Fit to Screen">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
+            </path>
+          </svg>
+        </button>
+        <button id="resetView" title="Reset 100%">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12"></path>
+            <path d="M3 3v9h9"></path>
+          </svg>
+        </button>
+      </div>
     </main>
+  </div>
 
-    <script>
-      (function() {
-        const fileInput = document.getElementById('fileInput');
-        const base64Input = document.getElementById('base64Input');
-        const loadBase64Btn = document.getElementById('loadBase64');
-        const clearBase64Btn = document.getElementById('clearBase64');
-        const channelContainer = document.getElementById('channelContainer');
-        const canvas = document.getElementById('viewer');
-        const viewerWrap = document.getElementById('viewerWrap');
-        const zoomSlider = document.getElementById('zoomSlider');
-        const zoomOutBtn = document.getElementById('zoomOut');
-        const zoomInBtn = document.getElementById('zoomIn');
-        const fitWidthBtn = document.getElementById('fitWidth');
-        const zoomLabel = document.getElementById('zoomLabel');
-        const statusEl = document.getElementById('status');
-        const metaSize = document.getElementById('metaSize');
-        const metaChannels = document.getElementById('metaChannels');
-        const metaBits = document.getElementById('metaBits');
-        const metaLayout = document.getElementById('metaLayout');
+  <script>
+    (function () {
+      // --- Elements ---
+      const fileInput = document.getElementById('fileInput');
+      const base64Input = document.getElementById('base64Input');
+      const loadBase64Btn = document.getElementById('loadBase64');
+      const clearBase64Btn = document.getElementById('clearBase64');
+      const channelContainer = document.getElementById('channelContainer');
+      const canvas = document.getElementById('viewer');
+      const viewerContainer = document.getElementById('viewerContainer');
+      const zoomOutBtn = document.getElementById('zoomOut');
+      const zoomInBtn = document.getElementById('zoomIn');
+      const fitScreenBtn = document.getElementById('fitScreen');
+      const resetViewBtn = document.getElementById('resetView');
+      const zoomLabel = document.getElementById('zoomLabel');
+      const statusBar = document.getElementById('statusBar');
+      const dragOverlay = document.getElementById('dragOverlay');
 
-        const colorDefaults = [
-          [255, 0, 0],
-          [0, 255, 0],
-          [0, 0, 255],
-          [255, 255, 0],
-          [255, 0, 255],
-          [0, 255, 255],
-        ];
+      // Meta elements
+      const metaSize = document.getElementById('metaSize');
+      const metaChannels = document.getElementById('metaChannels');
+      const metaBits = document.getElementById('metaBits');
+      const metaLayout = document.getElementById('metaLayout');
 
-        let channelConfig = [];
-        const state = {
-          samples: null,
-          width: 0,
-          height: 0,
-          sampleCount: 0,
-          bitsPerSample: [],
-          planar: false,
-        };
-        let lastRgba = null;
-        let zoom = 1;
-        let fitMode = true;
+      // --- State ---
+      const colorDefaults = [
+        [255, 0, 0], [0, 255, 0], [0, 0, 255],
+        [255, 255, 0], [255, 0, 255], [0, 255, 255],
+      ];
 
-        fileInput.addEventListener('change', async (e) => {
-          const file = e.target.files && e.target.files[0];
-          if (!file) return;
-          try {
-            setStatus('Reading file...');
-            const buffer = await file.arrayBuffer();
-            await loadTiff(buffer);
-          } catch (err) {
-            setStatus(err.message || 'Failed to read file', true);
-          }
-        });
+      let channelConfig = [];
+      const state = {
+        samples: null,
+        width: 0,
+        height: 0,
+        sampleCount: 0,
+        bitsPerSample: [],
+        planar: false,
+      };
 
-        loadBase64Btn.addEventListener('click', async () => {
-          const raw = base64Input.value.trim();
-          if (!raw) {
-            setStatus('Paste a base64 string first.', true);
-            return;
-          }
-          try {
-            const buffer = base64ToArrayBuffer(raw);
-            await loadTiff(buffer);
-          } catch (err) {
-            setStatus(err.message || 'Failed to decode base64', true);
-          }
-        });
+      let zoom = 1;
+      let fitMode = true;
 
-        clearBase64Btn.addEventListener('click', () => {
-          base64Input.value = '';
-          setStatus('Cleared input.');
-        });
+      // --- Event Listeners ---
 
-        function setStatus(message, isError) {
-          statusEl.textContent = message;
-          statusEl.classList.toggle('error', !!isError);
+      // File Input
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        await handleFile(file);
+      });
+
+      // Base64 Input
+      loadBase64Btn.addEventListener('click', async () => {
+        const raw = base64Input.value.trim();
+        if (!raw) {
+          showStatus('Please paste a base64 string first.', true);
+          return;
         }
-
-        let utifPromise = null;
-        function ensureUtif() {
-          if (typeof window.UTIF !== 'undefined') return Promise.resolve(window.UTIF);
-          if (!utifPromise) {
-            utifPromise = new Promise((resolve, reject) => {
-              const script = document.createElement('script');
-              script.src = '/vendor/utif.js';
-              script.async = true;
-              script.onload = () => resolve(window.UTIF);
-              script.onerror = () => reject(new Error('Failed to load UTIF library.'));
-              document.head.appendChild(script);
-            });
-          }
-          return utifPromise;
+        try {
+          const buffer = base64ToArrayBuffer(raw);
+          await loadTiff(buffer);
+        } catch (err) {
+          showStatus(err.message || 'Failed to decode base64', true);
         }
+      });
 
-        function base64ToArrayBuffer(input) {
-          const trimmed = input.trim();
-          const base64 = trimmed.includes(',') && trimmed.startsWith('data:')
-            ? trimmed.split(',')[1]
-            : trimmed;
-          if (!base64) throw new Error('No base64 data found');
-          const binaryString = atob(base64);
-          const len = binaryString.length;
-          const bytes = new Uint8Array(len);
-          for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
-          return bytes.buffer;
+      clearBase64Btn.addEventListener('click', () => {
+        base64Input.value = '';
+        showStatus('Cleared input.');
+      });
+
+      // Drag & Drop (Window)
+      window.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dragOverlay.classList.add('active');
+      });
+
+      dragOverlay.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dragOverlay.classList.remove('active');
+      });
+
+      dragOverlay.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        dragOverlay.classList.remove('active');
+        const file = e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file) await handleFile(file);
+      });
+
+      // Zoom Controls
+      zoomInBtn.addEventListener('click', () => setZoom(zoom * 1.25));
+      zoomOutBtn.addEventListener('click', () => setZoom(zoom / 1.25));
+      fitScreenBtn.addEventListener('click', () => { fitMode = true; applyZoom(true); });
+      resetViewBtn.addEventListener('click', () => { fitMode = false; setZoom(1); });
+
+      // Mouse Wheel Zoom
+      viewerContainer.addEventListener('wheel', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          const delta = e.deltaY > 0 ? 0.9 : 1.1;
+          setZoom(zoom * delta);
         }
+      }, { passive: false });
 
-        async function loadTiff(buffer) {
-          setStatus('Decoding TIFF...');
-          const UTIF = await ensureUtif();
-          const ifds = UTIF.decode(buffer);
-          if (!ifds || ifds.length === 0) throw new Error('No images found in TIFF.');
-          const first = ifds[0];
-          if (typeof UTIF.decodeImages === 'function') {
-            UTIF.decodeImages(buffer, ifds);
-          } else if (typeof UTIF.decodeImage === 'function') {
-            UTIF.decodeImage(buffer, first);
-          } else {
-            throw new Error('Unsupported UTIF version: missing decode routine.');
-          }
-          const img = first;
-          const { width, height } = img;
-          const data = img.data;
-          if (!data || !width || !height) throw new Error('Missing image data.');
-          const bits = Array.isArray(img.bitsPerSample) ? img.bitsPerSample : [img.bitsPerSample || 8];
-          const baseChannels = Math.max(bits.length || 0, img.samplesPerPixel || 0, 1);
-          const strideGuess = Math.max(baseChannels, Math.round(data.length / (width * height)) || 1);
-          const sampleCount = img.planarConfiguration === 2 ? baseChannels || strideGuess : strideGuess;
-          if (data.length < width * height) throw new Error('Unexpected TIFF layout; not enough data.');
-          state.samples = data;
-          state.width = width;
-          state.height = height;
-          state.sampleCount = sampleCount;
-          state.bitsPerSample = Array.from({ length: sampleCount }, (_, i) => bits[i] ?? bits[bits.length - 1] ?? bits[0] ?? 8);
-          state.planar = img.planarConfiguration === 2;
-          if (!channelConfig.length || channelConfig.length !== sampleCount) {
-            channelConfig = Array.from({ length: sampleCount }, (_, i) => ({
-              enabled: true,
-              color: colorDefaults[i] ? colorDefaults[i].slice() : [255, 255, 255],
-            }));
-          } else if (channelConfig.length > sampleCount) {
-            channelConfig = channelConfig.slice(0, sampleCount);
-          }
-          updateMeta();
-          buildChannelUI();
-          fitMode = true;
-          redraw();
-          applyZoom(true);
-          setStatus(`Loaded ${width}×${height} with ${sampleCount} channel${sampleCount === 1 ? '' : 's'}.`);
+      window.addEventListener('resize', () => {
+        if (fitMode) applyZoom(true);
+      });
+
+      // --- Core Functions ---
+
+      async function handleFile(file) {
+        try {
+          showStatus('Reading file...');
+          const buffer = await file.arrayBuffer();
+          await loadTiff(buffer);
+        } catch (err) {
+          showStatus(err.message || 'Failed to read file', true);
         }
+      }
 
-        function rgbToHex([r, g, b]) {
-          return '#' + [r, g, b].map((x) => Math.max(0, Math.min(255, x)).toString(16).padStart(2, '0')).join('');
-        }
+      function showStatus(message, isError = false) {
+        statusBar.textContent = message;
+        statusBar.classList.toggle('error', isError);
+        statusBar.classList.add('show');
+        setTimeout(() => {
+          statusBar.classList.remove('show');
+        }, 4000);
+      }
 
-        function hexToRgb(hex) {
-          const m = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(hex);
-          if (!m) return [255, 255, 255];
-          return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
-        }
-
-        function buildChannelUI() {
-          channelContainer.innerHTML = '';
-          if (!state.samples) {
-            const empty = document.createElement('div');
-            empty.className = 'muted';
-            empty.textContent = 'Load a TIFF to configure channels.';
-            channelContainer.appendChild(empty);
-            return;
-          }
-          channelConfig.forEach((cfg, idx) => {
-            const row = document.createElement('div');
-            row.className = 'channel-row';
-            const label = document.createElement('div');
-            label.innerHTML = `<strong>Channel ${idx + 1}</strong> <span class="muted">(${state.bitsPerSample[idx] || state.bitsPerSample[0]}-bit)</span>`;
-            const toggle = document.createElement('input');
-            toggle.type = 'checkbox';
-            toggle.checked = cfg.enabled;
-            toggle.addEventListener('change', () => {
-              cfg.enabled = toggle.checked;
-              redraw();
-            });
-            const color = document.createElement('input');
-            color.type = 'color';
-            color.value = rgbToHex(cfg.color);
-            color.title = `Color for channel ${idx + 1}`;
-            color.addEventListener('input', () => {
-              cfg.color = hexToRgb(color.value);
-              redraw();
-            });
-            row.appendChild(label);
-            row.appendChild(toggle);
-            row.appendChild(color);
-            channelContainer.appendChild(row);
+      let utifPromise = null;
+      function ensureUtif() {
+        if (typeof window.UTIF !== 'undefined') return Promise.resolve(window.UTIF);
+        if (!utifPromise) {
+          utifPromise = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'vendor/utif.js';
+            script.async = true;
+            script.onload = () => resolve(window.UTIF);
+            script.onerror = () => reject(new Error('Failed to load UTIF library.'));
+            document.head.appendChild(script);
           });
         }
+        return utifPromise;
+      }
 
-        function mixChannels(samples, width, height, sampleCount, config, bits, planar) {
-          const out = new Uint8ClampedArray(width * height * 4);
-          const perChannelMax = bits.map((b) => {
-            const bitsNum = Number(b) || 8;
-            return Math.max(1, Math.pow(2, bitsNum) - 1);
+      function base64ToArrayBuffer(input) {
+        const trimmed = input.trim();
+        const base64 = trimmed.includes(',') && trimmed.startsWith('data:')
+          ? trimmed.split(',')[1]
+          : trimmed;
+        if (!base64) throw new Error('No base64 data found');
+        const binaryString = atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+        return bytes.buffer;
+      }
+
+      async function loadTiff(buffer) {
+        showStatus('Decoding TIFF...');
+        const UTIF = await ensureUtif();
+        const ifds = UTIF.decode(buffer);
+        if (!ifds || ifds.length === 0) throw new Error('No images found in TIFF.');
+
+        const first = ifds[0];
+        if (typeof UTIF.decodeImages === 'function') {
+          UTIF.decodeImages(buffer, ifds);
+        } else if (typeof UTIF.decodeImage === 'function') {
+          UTIF.decodeImage(buffer, first);
+        } else {
+          throw new Error('Unsupported UTIF version: missing decode routine.');
+        }
+
+        const img = first;
+        const { width, height } = img;
+        const data = img.data;
+
+        if (!data || !width || !height) throw new Error('Missing image data.');
+
+        const bits = Array.isArray(img.bitsPerSample) ? img.bitsPerSample : [img.bitsPerSample || 8];
+        const baseChannels = Math.max(bits.length || 0, img.samplesPerPixel || 0, 1);
+        const strideGuess = Math.max(baseChannels, Math.round(data.length / (width * height)) || 1);
+        const sampleCount = img.planarConfiguration === 2 ? baseChannels || strideGuess : strideGuess;
+
+        if (data.length < width * height) throw new Error('Unexpected TIFF layout; not enough data.');
+
+        state.samples = data;
+        state.width = width;
+        state.height = height;
+        state.sampleCount = sampleCount;
+        state.bitsPerSample = Array.from({ length: sampleCount }, (_, i) => bits[i] ?? bits[bits.length - 1] ?? bits[0] ?? 8);
+        state.planar = img.planarConfiguration === 2;
+
+        // Reset or Init Channel Config
+        if (!channelConfig.length || channelConfig.length !== sampleCount) {
+          channelConfig = Array.from({ length: sampleCount }, (_, i) => ({
+            enabled: true,
+            color: colorDefaults[i] ? colorDefaults[i].slice() : [255, 255, 255],
+          }));
+        } else if (channelConfig.length > sampleCount) {
+          channelConfig = channelConfig.slice(0, sampleCount);
+        }
+
+        updateMeta();
+        buildChannelUI();
+        fitMode = true;
+        redraw();
+        applyZoom(true);
+        showStatus(`Loaded ${width}×${height} with ${sampleCount} channel${sampleCount === 1 ? '' : 's'}.`);
+      }
+
+      function rgbToHex([r, g, b]) {
+        return '#' + [r, g, b].map((x) => Math.max(0, Math.min(255, x)).toString(16).padStart(2, '0')).join('');
+      }
+
+      function hexToRgb(hex) {
+        const m = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(hex);
+        if (!m) return [255, 255, 255];
+        return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
+      }
+
+      function buildChannelUI() {
+        channelContainer.innerHTML = '';
+        if (!state.samples) {
+          channelContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 1rem;">No image loaded</div>';
+          return;
+        }
+
+        channelConfig.forEach((cfg, idx) => {
+          const item = document.createElement('div');
+          item.className = 'channel-item';
+
+          const info = document.createElement('div');
+          info.className = 'channel-info';
+          info.innerHTML = `<strong>Ch ${idx + 1}</strong> <span style="color:var(--text-muted)">(${state.bitsPerSample[idx] || 8}-bit)</span>`;
+
+          const controls = document.createElement('div');
+          controls.className = 'channel-controls';
+
+          const toggle = document.createElement('input');
+          toggle.type = 'checkbox';
+          toggle.checked = cfg.enabled;
+          toggle.title = 'Toggle Channel';
+          toggle.addEventListener('change', () => {
+            cfg.enabled = toggle.checked;
+            redraw();
           });
-          const pxCount = width * height;
-          for (let px = 0; px < pxCount; px++) {
-            let r = 0;
-            let g = 0;
-            let b = 0;
-            for (let c = 0; c < sampleCount; c++) {
-              const cfg = config[c];
-              if (!cfg || !cfg.enabled) continue;
-              const offset = planar ? c * pxCount + px : px * sampleCount + c;
-              const sample = samples[offset];
-              const max = perChannelMax[c] || perChannelMax[0] || 255;
-              const value = sample === undefined ? 0 : sample / max;
-              r += value * cfg.color[0];
-              g += value * cfg.color[1];
-              b += value * cfg.color[2];
-            }
-            const outIdx = px * 4;
-            out[outIdx] = r > 255 ? 255 : r;
-            out[outIdx + 1] = g > 255 ? 255 : g;
-            out[outIdx + 2] = b > 255 ? 255 : b;
-            out[outIdx + 3] = 255;
+
+          const color = document.createElement('input');
+          color.type = 'color';
+          color.value = rgbToHex(cfg.color);
+          color.title = 'Channel Color';
+          color.addEventListener('input', () => {
+            cfg.color = hexToRgb(color.value);
+            redraw();
+          });
+
+          const soloBtn = document.createElement('button');
+          soloBtn.className = 'btn-sm';
+          soloBtn.textContent = 'Solo';
+          soloBtn.title = 'Solo this channel';
+          soloBtn.addEventListener('click', () => {
+            channelConfig.forEach((c, i) => c.enabled = (i === idx));
+            buildChannelUI(); // Rebuild to update checkboxes
+            redraw();
+          });
+
+          controls.appendChild(soloBtn);
+          controls.appendChild(color);
+          controls.appendChild(toggle);
+
+          item.appendChild(info);
+          item.appendChild(controls);
+          channelContainer.appendChild(item);
+        });
+      }
+
+      function mixChannels(samples, width, height, sampleCount, config, bits, planar) {
+        const out = new Uint8ClampedArray(width * height * 4);
+        const perChannelMax = bits.map((b) => {
+          const bitsNum = Number(b) || 8;
+          return Math.max(1, Math.pow(2, bitsNum) - 1);
+        });
+        const pxCount = width * height;
+
+        for (let px = 0; px < pxCount; px++) {
+          let r = 0, g = 0, b = 0;
+
+          for (let c = 0; c < sampleCount; c++) {
+            const cfg = config[c];
+            if (!cfg || !cfg.enabled) continue;
+
+            const offset = planar ? c * pxCount + px : px * sampleCount + c;
+            const sample = samples[offset];
+            const max = perChannelMax[c] || perChannelMax[0] || 255;
+            const value = sample === undefined ? 0 : sample / max;
+
+            r += value * cfg.color[0];
+            g += value * cfg.color[1];
+            b += value * cfg.color[2];
           }
-          return out;
+
+          const outIdx = px * 4;
+          out[outIdx] = r > 255 ? 255 : r;
+          out[outIdx + 1] = g > 255 ? 255 : g;
+          out[outIdx + 2] = b > 255 ? 255 : b;
+          out[outIdx + 3] = 255;
+        }
+        return out;
+      }
+
+      function renderToCanvas(canvasEl, rgbaData, width, height) {
+        const ctx = canvasEl.getContext('2d');
+        canvasEl.width = width;
+        canvasEl.height = height;
+        const imageData = new ImageData(rgbaData, width, height);
+        ctx.putImageData(imageData, 0, 0);
+        applyZoom();
+      }
+
+      function redraw() {
+        if (!state.samples) return;
+        const rgba = mixChannels(
+          state.samples,
+          state.width,
+          state.height,
+          state.sampleCount,
+          channelConfig,
+          state.bitsPerSample,
+          state.planar
+        );
+        renderToCanvas(canvas, rgba, state.width, state.height);
+      }
+
+      function updateMeta() {
+        metaSize.textContent = state.samples ? `${state.width} × ${state.height}` : '–';
+        metaChannels.textContent = state.samples ? String(state.sampleCount) : '–';
+        metaBits.textContent = state.samples ? state.bitsPerSample.join(', ') : '–';
+        metaLayout.textContent = state.samples ? (state.planar ? 'Planar' : 'Interleaved') : '–';
+      }
+
+      function applyZoom(forceFit = false) {
+        if (!state.width || !state.height) return;
+
+        if (fitMode || forceFit) {
+          // Calculate fit zoom
+          const containerW = viewerContainer.clientWidth - 40; // padding
+          const containerH = viewerContainer.clientHeight - 40;
+
+          const scaleW = containerW / state.width;
+          const scaleH = containerH / state.height;
+
+          zoom = Math.min(scaleW, scaleH, 1); // Don't zoom in by default if image is small
+          if (zoom < 0.05) zoom = 0.05;
         }
 
-        function renderToCanvas(canvasEl, rgbaData, width, height) {
-          const ctx = canvasEl.getContext('2d');
-          canvasEl.width = width;
-          canvasEl.height = height;
-          const imageData = new ImageData(rgbaData, width, height);
-          ctx.putImageData(imageData, 0, 0);
-          applyZoom();
-        }
+        const scaledW = state.width * zoom;
+        const scaledH = state.height * zoom;
 
-        function redraw() {
-          if (!state.samples) return;
-          lastRgba = mixChannels(
-            state.samples,
-            state.width,
-            state.height,
-            state.sampleCount,
-            channelConfig,
-            state.bitsPerSample,
-            state.planar
-          );
-          renderToCanvas(canvas, lastRgba, state.width, state.height);
-        }
+        canvas.style.width = `${scaledW}px`;
+        canvas.style.height = `${scaledH}px`;
 
-        function updateMeta() {
-          metaSize.textContent = state.samples ? `${state.width} × ${state.height}` : '–';
-          metaChannels.textContent = state.samples ? String(state.sampleCount) : '–';
-          metaBits.textContent = state.samples ? state.bitsPerSample.join(', ') : '–';
-          metaLayout.textContent = state.samples ? (state.planar ? 'Planar (separate)' : 'Chunky (interleaved)') : '–';
-        }
+        zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
+      }
 
-        function applyZoom(forceFit = false) {
-          if (!state.width || !state.height) return;
-          if (fitMode || forceFit) {
-            const wrapWidth = viewerWrap?.clientWidth ? Math.max(1, viewerWrap.clientWidth - 20) : state.width;
-            zoom = Math.max(0.05, wrapWidth / state.width);
-          }
-          const scaledW = state.width * zoom;
-          const scaledH = state.height * zoom;
-          canvas.style.width = `${scaledW}px`;
-          canvas.style.height = `${scaledH}px`;
-          if (zoomSlider) zoomSlider.value = String(Math.round(zoom * 100));
-          if (zoomLabel) zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
-        }
+      function setZoom(newZoom) {
+        const clamped = Math.max(0.05, Math.min(newZoom, 10));
+        zoom = clamped;
+        fitMode = false;
+        applyZoom();
+      }
 
-        function setZoom(newZoom, markManual = true) {
-          const clamped = Math.max(0.05, Math.min(newZoom, 8));
-          zoom = clamped;
-          if (markManual) fitMode = false;
-          applyZoom();
-        }
+    })();
+  </script>
+</body>
 
-        zoomInBtn?.addEventListener('click', () => setZoom(zoom * 1.25));
-        zoomOutBtn?.addEventListener('click', () => setZoom(zoom / 1.25));
-        zoomSlider?.addEventListener('input', (e) => {
-          const val = Number(e.target.value) || 100;
-          setZoom(val / 100);
-        });
-        fitWidthBtn?.addEventListener('click', () => {
-          fitMode = true;
-          applyZoom(true);
-        });
-
-        window.addEventListener('resize', () => {
-          if (fitMode) applyZoom(true);
-        });
-      })();
-    </script>
-  </body>
 </html>
