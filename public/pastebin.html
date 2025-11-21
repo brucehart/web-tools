@@ -6,55 +6,89 @@
     <title>Pastebin</title>
     <style>
       :root {
-        color-scheme: light dark;
-        --bg: #ffffff;
-        --fg: #111111;
-        --header-bg: #2f2f2f;
-        --header-fg: #f3f3f3;
-        --border: #cfcfcf;
-        --pane-bg: #f6f6f6;
-        --muted: #666666;
-        --accent: #7aa2f7;
+        color-scheme: light;
+        --bg: #f4f6fb;
+        --fg: #0f172a;
+        --header-bg: #0f172a;
+        --header-fg: #f8fafc;
+        --panel: #ffffff;
+        --border: #d7dce5;
+        --pane-bg: #ffffff;
+        --muted: #52607a;
+        --accent: #2f7cf6;
+        --accent-soft: #e8f1ff;
+        --shadow: 0 14px 30px rgba(12, 30, 65, 0.16);
       }
       [data-theme="dark"] {
-        --bg: #121212;
-        --fg: #eaeaea;
-        --header-bg: #2f2f2f;
-        --header-fg: #f3f3f3;
-        --border: #3a3a3a;
-        --pane-bg: #1a1a1a;
-        --muted: #9aa0a6;
+        color-scheme: dark;
+        --bg: #0b1020;
+        --fg: #e5edff;
+        --header-bg: #0f172a;
+        --header-fg: #f8fafc;
+        --panel: #0f172a;
+        --border: #1f2742;
+        --pane-bg: #0f172a;
+        --muted: #91a1c4;
         --accent: #7aa2f7;
+        --accent-soft: rgba(122, 162, 247, 0.12);
+        --shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
       }
       * { box-sizing: border-box; }
       html, body { height: 100%; margin: 0; }
-      body { background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; }
-      header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); background: var(--header-bg); color: var(--header-fg); position: sticky; top: 0; z-index: 10; }
-      header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
-      header .actions { display: flex; gap: 8px; align-items: center; }
-      .icon-btn { appearance: none; border: 1px solid var(--border); background: transparent; color: inherit; padding: 6px 10px; border-radius: 8px; font-size: 0.9rem; line-height: 1; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-      .icon-btn:hover { background: rgba(127,127,127,0.12); }
-      h1 { margin: 0; font-size: 1.15rem; }
-      main { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; }
-      .panel { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; background: var(--pane-bg); }
-      .panel header { border-bottom: 1px solid var(--border); padding: .5rem .75rem; }
-      .panel .content { padding: .75rem; display: flex; gap: 8px; flex-direction: column; }
-      textarea { width: 100%; min-height: 220px; resize: vertical; padding: .75rem; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: inherit; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 14px; }
-      input, select, button { font: inherit; padding: .5rem .6rem; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: inherit; }
+      body { background: radial-gradient(circle at 20% 20%, rgba(47,124,246,0.08), transparent 25%), radial-gradient(circle at 80% 0%, rgba(122,162,247,0.08), transparent 25%), var(--bg); color: var(--fg); font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; }
+      .app-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border); background: var(--header-bg); color: var(--header-fg); position: sticky; top: 0; z-index: 10; box-shadow: 0 4px 16px rgba(0,0,0,0.24); }
+      .app-header h1 { margin: 0; font-size: 1.05rem; letter-spacing: 0.5px; text-transform: uppercase; }
+      .app-header .actions { display: flex; gap: 8px; align-items: center; }
+      .icon-btn { appearance: none; border: 1px solid var(--border); background: rgba(255,255,255,0.08); color: inherit; padding: 6px 10px; border-radius: 10px; font-size: 0.9rem; line-height: 1; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+      .icon-btn:hover { background: rgba(255,255,255,0.12); }
+      .page { max-width: 1200px; margin: 0 auto; padding: 16px 14px 40px; }
+      .topline { display: grid; grid-template-columns: 1.8fr 1.2fr; gap: 12px; align-items: center; margin: 14px 0; border: 1px solid var(--border); background: linear-gradient(135deg, rgba(47,124,246,0.12), rgba(14,43,121,0.08)), var(--pane-bg); color: var(--fg); border-radius: 14px; padding: 16px 18px; box-shadow: var(--shadow); }
+      .topline h2 { margin: 6px 0 4px; font-size: 1.2rem; }
+      .topline p { margin: 4px 0 0; }
+      main { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; align-items: start; }
+      .panel { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; background: var(--pane-bg); box-shadow: var(--shadow); }
+      .panel header { border-bottom: 1px solid var(--border); padding: .7rem .9rem; background: rgba(255,255,255,0.02); }
+      .panel .content { padding: .9rem; display: flex; gap: 10px; flex-direction: column; }
+      textarea { width: 100%; min-height: 260px; resize: vertical; padding: .8rem .85rem; border: 1px solid var(--border); border-radius: 12px; background: transparent; color: inherit; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 14px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); }
+      textarea:focus, input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+      input, select, button { font: inherit; padding: .55rem .65rem; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: inherit; }
+      button { cursor: pointer; }
       .row { display: flex; gap: 8px; align-items: center; }
+      .wrap { flex-wrap: wrap; }
+      .between { justify-content: space-between; }
       .grow { flex: 1; }
-      .muted { color: var(--muted); font-size: .9rem; }
-      .list { padding: .5rem; max-height: 420px; overflow: auto; }
-      .list-item { display: flex; justify-content: space-between; align-items: center; padding: .5rem; border-bottom: 1px solid var(--border); gap: 8px; }
-      .list-item a { text-decoration: none; }
-      .pill { font-size: .75rem; border: 1px solid var(--border); border-radius: 999px; padding: .15rem .5rem; }
+      .muted { color: var(--muted); font-size: .95rem; }
+      .small { font-size: .85rem; }
+      .list { padding: .5rem; max-height: 440px; overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+      .list-item { display: grid; grid-template-columns: 1fr repeat(3, auto); align-items: center; padding: .65rem .7rem; border: 1px solid var(--border); border-radius: 10px; gap: 8px; background: rgba(255,255,255,0.02); }
+      .list-item a { text-decoration: none; color: inherit; font-weight: 600; }
+      .pill { font-size: .8rem; border: 1px solid var(--border); border-radius: 999px; padding: .25rem .65rem; background: var(--accent-soft); }
+      .pill.accent { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+      .pill.subtle { background: transparent; }
       .right { margin-left: auto; }
-      .btn-danger { background:#d9534f; border-color:#d43f3a; color:white }
-      @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+      .btn-danger { background:#d9534f; border-color:#d43f3a; color:white; }
+      .primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(47,124,246,0.35); }
+      .ghost { background: rgba(255,255,255,0.05); border-style: dashed; }
+      .kicker { text-transform: uppercase; letter-spacing: 1px; font-size: .85rem; color: var(--muted); }
+      .chip-row { display:flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+      .status-block { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; justify-content: center; }
+      .status-pill { padding: .4rem .8rem; border-radius: 999px; border: 1px solid var(--border); background: rgba(255,255,255,0.02); font-weight: 600; }
+      .status-pill[data-variant="local"] { border-color: #d97706; color: #b45309; background: rgba(217,119,6,0.15); }
+      .status-pill[data-variant="account"] { border-color: #22c55e; color: #15803d; background: rgba(34,197,94,0.15); }
+      .status-pill[data-variant="loading"] { border-style: dashed; }
+      .callout { border: 1px dashed var(--border); border-radius: 12px; padding: .65rem .75rem; background: rgba(255,255,255,0.02); }
+      .section-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: .65rem .75rem; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); }
+      .section-header strong { font-size: 1rem; }
+      .list-actions { display: flex; gap: 8px; align-items: center; }
+      .input-chip { padding: .5rem .65rem; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.02); }
+      .result-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .error { color: #e11d48; }
+      @media (max-width: 1100px) { main { grid-template-columns: 1fr; } .topline { grid-template-columns: 1fr; } }
+      @media (max-width: 600px) { .app-header h1 { font-size: 1rem; } textarea { min-height: 200px; } }
     </style>
   </head>
   <body>
-    <header>
+    <header class="app-header">
       <h1>Pastebin</h1>
       <div class="actions">
         <a href="/" class="icon-btn" title="Home" aria-label="Home">🏠</a>
@@ -62,43 +96,92 @@
         <div id="authArea" class="row"></div>
       </div>
     </header>
-    <main>
-      <section id="viewPanel" class="panel" style="display:none">
-        <header><strong>View Paste</strong></header>
-        <div class="content">
-          <div class="row"><input id="vtitle" class="grow" readonly /></div>
-          <textarea id="vcontent" readonly></textarea>
-          <div class="row" style="justify-content: space-between; align-items: center;">
-            <div class="muted" id="vmeta"></div>
-            <button id="deleteBtn" style="display:none; background:#d9534f; border-color:#d43f3a; color:white">Delete</button>
+    <div class="page">
+      <section class="topline panel">
+        <div>
+          <div class="kicker">Share snippets without friction</div>
+          <h2>Paste, save, and hand off links in seconds.</h2>
+          <p class="muted">Signed-in users get shareable links; signed-out users keep drafts locally inside this browser.</p>
+          <div class="chip-row">
+            <span class="pill accent">Public, unlisted, or private</span>
+            <span class="pill subtle">Local drafts autosave</span>
+            <span class="pill subtle">Copy links instantly</span>
           </div>
-          <div class="muted" id="verror" style="display:none"></div>
+        </div>
+        <div class="status-block">
+          <div class="muted small">Save destination</div>
+          <div id="modePill" class="status-pill" data-variant="loading">Checking access…</div>
         </div>
       </section>
-      <section class="panel">
-        <header><strong>Create Paste</strong></header>
-        <div class="content">
-          <input id="title" class="grow" placeholder="Title (optional)" />
-          <textarea id="content" placeholder="Paste text here..."></textarea>
-          <div class="row">
-            <label for="visibility">Visibility</label>
-            <select id="visibility">
-              <option value="public">Public</option>
-              <option value="unlisted">Unlisted</option>
-              <option value="private">Private</option>
-            </select>
-            <button id="createBtn" class="right">Create</button>
+      <main>
+        <section id="viewPanel" class="panel" style="display:none">
+          <header><strong>View Paste</strong></header>
+          <div class="content">
+            <div class="row between wrap">
+              <input id="vtitle" class="grow" readonly />
+              <div class="row wrap">
+                <button id="copyViewLink" class="ghost" type="button">Copy link</button>
+                <button id="copyViewContent" class="ghost" type="button">Copy text</button>
+                <button id="deleteBtn" class="btn-danger" style="display:none" type="button">Delete</button>
+              </div>
+            </div>
+            <textarea id="vcontent" readonly></textarea>
+            <div class="row between wrap" style="align-items: flex-start;">
+              <div class="muted" id="vmeta"></div>
+            </div>
+            <div class="muted error" id="verror" style="display:none"></div>
           </div>
-          <div id="createResult" class="muted"></div>
-        </div>
-      </section>
-      <section class="panel">
-        <header><strong>Your Pastes</strong></header>
-        <div class="list" id="mineList"><div class="muted">Sign in to see your pastes.</div></div>
-        <header><strong>Recent Public</strong></header>
-        <div class="list" id="publicList"><div class="muted">Loading…</div></div>
-      </section>
-    </main>
+        </section>
+        <section class="panel create-panel">
+          <header><strong>Create Paste</strong></header>
+          <div class="content">
+            <div class="row wrap">
+              <input id="title" class="grow" placeholder="Title (optional)" />
+              <div id="storageHint" class="input-chip muted small">Checking access…</div>
+            </div>
+            <textarea id="content" placeholder="Paste text here..."></textarea>
+            <div class="row between wrap">
+              <div id="composerMeta" class="muted small">0 characters • 0 lines</div>
+              <button id="clearBtn" class="ghost" type="button">Reset</button>
+            </div>
+            <div class="row wrap">
+              <label for="visibility" class="muted small">Visibility</label>
+              <select id="visibility">
+                <option value="public">Public</option>
+                <option value="unlisted">Unlisted</option>
+                <option value="private">Private</option>
+              </select>
+              <div class="muted small">Public items appear on the list; unlisted works via direct link only.</div>
+              <button id="createBtn" class="primary right" type="button">Create</button>
+            </div>
+            <div class="result-row">
+              <div id="createResult" class="muted"></div>
+              <button id="copyResultBtn" class="ghost" type="button" style="display:none">Copy link</button>
+            </div>
+            <div class="callout muted small">
+              Tip: keep private snippets for yourself, or switch to public when you need others to find it quickly.
+            </div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="section-header">
+            <strong>Your Pastes</strong>
+            <div class="list-actions">
+              <input id="mineFilter" placeholder="Filter title…" />
+              <button id="refreshMineBtn" class="ghost" type="button">Refresh</button>
+            </div>
+          </div>
+          <div class="list" id="mineList"><div class="muted">Sign in to see your pastes.</div></div>
+          <div class="section-header">
+            <strong>Recent Public</strong>
+            <div class="list-actions">
+              <button id="publicRefreshBtn" class="ghost" type="button">Refresh</button>
+            </div>
+          </div>
+          <div class="list" id="publicList"><div class="muted">Loading…</div></div>
+        </section>
+      </main>
+    </div>
     <script>
       const qs = (sel) => document.querySelector(sel);
       const THEME_KEY = 'pb_theme';
@@ -126,6 +209,36 @@
       function saveLocal(list) { localStorage.setItem(LS_KEY, JSON.stringify(list)); }
 
       let PB_STATE = { loggedIn: false, allowed: false, user: null };
+      let LAST_LINK = '';
+      let CURRENT_VIEW_LINK = '';
+      let CURRENT_VIEW_CONTENT = '';
+
+      function setModeLabel(text, variant='loading') {
+        const pill = qs('#modePill');
+        if (!pill) return;
+        pill.textContent = text;
+        pill.setAttribute('data-variant', variant);
+      }
+
+      function updateStorageHint(text) {
+        const hint = qs('#storageHint');
+        if (hint) hint.textContent = text;
+      }
+
+      function setCreateResult(message, url='') {
+        const res = qs('#createResult');
+        const copyBtn = qs('#copyResultBtn');
+        if (res) res.innerHTML = message || '';
+        LAST_LINK = '';
+        if (copyBtn) copyBtn.style.display = 'none';
+        if (url) {
+          const full = new URL(url, location.origin).toString();
+          LAST_LINK = full;
+          if (res) res.innerHTML = `${message}: <a href="${url}">${url}</a>`;
+          if (copyBtn) copyBtn.style.display = '';
+        }
+      }
+
       async function refreshAuth() {
         try {
           const me = await api('/api/auth/me');
@@ -136,7 +249,8 @@
               el('span', { class: 'muted' }, [me.user.email]),
               el('button', { onclick: async()=>{ await api('/api/auth/logout', { method: 'POST' }); location.reload(); } }, ['Logout'])
             );
-            // Any logged-in user stores in server DB
+            setModeLabel('Account storage', 'account');
+            updateStorageHint('Saving to your account with shareable links.');
             loadMine();
           } else {
             qs('#authArea').innerHTML = '';
@@ -146,11 +260,23 @@
             const list = qs('#mineList');
             if (list) list.innerHTML = '';
             renderLocalMine();
-            qs('#createResult').textContent = 'Not signed in; creating local pastes.';
+            setModeLabel('Local drafts only', 'local');
+            updateStorageHint('Keeping drafts in this browser until you sign in.');
+            setCreateResult('Not signed in; creating local pastes.');
           }
         } catch (e) {
           console.error(e);
+          setModeLabel('Unable to check access', 'local');
         }
+      }
+
+      function filterListByQuery(listEl, query) {
+        if (!listEl) return;
+        const q = (query || '').trim().toLowerCase();
+        listEl.querySelectorAll('[data-title]').forEach((item) => {
+          const title = (item.getAttribute('data-title') || '').toLowerCase();
+          item.style.display = !q || title.includes(q) ? '' : 'none';
+        });
       }
 
       function renderLocalMine() {
@@ -160,9 +286,10 @@
         list.innerHTML = '';
         if (!items.length) { list.append(el('div', {class:'muted'}, ['No local pastes yet.'])); return; }
         items.forEach(p => {
-          const row = el('div', { class: 'list-item' }, []);
+          const row = el('div', { class: 'list-item', 'data-title': p.title || '(untitled)' }, []);
           const link = el('a', { href: `/pastebin#local=${p.id}` }, [p.title || '(untitled)']);
           const vis = el('span', { class: 'pill' }, [p.visibility || 'unlisted']);
+          const meta = el('span', { class: 'muted small' }, [new Date(p.created_at).toLocaleString()]);
           const del = el('button', { class: 'btn-danger', title: 'Delete paste' }, ['Delete']);
           del.addEventListener('click', (ev) => {
             ev.preventDefault(); ev.stopPropagation();
@@ -171,9 +298,10 @@
             if (idx >= 0) { all.splice(idx, 1); saveLocal(all); renderLocalMine(); }
             if ((location.hash||'').includes(`#local=${p.id}`)) location.href = '/pastebin';
           });
-          row.append(link, vis, del);
+          row.append(link, meta, vis, del);
           list.append(row);
         });
+        filterListByQuery(list, qs('#mineFilter')?.value || '');
       }
 
       async function loadMine() {
@@ -183,8 +311,9 @@
           list.innerHTML = '';
           if (!data || !data.length) { list.append(el('div', {class:'muted'}, ['No pastes yet.'])); return; }
           data.forEach(p => {
-            const row = el('div', { class: 'list-item' }, []);
+            const row = el('div', { class: 'list-item', 'data-title': p.title || '(untitled)' }, []);
             const link = el('a', { href: `/pastebin/p/${p.id}` }, [p.title || '(untitled)']);
+            const meta = el('span', { class: 'muted small' }, [new Date(p.created_at).toLocaleString()]);
             const vis = el('span', { class: 'pill' }, [p.visibility]);
             const del = el('button', { class: 'btn-danger', title: 'Delete paste' }, ['Delete']);
             del.addEventListener('click', async (ev) => {
@@ -200,9 +329,10 @@
                 alert('Failed to delete paste: ' + e.message);
               }
             });
-            row.append(link, vis, del);
+            row.append(link, meta, vis, del);
             list.append(row);
           });
+          filterListByQuery(list, qs('#mineFilter')?.value || '');
         } catch (e) {
           qs('#mineList').innerHTML = '<div class="muted">Sign in to see your pastes.</div>';
         }
@@ -215,11 +345,13 @@
           list.innerHTML = '';
           if (!data || !data.length) { list.append(el('div', {class:'muted'}, ['No public pastes.'])); return; }
           data.forEach(p => {
-            list.append(el('div', { class: 'list-item' }, [
+            list.append(el('div', { class: 'list-item', 'data-title': p.title || '(untitled)' }, [
               el('a', { href: `/pastebin/p/${p.id}` }, [p.title || '(untitled)']),
-              el('span', { class: 'pill' }, [new Date(p.created_at).toLocaleString()])
+              el('span', { class: 'muted small' }, [new Date(p.created_at).toLocaleString()]),
+              el('span', { class: 'pill' }, [p.visibility || 'public'])
             ]));
           });
+          filterListByQuery(list, '');
         } catch (e) {
           qs('#publicList').innerHTML = '<div class="muted">Failed to load.</div>';
         }
@@ -238,7 +370,7 @@
               body: JSON.stringify({ title, content, visibility })
             });
             const url = `/pastebin/p/${res.id}`;
-            qs('#createResult').innerHTML = `Created: <a href="${url}">${url}</a>`;
+            setCreateResult('Created', url);
             loadMine();
             if (visibility === 'public') loadPublic();
           } catch (e) {
@@ -250,14 +382,49 @@
           all.unshift({ id, title, content, visibility, created_at: new Date().toISOString() });
           saveLocal(all);
           const url = `/pastebin#local=${id}`;
-          qs('#createResult').innerHTML = `Saved locally: <a href="${url}">${url}</a>`;
+          setCreateResult('Saved locally', url);
           renderLocalMine();
         }
       }
 
-      qs('#createBtn').addEventListener('click', createPaste);
-      applyTheme(preferredTheme());
+      function updateComposerMeta() {
+        const content = qs('#content').value || '';
+        const lines = content ? content.split(/\r?\n/).length : 0;
+        const chars = content.length;
+        qs('#composerMeta').textContent = `${chars} ${chars === 1 ? 'character' : 'characters'} • ${lines} ${lines === 1 ? 'line' : 'lines'}`;
+      }
+
+      function clearForm() {
+        qs('#title').value = '';
+        qs('#content').value = '';
+        updateComposerMeta();
+        setCreateResult('');
+      }
+
+      async function copyText(value, btn) {
+        try {
+          await navigator.clipboard.writeText(value);
+          if (btn) {
+            const original = btn.textContent;
+            btn.textContent = 'Copied!';
+            setTimeout(() => { btn.textContent = original; }, 1600);
+          }
+        } catch (err) {
+          alert('Unable to copy to clipboard. ' + err.message);
+        }
+      }
+
       const toggleBtn = document.getElementById('toggleTheme');
+      qs('#createBtn').addEventListener('click', createPaste);
+      qs('#clearBtn').addEventListener('click', clearForm);
+      qs('#copyResultBtn').addEventListener('click', () => { if (LAST_LINK) copyText(LAST_LINK, qs('#copyResultBtn')); });
+      qs('#mineFilter').addEventListener('input', (ev) => filterListByQuery(qs('#mineList'), ev.target.value));
+      qs('#refreshMineBtn').addEventListener('click', () => { if (PB_STATE && PB_STATE.loggedIn) loadMine(); else renderLocalMine(); });
+      qs('#publicRefreshBtn').addEventListener('click', loadPublic);
+      qs('#copyViewLink').addEventListener('click', () => { if (CURRENT_VIEW_LINK) copyText(CURRENT_VIEW_LINK, qs('#copyViewLink')); });
+      qs('#copyViewContent').addEventListener('click', () => { if (CURRENT_VIEW_CONTENT) copyText(CURRENT_VIEW_CONTENT, qs('#copyViewContent')); });
+      qs('#content').addEventListener('input', updateComposerMeta);
+      applyTheme(preferredTheme());
       if (toggleBtn) toggleBtn.addEventListener('click', () => {
         const current = root.getAttribute('data-theme') || preferredTheme();
         applyTheme(current === 'dark' ? 'light' : 'dark');
@@ -278,9 +445,10 @@
             document.title = (p.title || 'Paste') + ' - Pastebin';
             qs('#vtitle').value = p.title || '';
             qs('#vcontent').value = p.content || '';
+            CURRENT_VIEW_CONTENT = p.content || '';
+            CURRENT_VIEW_LINK = new URL(`/pastebin#local=${lid}`, location.origin).toString();
             qs('#vmeta').textContent = `${(p.visibility||'unlisted').toUpperCase()} • ${new Date(p.created_at).toLocaleString()} • Local`;
             qs('#viewPanel').style.display = '';
-            // De-emphasize create/list panels
             document.querySelectorAll('main > section.panel').forEach((s, idx) => { if (idx > 0) s.style.opacity = '0.6'; });
             window.scrollTo({ top: 0 });
             return;
@@ -289,6 +457,8 @@
           document.title = (data.title || 'Paste') + ' - Pastebin';
           qs('#vtitle').value = data.title || '';
           qs('#vcontent').value = data.content || '';
+          CURRENT_VIEW_CONTENT = data.content || '';
+          CURRENT_VIEW_LINK = new URL(`/pastebin/p/${id}`, location.origin).toString();
           qs('#vmeta').textContent = `${data.visibility.toUpperCase()} • ${new Date(data.created_at).toLocaleString()}`;
           qs('#viewPanel').style.display = '';
           document.querySelectorAll('main > section.panel').forEach((s, idx) => { if (idx > 0) s.style.opacity = '0.6'; });
@@ -316,6 +486,7 @@
 
       refreshAuth();
       loadPublic();
+      updateComposerMeta();
       maybeView();
     </script>
   </body>

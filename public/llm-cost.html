@@ -5,179 +5,450 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LLM Cost Calculator</title>
     <style>
-      :root { color-scheme: light dark; }
+      :root {
+        --bg-color: #0f172a;
+        --card-bg: #1e293b;
+        --text-primary: #f1f5f9;
+        --text-secondary: #94a3b8;
+        --accent-color: #3b82f6;
+        --accent-hover: #2563eb;
+        --border-color: #334155;
+        --input-bg: #0f172a;
+        --success-color: #10b981;
+        --danger-color: #ef4444;
+        --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      }
+
       * { box-sizing: border-box; }
-      html, body { height: 100%; margin: 0; }
-      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; }
-      header { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0.75rem 1rem; border-bottom:1px solid #ddd; }
-      header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
-      main { padding: 12px; display:grid; gap:12px; grid-template-columns: 1fr 1fr; }
-      @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
-      .card { border:1px solid #ddd; border-radius:10px; background: rgba(127,127,127,0.06); padding:12px; }
-      .card h2 { margin:0 0 .5rem; font-size:1rem; }
-      .row { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-      .row3 { display:grid; grid-template-columns: 1fr auto auto; gap:10px; align-items:end; }
-      label { display:block; font-size:.9rem; margin:.25rem 0; }
-      input[type="number"], input[type="text"], select, textarea { width:100%; padding:8px; border:1px solid #ccc; border-radius:8px; font:inherit; background:transparent; color:inherit; }
-      textarea { resize: vertical; min-height: 88px; }
-      .actions { display:flex; gap:8px; flex-wrap: wrap; }
-      button { appearance:none; border:1px solid #ccc; background:transparent; color:inherit; padding:8px 10px; border-radius:8px; cursor:pointer; }
-      button:hover { background: rgba(127,127,127,0.12); }
-      .muted { color:#666; font-size:.9rem; }
-      .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-      .breakdown { width:100%; border-collapse: collapse; }
-      .breakdown th, .breakdown td { border:1px solid #ddd; padding:6px 8px; text-align:right; }
-      .breakdown th:nth-child(1), .breakdown td:nth-child(1) { text-align:left; }
-      .right { text-align: right; }
-      .top-actions { display:flex; gap:8px; align-items:center; }
-      .pill { padding: 2px 8px; border:1px solid #ccc; border-radius:999px; font-size:.85rem; }
-      .inline { display:inline-flex; gap:6px; align-items:center; }
-      .nowrap { white-space: nowrap; }
+
+      body {
+        margin: 0;
+        font-family: var(--font-family);
+        background-color: var(--bg-color);
+        color: var(--text-primary);
+        line-height: 1.5;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      header {
+        background-color: var(--card-bg);
+        border-bottom: 1px solid var(--border-color);
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        backdrop-filter: blur(10px);
+        background-color: rgba(30, 41, 59, 0.9);
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        background: linear-gradient(to right, #60a5fa, #a78bfa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .nav-link {
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+      }
+
+      .nav-link:hover {
+        color: var(--text-primary);
+        background-color: rgba(255, 255, 255, 0.05);
+        border-color: var(--border-color);
+      }
+
+      main {
+        flex: 1;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+      }
+
+      @media (max-width: 900px) {
+        main { grid-template-columns: 1fr; padding: 1rem; }
+      }
+
+      .card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      }
+
+      .card h2 {
+        margin: 0 0 1.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .card h2::before {
+        content: '';
+        display: block;
+        width: 4px;
+        height: 1.2em;
+        background-color: var(--accent-color);
+        border-radius: 2px;
+      }
+
+      label {
+        display: block;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+      }
+
+      input[type="number"], input[type="text"], select, textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        background-color: var(--input-bg);
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 0.95rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+
+      input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+      }
+
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+        line-height: 1.6;
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      .grid-4 {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+      
+      @media (min-width: 600px) {
+        .grid-4 { grid-template-columns: repeat(4, 1fr); }
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid var(--border-color);
+        background-color: transparent;
+        color: var(--text-primary);
+        gap: 0.5rem;
+      }
+
+      .btn:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-color: var(--text-secondary);
+      }
+
+      .btn-primary {
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background-color: var(--accent-hover);
+        border-color: var(--accent-hover);
+      }
+
+      .btn-danger {
+        color: var(--danger-color);
+        border-color: rgba(239, 68, 68, 0.2);
+      }
+
+      .btn-danger:hover {
+        background-color: rgba(239, 68, 68, 0.1);
+        border-color: var(--danger-color);
+      }
+
+      .btn-sm {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.8rem;
+      }
+
+      .actions-bar {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+      }
+
+      .price-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.5rem;
+        align-items: end;
+        margin-bottom: 1rem;
+      }
+
+      .unit-select {
+        width: auto;
+        min-width: 100px;
+      }
+
+      .result-card {
+        grid-column: 1 / -1;
+        background: linear-gradient(145deg, var(--card-bg), #1e293b);
+      }
+
+      .total-display {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--success-color);
+        text-align: center;
+        margin: 1rem 0;
+        text-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+      }
+
+      .breakdown-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-top: 1.5rem;
+      }
+
+      .breakdown-table th {
+        text-align: left;
+        padding: 0.75rem 1rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .breakdown-table td {
+        padding: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .breakdown-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .breakdown-table .cost-cell {
+        font-family: monospace;
+        text-align: right;
+        color: var(--success-color);
+        font-weight: 600;
+      }
+
+      .breakdown-table .num-cell {
+        font-family: monospace;
+        text-align: right;
+      }
+
+      .muted-text {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        margin-top: 0.5rem;
+      }
+
+      .copy-feedback {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--success-color);
+        color: white;
+        padding: 0.5rem 1.5rem;
+        border-radius: 9999px;
+        font-size: 0.9rem;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
+
+      .copy-feedback.show { opacity: 1; }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-track { background: var(--bg-color); }
+      ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
     </style>
   </head>
   <body>
     <header>
       <h1>LLM Cost Calculator</h1>
-      <div class="top-actions">
-        <a href="/" class="pill" title="Home" aria-label="Home">🏠 Home</a>
-      </div>
+      <nav>
+        <a href="/" class="nav-link">← Back to Tools</a>
+      </nav>
     </header>
+
     <main>
-      <section class="card" id="usageCard">
+      <!-- Usage Section -->
+      <section class="card">
         <h2>Token Usage</h2>
-        <div class="row">
+        <div style="margin-bottom: 1.5rem;">
+          <label for="usageText">Paste Usage String</label>
+          <textarea id="usageText" placeholder="Paste usage log here...
+Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></textarea>
+          <div class="muted-text">Automatically parses various formats (OpenAI, Anthropic, etc.)</div>
+        </div>
+
+        <div class="grid-4">
           <div>
-            <label>Paste usage string</label>
-            <textarea id="usageText" placeholder="e.g. Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></textarea>
-            <div class="muted">Also supports: "Token usage: total=82603 input=71947 (+ 331776 cached) output=10656 (reasoning 4480)"</div>
+            <label for="inTok">Input</label>
+            <input id="inTok" type="number" min="0" step="1" value="0" />
           </div>
           <div>
-            <div class="grid-2">
-              <div>
-                <label for="inTok">Input tokens</label>
-                <input id="inTok" type="number" min="0" step="1" value="0" />
-              </div>
-              <div>
-                <label for="cacheTok">Cached input</label>
-                <input id="cacheTok" type="number" min="0" step="1" value="0" />
-              </div>
-              <div>
-                <label for="outTok">Output tokens</label>
-                <input id="outTok" type="number" min="0" step="1" value="0" />
-              </div>
-              <div>
-                <label for="reasonTok">Reasoning tokens</label>
-                <input id="reasonTok" type="number" min="0" step="1" value="0" />
-              </div>
-            </div>
+            <label for="cacheTok">Cached</label>
+            <input id="cacheTok" type="number" min="0" step="1" value="0" />
+          </div>
+          <div>
+            <label for="outTok">Output</label>
+            <input id="outTok" type="number" min="0" step="1" value="0" />
+          </div>
+          <div>
+            <label for="reasonTok">Reasoning</label>
+            <input id="reasonTok" type="number" min="0" step="1" value="0" />
           </div>
         </div>
       </section>
 
-      <section class="card" id="pricingCard">
-        <h2>Pricing</h2>
-        <div class="row">
-          <div>
-            <label for="modelSelect">Saved models</label>
-            <div class="actions">
-              <select id="modelSelect"></select>
-              <button id="loadModel">Load</button>
-              <button id="deleteModel" title="Delete selected model">Delete</button>
-              <button id="addDefaults" title="Add common defaults">Add defaults</button>
-              <button id="exportModels" title="Export all pricing as JSON">Export</button>
-              <button id="importModels" title="Import pricing from JSON">Import</button>
+      <!-- Pricing Section -->
+      <section class="card">
+        <h2>Model Pricing</h2>
+        
+        <div class="actions-bar">
+          <select id="modelSelect" style="flex: 1; min-width: 150px;"></select>
+          <button id="loadModel" class="btn btn-primary btn-sm">Load</button>
+        </div>
+
+        <div class="actions-bar">
+           <input id="modelName" type="text" placeholder="New model name..." style="flex: 1;" />
+           <button id="saveModel" class="btn btn-sm">Save</button>
+           <button id="deleteModel" class="btn btn-danger btn-sm" title="Delete model">×</button>
+        </div>
+
+        <div class="grid-2">
+          <div class="price-row">
+            <div>
+              <label>Input Price</label>
+              <input id="inPrice" type="number" step="0.0000001" min="0" value="0" />
             </div>
-            <div style="margin-top:8px;" class="inline">
-              <label for="modelName" style="margin:0;">Name</label>
-              <input id="modelName" type="text" placeholder="e.g. o4-mini 2024-xx-xx" style="min-width:220px;" />
-              <button id="saveModel">Save/Update</button>
-            </div>
+            <select id="inUnit" class="unit-select">
+              <option value="per">/ 1</option>
+              <option value="k">/ 1K</option>
+              <option value="m">/ 1M</option>
+            </select>
           </div>
-          <div>
-            <div class="row3">
-              <div>
-                <label>Input price</label>
-                <input id="inPrice" type="number" step="0.0000001" min="0" value="0" />
-              </div>
-              <div>
-                <label>Unit</label>
-                <select id="inUnit">
-                  <option value="per">per token</option>
-                  <option value="k">per 1K</option>
-                  <option value="m">per 1M</option>
-                </select>
-              </div>
-              <div class="nowrap">&nbsp;</div>
+
+          <div class="price-row">
+            <div>
+              <label>Cached Price</label>
+              <input id="cachePrice" type="number" step="0.0000001" min="0" value="0" />
             </div>
-            <div class="row3">
-              <div>
-                <label>Cached input price</label>
-                <input id="cachePrice" type="number" step="0.0000001" min="0" value="0" />
-              </div>
-              <div>
-                <label>Unit</label>
-                <select id="cacheUnit">
-                  <option value="per">per token</option>
-                  <option value="k">per 1K</option>
-                  <option value="m">per 1M</option>
-                </select>
-              </div>
-              <div class="nowrap">&nbsp;</div>
-            </div>
-            <div class="row3">
-              <div>
-                <label>Output price</label>
-                <input id="outPrice" type="number" step="0.0000001" min="0" value="0" />
-              </div>
-              <div>
-                <label>Unit</label>
-                <select id="outUnit">
-                  <option value="per">per token</option>
-                  <option value="k">per 1K</option>
-                  <option value="m">per 1M</option>
-                </select>
-              </div>
-              <div class="nowrap">&nbsp;</div>
-            </div>
-            <div class="row3">
-              <div>
-                <label>Reasoning price</label>
-                <input id="reasonPrice" type="number" step="0.0000001" min="0" value="0" />
-              </div>
-              <div>
-                <label>Unit</label>
-                <select id="reasonUnit">
-                  <option value="per">per token</option>
-                  <option value="k">per 1K</option>
-                  <option value="m">per 1M</option>
-                </select>
-              </div>
-              <div class="nowrap">&nbsp;</div>
-            </div>
+            <select id="cacheUnit" class="unit-select">
+              <option value="per">/ 1</option>
+              <option value="k">/ 1K</option>
+              <option value="m">/ 1M</option>
+            </select>
           </div>
+
+          <div class="price-row">
+            <div>
+              <label>Output Price</label>
+              <input id="outPrice" type="number" step="0.0000001" min="0" value="0" />
+            </div>
+            <select id="outUnit" class="unit-select">
+              <option value="per">/ 1</option>
+              <option value="k">/ 1K</option>
+              <option value="m">/ 1M</option>
+            </select>
+          </div>
+
+          <div class="price-row">
+            <div>
+              <label>Reasoning Price</label>
+              <input id="reasonPrice" type="number" step="0.0000001" min="0" value="0" />
+            </div>
+            <select id="reasonUnit" class="unit-select">
+              <option value="per">/ 1</option>
+              <option value="k">/ 1K</option>
+              <option value="m">/ 1M</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="actions-bar" style="margin-top: 1rem; justify-content: flex-end;">
+          <button id="addDefaults" class="btn btn-sm">Reset Defaults</button>
+          <button id="exportModels" class="btn btn-sm">Export JSON</button>
+          <button id="importModels" class="btn btn-sm">Import JSON</button>
         </div>
       </section>
 
-      <section class="card" id="resultCard" style="grid-column: 1 / -1;">
-        <h2>Result</h2>
-        <div class="actions" style="margin-bottom:8px;">
-          <span id="summary" class="pill"></span>
-          <button id="copySummary">Copy summary</button>
+      <!-- Result Section -->
+      <section class="card result-card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>Estimated Cost</h2>
+          <button id="copySummary" class="btn btn-sm">Copy Summary</button>
         </div>
-        <table class="breakdown">
+        
+        <div id="totalDisplay" class="total-display">$0.00</div>
+        
+        <table class="breakdown-table">
           <thead>
-            <tr><th>Category</th><th>Tokens</th><th>Unit price</th><th>Cost</th></tr>
+            <tr>
+              <th>Category</th>
+              <th style="text-align: right;">Tokens</th>
+              <th style="text-align: right;">Rate (per 1M)</th>
+              <th style="text-align: right;">Cost</th>
+            </tr>
           </thead>
           <tbody id="rows"></tbody>
-          <tfoot>
-            <tr><th colspan="3" class="right">Total</th><th id="totalCell">$0.00</th></tr>
-          </tfoot>
         </table>
-        <div class="muted" style="margin-top:8px;">
-          Unit price shown normalized per 1M tokens. Change units in Pricing to match vendor quotes (per token, per 1K, or per 1M).
+        
+        <div class="muted-text" style="text-align: center; margin-top: 1.5rem;">
+          <span id="summaryText"></span>
         </div>
       </section>
     </main>
+
+    <div id="toast" class="copy-feedback">Copied to clipboard!</div>
 
     <script>
       (function() {
@@ -187,11 +458,17 @@
           usageText: $('usageText'), inTok: $('inTok'), cacheTok: $('cacheTok'), outTok: $('outTok'), reasonTok: $('reasonTok'),
           modelSelect: $('modelSelect'), modelName: $('modelName'), loadModel: $('loadModel'), deleteModel: $('deleteModel'), saveModel: $('saveModel'), addDefaults: $('addDefaults'), exportModels: $('exportModels'), importModels: $('importModels'),
           inPrice: $('inPrice'), inUnit: $('inUnit'), cachePrice: $('cachePrice'), cacheUnit: $('cacheUnit'), outPrice: $('outPrice'), outUnit: $('outUnit'), reasonPrice: $('reasonPrice'), reasonUnit: $('reasonUnit'),
-          rows: $('rows'), totalCell: $('totalCell'), summary: $('summary'), copySummary: $('copySummary')
+          rows: $('rows'), totalDisplay: $('totalDisplay'), summaryText: $('summaryText'), copySummary: $('copySummary'), toast: $('toast')
         };
 
         const STORAGE_MODELS = 'llm_cost_models_v1';
         const STORAGE_LAST = 'llm_cost_last_v1';
+
+        function showToast(msg) {
+          fields.toast.textContent = msg;
+          fields.toast.classList.add('show');
+          setTimeout(() => fields.toast.classList.remove('show'), 2000);
+        }
 
         function loadModels() {
           try { return JSON.parse(localStorage.getItem(STORAGE_MODELS) || '{}') || {}; } catch { return {}; }
@@ -202,47 +479,48 @@
         function refreshModelSelect() {
           const models = loadModels();
           const options = Object.keys(models).sort();
+          const current = fields.modelSelect.value;
           fields.modelSelect.innerHTML = '';
+          
           const ph = document.createElement('option');
           ph.value = '';
-          ph.textContent = '-- select model --';
+          ph.textContent = 'Select a model...';
           fields.modelSelect.appendChild(ph);
+          
           for (const name of options) {
             const opt = document.createElement('option');
             opt.value = name; opt.textContent = name;
             fields.modelSelect.appendChild(opt);
           }
+          if (options.includes(current)) fields.modelSelect.value = current;
         }
 
         function parseUsage(text) {
           const s = String(text || '').trim();
           const clean = s.replace(/[,\u00A0]/g, '');
           const get = (re) => { const m = clean.match(re); return m ? Number(m[1]) || 0 : 0; };
-          // Known formats from Codex output
+          
           let input = get(/\binput\s*=\s*(\d+)/i);
           let output = get(/\boutput\s*=\s*(\d+)/i);
           let cached = get(/\(\+\s*(\d+)\s*cached\)/i);
-          // Optional explicit cached=... formats
           if (!cached) cached = get(/\bcached\s*=\s*(\d+)/i);
-          // Reasoning tokens
           let reasoning = get(/\breasoning\s*(?:tokens)?\s*(\d+)/i);
-          // Alternative formats: "input: 123" "output: 456" etc.
+          
           if (!input) input = get(/\binput\s*[:\-]\s*(\d+)/i);
           if (!output) output = get(/\boutput\s*[:\-]\s*(\d+)/i);
           if (!reasoning) reasoning = get(/\breasoning\s*[:\-]\s*(\d+)/i);
           if (!cached) cached = get(/\bcached\s*[:\-]\s*(\d+)/i);
+          
           return { input, cached, output, reasoning };
         }
 
         function unitNorm(unit) {
-          return unit === 'k' ? 1/1000 : unit === 'm' ? 1/1000000 : 1; // multiply by this to normalize a per-K or per-M price to per-token
+          return unit === 'k' ? 1/1000 : unit === 'm' ? 1/1000000 : 1;
         }
 
-        function toMoney(n) {
+        function toMoney(n, minFractionDigits = 2) {
           if (!isFinite(n)) return '$0.00';
-          const s = (Math.round(n * 100000) / 100000).toFixed(5); // 5 decimals for transparency
-          // Trim trailing zeros
-          return '$' + s.replace(/\.0+$/, '.00').replace(/(\.\d*[1-9])0+$/, '$1');
+          return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: minFractionDigits, maximumFractionDigits: 6 }).format(n);
         }
 
         function readPricing() {
@@ -285,32 +563,37 @@
             out: usage.output * perToken.out,
             reason: usage.reasoning * perToken.reason,
           };
-          const rows = [];
-          rows.push({ name: 'Input', tok: usage.input, unit: perToken.in, cost: costs.in });
-          rows.push({ name: 'Cached input', tok: usage.cached, unit: perToken.cache, cost: costs.cache });
-          rows.push({ name: 'Output', tok: usage.output, unit: perToken.out, cost: costs.out });
-          rows.push({ name: 'Reasoning', tok: usage.reasoning, unit: perToken.reason, cost: costs.reason });
+          
+          const rows = [
+            { name: 'Input', tok: usage.input, unit: perToken.in, cost: costs.in },
+            { name: 'Cached Input', tok: usage.cached, unit: perToken.cache, cost: costs.cache },
+            { name: 'Output', tok: usage.output, unit: perToken.out, cost: costs.out },
+            { name: 'Reasoning', tok: usage.reasoning, unit: perToken.reason, cost: costs.reason }
+          ];
 
-          // Render rows
           fields.rows.innerHTML = '';
           let total = 0;
+          
           for (const r of rows) {
-            if (!r.tok) continue;
+            if (!r.tok && !r.cost) continue; // Skip empty rows unless they have cost (unlikely)
             total += r.cost;
             const tr = document.createElement('tr');
+            
             const td1 = document.createElement('td'); td1.textContent = r.name;
-            const td2 = document.createElement('td'); td2.textContent = r.tok.toLocaleString();
-            const td3 = document.createElement('td'); td3.textContent = toMoney(r.unit * 1_000_000) + ' / 1M tok';
-            const td4 = document.createElement('td'); td4.textContent = toMoney(r.cost);
+            const td2 = document.createElement('td'); td2.className = 'num-cell'; td2.textContent = r.tok.toLocaleString();
+            const td3 = document.createElement('td'); td3.className = 'num-cell'; td3.textContent = toMoney(r.unit * 1_000_000, 2);
+            const td4 = document.createElement('td'); td4.className = 'cost-cell'; td4.textContent = toMoney(r.cost, 4);
+            
             tr.append(td1, td2, td3, td4);
             fields.rows.appendChild(tr);
           }
-          fields.totalCell.textContent = toMoney(total);
-          fields.summary.textContent = `Total ${toMoney(total)} · in ${usage.input.toLocaleString()} | cached ${usage.cached.toLocaleString()} | out ${usage.output.toLocaleString()}${usage.reasoning? ' | reasoning ' + usage.reasoning.toLocaleString(): ''}`;
 
-          // Save last state
-          const last = { usage, pricing };
-          localStorage.setItem(STORAGE_LAST, JSON.stringify(last));
+          fields.totalDisplay.textContent = toMoney(total, 2);
+          
+          const summary = `Total ${toMoney(total, 4)} · In: ${usage.input.toLocaleString()} | Cached: ${usage.cached.toLocaleString()} | Out: ${usage.output.toLocaleString()}${usage.reasoning ? ' | Reasoning: ' + usage.reasoning.toLocaleString() : ''}`;
+          fields.summaryText.textContent = summary;
+
+          localStorage.setItem(STORAGE_LAST, JSON.stringify({ usage, pricing }));
         }
 
         function applyUsage(u) {
@@ -320,20 +603,26 @@
           fields.reasonTok.value = String(u?.reasoning ?? 0);
         }
 
-        // Wire events
+        // Event Listeners
         fields.usageText.addEventListener('input', () => {
           const u = parseUsage(fields.usageText.value);
           applyUsage(u);
           calculate();
         });
-        for (const id of ['inTok','cacheTok','outTok','reasonTok','inPrice','cachePrice','outPrice','reasonPrice','inUnit','cacheUnit','outUnit','reasonUnit']) {
+
+        ['inTok','cacheTok','outTok','reasonTok','inPrice','cachePrice','outPrice','reasonPrice','inUnit','cacheUnit','outUnit','reasonUnit'].forEach(id => {
           $(id).addEventListener('input', calculate);
           $(id).addEventListener('change', calculate);
-        }
+        });
 
         fields.copySummary.addEventListener('click', async () => {
-          const text = fields.summary.textContent || '';
-          try { await navigator.clipboard.writeText(text); fields.copySummary.textContent = 'Copied'; setTimeout(()=>fields.copySummary.textContent='Copy summary', 1200); } catch {}
+          const text = fields.summaryText.textContent || '';
+          try {
+            await navigator.clipboard.writeText(text);
+            showToast('Summary copied!');
+          } catch {
+            showToast('Failed to copy');
+          }
         });
 
         fields.saveModel.addEventListener('click', () => {
@@ -343,8 +632,8 @@
           models[name] = readPricing();
           saveModels(models);
           refreshModelSelect();
-          // Select newly saved
           fields.modelSelect.value = name;
+          showToast('Model saved');
         });
 
         fields.loadModel.addEventListener('click', () => {
@@ -355,6 +644,7 @@
             applyPricing(models[name]);
             fields.modelName.value = name;
             calculate();
+            showToast('Model loaded');
           }
         });
 
@@ -367,24 +657,29 @@
           saveModels(models);
           refreshModelSelect();
           if (fields.modelName.value === name) fields.modelName.value = '';
+          showToast('Model deleted');
         });
 
         fields.addDefaults.addEventListener('click', () => {
           const models = loadModels();
-          const changed = addDefaults(models);
-          if (changed) {
+          if (addDefaults(models)) {
             saveModels(models);
             refreshModelSelect();
-            alert('Common defaults added.');
+            showToast('Defaults added');
           } else {
-            alert('Defaults already present.');
+            showToast('Defaults already present');
           }
         });
 
         fields.exportModels.addEventListener('click', async () => {
           const models = loadModels();
           const text = JSON.stringify(models, null, 2);
-          try { await navigator.clipboard.writeText(text); alert('Pricing copied to clipboard.'); } catch { alert('Copy failed. Here is the JSON in a prompt.'); prompt('Copy pricing JSON:', text); }
+          try {
+            await navigator.clipboard.writeText(text);
+            showToast('JSON copied to clipboard');
+          } catch {
+            prompt('Copy pricing JSON:', text);
+          }
         });
 
         fields.importModels.addEventListener('click', () => {
@@ -399,27 +694,19 @@
             }
             saveModels(models);
             refreshModelSelect();
-            alert(`Imported ${merged} model(s).`);
-          } catch (e) {
-            alert('Invalid JSON.');
+            showToast(`Imported ${merged} models`);
+          } catch {
+            alert('Invalid JSON');
           }
         });
 
         const DEFAULT_MODELS = {
-          // OpenAI — fill current pricing as needed (units default per 1M)
-          'gpt-5': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
-          'gpt-5 mini': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
-          'gpt-4o': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
-          'gpt-4o mini': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
-          'o4-mini (OpenAI)': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
-          'gpt-3.5-turbo': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
-          // Anthropic — update per provider
-          'claude-3.5-sonnet': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
-          'claude-3.5-haiku': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
-          // Meta / Mistral — hosted variants vary by provider
-          'llama-3.1-70b-instruct': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
-          'llama-3.1-8b-instruct': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
-          'mistral-large': { in: { price: 0, unit: 'm' }, cache: { price: 0, unit: 'm' }, out: { price: 0, unit: 'm' }, reason: { price: 0, unit: 'm' } },
+          'gpt-4o': { in: { price: 2.50, unit: 'm' }, cache: { price: 1.25, unit: 'm' }, out: { price: 10.00, unit: 'm' }, reason: { price: 0, unit: 'm' } },
+          'gpt-4o-mini': { in: { price: 0.15, unit: 'm' }, cache: { price: 0.075, unit: 'm' }, out: { price: 0.60, unit: 'm' }, reason: { price: 0, unit: 'm' } },
+          'claude-3.5-sonnet': { in: { price: 3.00, unit: 'm' }, cache: { price: 0.30, unit: 'm' }, out: { price: 15.00, unit: 'm' }, reason: { price: 0, unit: 'm' } },
+          'claude-3.5-haiku': { in: { price: 0.80, unit: 'm' }, cache: { price: 0.08, unit: 'm' }, out: { price: 4.00, unit: 'm' }, reason: { price: 0, unit: 'm' } },
+          'o1-preview': { in: { price: 15.00, unit: 'm' }, cache: { price: 7.50, unit: 'm' }, out: { price: 60.00, unit: 'm' }, reason: { price: 15.00, unit: 'm' } },
+          'o1-mini': { in: { price: 3.00, unit: 'm' }, cache: { price: 1.50, unit: 'm' }, out: { price: 12.00, unit: 'm' }, reason: { price: 3.00, unit: 'm' } },
         };
 
         function addDefaults(models) {
@@ -433,14 +720,8 @@
         function seedDefaultsOnce() {
           const models = loadModels();
           if (Object.keys(models).length === 0) {
-            // Start with defaults when empty
             addDefaults(models);
-            // Include a simple per-1K template example too
-            models['Custom example (per 1K)'] = { in: { price: 0, unit: 'k' }, cache: { price: 0, unit: 'k' }, out: { price: 0, unit: 'k' }, reason: { price: 0, unit: 'k' } };
             saveModels(models);
-          } else {
-            // Merge defaults if missing specific entries (idempotent)
-            if (addDefaults(models)) saveModels(models);
           }
           refreshModelSelect();
         }
