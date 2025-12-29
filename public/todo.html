@@ -741,6 +741,85 @@
         .loading {
             animation: pulse 1.5s infinite;
         }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--pane-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow);
+            transform: translateY(20px);
+            transition: transform 0.2s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--muted);
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--fg);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+        }
     </style>
 </head>
 
@@ -755,18 +834,6 @@
     </header>
 
     <div class="page">
-        <!-- Hero Section -->
-        <section class="hero">
-            <div>
-                <div class="kicker">Stay organized</div>
-                <h2>Manage your tasks with ease</h2>
-                <p>Create, prioritize, and track your to-dos. Sign in to sync across devices.</p>
-            </div>
-            <div class="status-block">
-                <div class="muted small">Status</div>
-                <div id="modePill" class="status-pill" data-variant="loading">Checking access…</div>
-            </div>
-        </section>
 
         <!-- Stats Row -->
         <div class="stats-row" id="statsRow" style="display: none;">
@@ -885,6 +952,56 @@
                 </a>
             </div>
         </section>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>✏️ Edit Task</h3>
+                <button class="modal-close" onclick="closeEditModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <input type="text" id="editTitle" class="grow" placeholder="Task title" />
+                </div>
+                <div class="form-row">
+                    <textarea id="editDescription" placeholder="Description (optional)"></textarea>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label for="editPriority">Priority</label>
+                        <select id="editPriority">
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="editCategory">Category</label>
+                        <select id="editCategory">
+                            <option value="personal">🏠 Personal</option>
+                            <option value="work">💼 Work</option>
+                            <option value="projects">📁 Projects</option>
+                            <option value="shopping">🛒 Shopping</option>
+                            <option value="health">💪 Health</option>
+                            <option value="finance">💰 Finance</option>
+                            <option value="other">📌 Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div style="flex: 1;">
+                        <label for="editDueDate">Due Date (optional)</label>
+                        <input type="date" id="editDueDate" style="width: 100%;" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn ghost" onclick="closeEditModal()">Cancel</button>
+                <button class="btn primary" onclick="saveEdit()">Save Changes</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1043,6 +1160,11 @@
                     el('div', { class: 'todo-actions' }, [
                         el('button', {
                             class: 'btn ghost sm',
+                            title: 'Edit task',
+                            onclick: () => openEditModal(todo)
+                        }, ['✏️']),
+                        el('button', {
+                            class: 'btn ghost sm',
                             title: 'Delete task',
                             onclick: () => deleteTodo(todo.id)
                         }, ['🗑️'])
@@ -1126,6 +1248,56 @@
             }
         }
 
+        let EDIT_TODO = null;
+
+        function openEditModal(todo) {
+            EDIT_TODO = todo;
+            qs('#editTitle').value = todo.title || '';
+            qs('#editDescription').value = todo.description || '';
+            qs('#editPriority').value = todo.priority || 'medium';
+            qs('#editCategory').value = todo.category || 'personal';
+            qs('#editDueDate').value = todo.due_date || '';
+            qs('#editModal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            EDIT_TODO = null;
+            qs('#editModal').classList.remove('active');
+        }
+
+        async function saveEdit() {
+            if (!EDIT_TODO) return;
+            const title = qs('#editTitle').value.trim();
+            const description = qs('#editDescription').value.trim();
+            const priority = qs('#editPriority').value;
+            const category = qs('#editCategory').value;
+            const dueDate = qs('#editDueDate').value || null;
+
+            if (!title) {
+                alert('Please enter a task title');
+                return;
+            }
+
+            try {
+                await api('/api/todo/update', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        id: EDIT_TODO.id,
+                        title,
+                        description: description || null,
+                        priority,
+                        category,
+                        due_date: dueDate
+                    })
+                });
+                closeEditModal();
+                loadTodos();
+            } catch (e) {
+                alert('Failed to update task: ' + e.message);
+            }
+        }
+
         async function refreshAuth() {
             try {
                 const me = await api('/api/auth/me');
@@ -1193,6 +1365,16 @@
         qs('#filterStatus').addEventListener('change', renderTodos);
         qs('#filterPriority').addEventListener('change', renderTodos);
         qs('#filterCategory').addEventListener('change', renderTodos);
+
+        // Modal event listeners
+        qs('#editModal').addEventListener('click', (e) => {
+            if (e.target === qs('#editModal')) closeEditModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && qs('#editModal').classList.contains('active')) {
+                closeEditModal();
+            }
+        });
 
         // Initialize
         refreshAuth();
