@@ -1,5 +1,4 @@
 -- Add 'private' visibility to pastes by recreating table with updated CHECK
-BEGIN TRANSACTION;
 
 -- Create new table with updated CHECK constraint
 CREATE TABLE IF NOT EXISTS pastes_new (
@@ -27,6 +26,3 @@ ALTER TABLE pastes_new RENAME TO pastes;
 -- Recreate indexes
 CREATE INDEX IF NOT EXISTS idx_pastes_visibility_created ON pastes(visibility, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_pastes_user_created ON pastes(user_id, created_at DESC);
-
-COMMIT;
-
