@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>To-Do List</title>
+    <meta name="description" content="A beautiful to-do list app with priorities, due dates, and cloud sync." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f4f6fb;
+            --fg: #0f172a;
+            --header-bg: #0f172a;
+            --header-fg: #f8fafc;
+            --panel: #ffffff;
+            --border: #d7dce5;
+            --pane-bg: #ffffff;
+            --muted: #52607a;
+            --accent: #2f7cf6;
+            --accent-soft: #e8f1ff;
+            --accent-gradient: linear-gradient(135deg, #2f7cf6 0%, #7c3aed 100%);
+            --success: #10b981;
+            --success-soft: rgba(16, 185, 129, 0.12);
+            --warning: #f59e0b;
+            --warning-soft: rgba(245, 158, 11, 0.12);
+            --danger: #ef4444;
+            --danger-soft: rgba(239, 68, 68, 0.12);
+            --shadow: 0 14px 30px rgba(12, 30, 65, 0.16);
+            --shadow-sm: 0 4px 12px rgba(12, 30, 65, 0.08);
+        }
+
+        [data-theme="dark"] {
+            color-scheme: dark;
+            --bg: #0b1020;
+            --fg: #e5edff;
+            --header-bg: #0f172a;
+            --header-fg: #f8fafc;
+            --panel: #0f172a;
+            --border: #1f2742;
+            --pane-bg: #0f172a;
+            --muted: #91a1c4;
+            --accent: #7aa2f7;
+            --accent-soft: rgba(122, 162, 247, 0.12);
+            --accent-gradient: linear-gradient(135deg, #7aa2f7 0%, #a78bfa 100%);
+            --success: #34d399;
+            --success-soft: rgba(52, 211, 153, 0.15);
+            --warning: #fbbf24;
+            --warning-soft: rgba(251, 191, 36, 0.15);
+            --danger: #f87171;
+            --danger-soft: rgba(248, 113, 113, 0.15);
+            --shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            background: radial-gradient(circle at 20% 20%, rgba(47, 124, 246, 0.08), transparent 25%),
+                radial-gradient(circle at 80% 0%, rgba(124, 58, 237, 0.08), transparent 25%),
+                var(--bg);
+            color: var(--fg);
+            font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif;
+        }
+
+        /* Header */
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 0.85rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--header-bg);
+            color: var(--header-fg);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.24);
+        }
+
+        .app-header h1 {
+            margin: 0;
+            font-size: 1.05rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .app-header h1 span {
+            font-size: 1.2rem;
+        }
+
+        .app-header .actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .icon-btn {
+            appearance: none;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.08);
+            color: inherit;
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        /* Page Layout */
+        .page {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px 14px 40px;
+        }
+
+        /* Hero Section */
+        .hero {
+            display: grid;
+            grid-template-columns: 1.8fr 1fr;
+            gap: 12px;
+            align-items: center;
+            margin: 14px 0 24px;
+            border: 1px solid var(--border);
+            background: linear-gradient(135deg, rgba(47, 124, 246, 0.12), rgba(124, 58, 237, 0.08)), var(--pane-bg);
+            color: var(--fg);
+            border-radius: 16px;
+            padding: 20px 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .hero h2 {
+            margin: 0 0 6px;
+            font-size: 1.35rem;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            margin: 4px 0 0;
+            color: var(--muted);
+        }
+
+        .kicker {
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .status-block {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        .status-pill {
+            padding: .4rem .8rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.02);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .status-pill[data-variant="loading"] {
+            border-style: dashed;
+        }
+
+        .status-pill[data-variant="account"] {
+            border-color: var(--success);
+            color: var(--success);
+            background: var(--success-soft);
+        }
+
+        .status-pill[data-variant="guest"] {
+            border-color: var(--warning);
+            color: var(--warning);
+            background: var(--warning-soft);
+        }
+
+        /* Stats Row */
+        .stats-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            flex: 1;
+            min-width: 120px;
+            padding: 14px 18px;
+            background: var(--pane-bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+        }
+
+        .stat-card .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        /* Panels */
+        .panel {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: var(--pane-bg);
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .panel-header strong {
+            font-size: 1rem;
+        }
+
+        .panel-content {
+            padding: 18px;
+        }
+
+        /* Form */
+        .form-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .form-row:last-child {
+            margin-bottom: 0;
+        }
+
+        input,
+        select,
+        textarea,
+        button {
+            font: inherit;
+        }
+
+        input,
+        select,
+        textarea {
+            padding: .65rem .8rem;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: inherit;
+            transition: all 0.2s ease;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        input.grow,
+        .grow {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .small {
+            font-size: 0.85rem;
+        }
+
+        /* Buttons */
+        button {
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: .65rem 1.2rem;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: inherit;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn.primary {
+            background: var(--accent-gradient);
+            border-color: var(--accent);
+            color: #fff;
+            font-weight: 600;
+            box-shadow: 0 8px 24px rgba(47, 124, 246, 0.35);
+        }
+
+        .btn.primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 28px rgba(47, 124, 246, 0.4);
+        }
+
+        .btn.ghost {
+            background: rgba(255, 255, 255, 0.05);
+            border-style: dashed;
+        }
+
+        .btn.danger {
+            background: var(--danger-soft);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .btn.danger:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn.sm {
+            padding: .4rem .75rem;
+            font-size: 0.85rem;
+        }
+
+        /* To-Do List */
+        .todo-list {
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .todo-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto auto;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.2s ease;
+        }
+
+        .todo-item:hover {
+            transform: translateX(4px);
+            border-color: var(--accent);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .todo-item.completed {
+            opacity: 0.6;
+        }
+
+        .todo-item.completed .todo-title {
+            text-decoration: line-through;
+        }
+
+        /* Checkbox */
+        .checkbox-wrapper {
+            width: 24px;
+            height: 24px;
+            position: relative;
+        }
+
+        .checkbox-wrapper input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .checkbox-custom {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            background: transparent;
+        }
+
+        .checkbox-wrapper input:checked+.checkbox-custom {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .checkbox-custom::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-wrapper input:checked+.checkbox-custom::after {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .todo-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .todo-title {
+            font-weight: 600;
+            font-size: 1rem;
+            word-break: break-word;
+        }
+
+        .todo-meta {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        /* Priority Pills */
+        .priority-pill {
+            font-size: 0.75rem;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .priority-pill.high {
+            background: var(--danger-soft);
+            color: var(--danger);
+        }
+
+        .priority-pill.medium {
+            background: var(--warning-soft);
+            color: var(--warning);
+        }
+
+        .priority-pill.low {
+            background: var(--success-soft);
+            color: var(--success);
+        }
+
+        /* Category Pills */
+        .category-pill {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 500;
+            background: var(--accent-soft);
+            color: var(--accent);
+            border: 1px solid transparent;
+        }
+
+        .category-pill.work {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+        }
+
+        .category-pill.personal {
+            background: rgba(168, 85, 247, 0.15);
+            color: #a855f7;
+        }
+
+        .category-pill.projects {
+            background: rgba(14, 165, 233, 0.15);
+            color: #0ea5e9;
+        }
+
+        .category-pill.shopping {
+            background: rgba(236, 72, 153, 0.15);
+            color: #ec4899;
+        }
+
+        .category-pill.health {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+        }
+
+        .category-pill.finance {
+            background: rgba(234, 179, 8, 0.15);
+            color: #eab308;
+        }
+
+        .category-pill.other {
+            background: rgba(107, 114, 128, 0.15);
+            color: #6b7280;
+        }
+
+        /* Due Date */
+        .due-date {
+            font-size: 0.8rem;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .due-date.overdue {
+            color: var(--danger);
+        }
+
+        .due-date.today {
+            color: var(--warning);
+        }
+
+        .todo-actions {
+            display: flex;
+            gap: 6px;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .todo-item:hover .todo-actions {
+            opacity: 1;
+        }
+
+        /* Filter/Sort Bar */
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-bar select {
+            min-width: 120px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--muted);
+        }
+
+        .empty-state .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            margin: 0 0 8px;
+            color: var(--fg);
+        }
+
+        .empty-state p {
+            margin: 0;
+        }
+
+        /* Auth Required */
+        .auth-required {
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .auth-required .auth-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        .auth-required h3 {
+            margin: 0 0 12px;
+        }
+
+        .auth-required p {
+            color: var(--muted);
+            margin: 0 0 20px;
+        }
+
+        .auth-required a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: var(--accent-gradient);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            box-shadow: 0 8px 24px rgba(47, 124, 246, 0.35);
+            transition: all 0.2s ease;
+        }
+
+        .auth-required a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(47, 124, 246, 0.4);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero {
+                grid-template-columns: 1fr;
+            }
+
+            .status-block {
+                margin-top: 12px;
+            }
+
+            .todo-item {
+                grid-template-columns: auto 1fr;
+            }
+
+            .todo-item .priority-pill {
+                grid-column: 2;
+            }
+
+            .todo-actions {
+                grid-column: 2;
+                justify-content: flex-end;
+                margin-top: 8px;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .app-header h1 {
+                font-size: 0.95rem;
+            }
+
+            .stats-row {
+                flex-direction: column;
+            }
+
+            .form-row {
+                flex-direction: column;
+            }
+
+            .form-row .grow {
+                min-width: 100%;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .todo-item {
+            animation: fadeIn 0.25s ease;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="app-header">
+        <h1><span>✅</span> To-Do List</h1>
+        <div class="actions">
+            <a href="/" class="icon-btn" title="Home" aria-label="Home">🏠</a>
+            <button id="toggleTheme" class="icon-btn" title="Toggle theme">🌙</button>
+            <div id="authArea" class="row"></div>
+        </div>
+    </header>
+
+    <div class="page">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div>
+                <div class="kicker">Stay organized</div>
+                <h2>Manage your tasks with ease</h2>
+                <p>Create, prioritize, and track your to-dos. Sign in to sync across devices.</p>
+            </div>
+            <div class="status-block">
+                <div class="muted small">Status</div>
+                <div id="modePill" class="status-pill" data-variant="loading">Checking access…</div>
+            </div>
+        </section>
+
+        <!-- Stats Row -->
+        <div class="stats-row" id="statsRow" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-value" id="statTotal">0</div>
+                <div class="stat-label">Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statPending">0</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statCompleted">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statHigh">0</div>
+                <div class="stat-label">High Priority</div>
+            </div>
+        </div>
+
+        <!-- Create Panel -->
+        <section class="panel" id="createPanel" style="display: none;">
+            <div class="panel-header">
+                <strong>➕ Add New Task</strong>
+            </div>
+            <div class="panel-content">
+                <div class="form-row">
+                    <input type="text" id="todoTitle" class="grow" placeholder="What needs to be done?" />
+                </div>
+                <div class="form-row">
+                    <textarea id="todoDescription" placeholder="Description (optional)"></textarea>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label for="todoPriority">Priority</label>
+                        <select id="todoPriority">
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="todoCategory">Category</label>
+                        <select id="todoCategory">
+                            <option value="personal">🏠 Personal</option>
+                            <option value="work">💼 Work</option>
+                            <option value="projects">📁 Projects</option>
+                            <option value="shopping">🛒 Shopping</option>
+                            <option value="health">💪 Health</option>
+                            <option value="finance">💰 Finance</option>
+                            <option value="other">📌 Other</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="todoDueDate">Due Date (optional)</label>
+                        <input type="date" id="todoDueDate" style="width: 100%;" />
+                    </div>
+                    <button id="createBtn" class="btn primary" style="align-self: flex-end;">Create Task</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tasks List Panel -->
+        <section class="panel" id="tasksPanel" style="display: none;">
+            <div class="panel-header">
+                <strong>📋 Your Tasks</strong>
+                <div class="filter-bar">
+                    <select id="filterStatus">
+                        <option value="all">All</option>
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    <select id="filterPriority">
+                        <option value="all">All Priorities</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                    <select id="filterCategory">
+                        <option value="all">All Categories</option>
+                        <option value="personal">🏠 Personal</option>
+                        <option value="work">💼 Work</option>
+                        <option value="projects">📁 Projects</option>
+                        <option value="shopping">🛒 Shopping</option>
+                        <option value="health">💪 Health</option>
+                        <option value="finance">💰 Finance</option>
+                        <option value="other">📌 Other</option>
+                    </select>
+                    <button id="refreshBtn" class="btn ghost sm">Refresh</button>
+                </div>
+            </div>
+            <div class="todo-list" id="todoList">
+                <div class="muted loading">Loading tasks...</div>
+            </div>
+        </section>
+
+        <!-- Auth Required State -->
+        <section class="panel" id="authPanel">
+            <div class="auth-required">
+                <div class="auth-icon">🔐</div>
+                <h3>Sign in to get started</h3>
+                <p>Your to-do items are saved to your account and synced across all your devices.</p>
+                <a href="/auth/google/login">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <path
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                        <path
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                        <path
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                    </svg>
+                    Sign in with Google
+                </a>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const qs = (sel) => document.querySelector(sel);
+        const THEME_KEY = 'todo_theme';
+        const root = document.documentElement;
+
+        function preferredTheme() {
+            const saved = localStorage.getItem(THEME_KEY);
+            if (saved === 'light' || saved === 'dark') return saved;
+            return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        }
+
+        function applyTheme(theme) {
+            root.setAttribute('data-theme', theme);
+            localStorage.setItem(THEME_KEY, theme);
+            const btn = document.getElementById('toggleTheme');
+            if (btn) btn.textContent = (theme === 'dark') ? '☀️' : '🌙';
+        }
+
+        async function api(path, opts = {}) {
+            const res = await fetch(path, Object.assign({ credentials: 'include' }, opts));
+            if (!res.ok) throw new Error(await res.text());
+            return res.json();
+        }
+
+        function el(tag, attrs = {}, children = []) {
+            const e = document.createElement(tag);
+            Object.entries(attrs).forEach(([k, v]) => {
+                if (k === 'class') e.className = v;
+                else if (k.startsWith('on')) e[k] = v;
+                else if (k === 'checked') e.checked = v;
+                else e.setAttribute(k, v);
+            });
+            children.forEach(c => e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c));
+            return e;
+        }
+
+        let TODO_STATE = { loggedIn: false, user: null };
+        let TODOS = [];
+
+        function setModeLabel(text, variant = 'loading') {
+            const pill = qs('#modePill');
+            if (!pill) return;
+            pill.textContent = text;
+            pill.setAttribute('data-variant', variant);
+        }
+
+        function updateStats() {
+            const total = TODOS.length;
+            const completed = TODOS.filter(t => t.completed).length;
+            const pending = total - completed;
+            const high = TODOS.filter(t => t.priority === 'high' && !t.completed).length;
+
+            qs('#statTotal').textContent = total;
+            qs('#statPending').textContent = pending;
+            qs('#statCompleted').textContent = completed;
+            qs('#statHigh').textContent = high;
+        }
+
+        function formatDueDate(dueDateStr) {
+            if (!dueDateStr) return null;
+            const due = new Date(dueDateStr + 'T00:00:00');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const diff = Math.floor((due - today) / (1000 * 60 * 60 * 24));
+
+            let cls = '';
+            let text = due.toLocaleDateString();
+
+            if (diff < 0) {
+                cls = 'overdue';
+                text = `Overdue (${-diff} ${-diff === 1 ? 'day' : 'days'})`;
+            } else if (diff === 0) {
+                cls = 'today';
+                text = 'Due today';
+            } else if (diff === 1) {
+                text = 'Due tomorrow';
+            } else if (diff <= 7) {
+                text = `Due in ${diff} days`;
+            }
+
+            return { cls, text };
+        }
+
+        function getCategoryLabel(category) {
+            const labels = {
+                personal: '🏠 Personal',
+                work: '💼 Work',
+                projects: '📁 Projects',
+                shopping: '🛒 Shopping',
+                health: '💪 Health',
+                finance: '💰 Finance',
+                other: '📌 Other'
+            };
+            return labels[category] || labels.personal;
+        }
+
+        function renderTodos() {
+            const list = qs('#todoList');
+            const filterStatus = qs('#filterStatus').value;
+            const filterPriority = qs('#filterPriority').value;
+            const filterCategory = qs('#filterCategory').value;
+
+            let filtered = [...TODOS];
+
+            if (filterStatus === 'pending') {
+                filtered = filtered.filter(t => !t.completed);
+            } else if (filterStatus === 'completed') {
+                filtered = filtered.filter(t => t.completed);
+            }
+
+            if (filterPriority !== 'all') {
+                filtered = filtered.filter(t => t.priority === filterPriority);
+            }
+
+            if (filterCategory !== 'all') {
+                filtered = filtered.filter(t => t.category === filterCategory);
+            }
+
+            list.innerHTML = '';
+
+            if (filtered.length === 0) {
+                const noFilters = filterStatus === 'all' && filterPriority === 'all' && filterCategory === 'all';
+                const empty = el('div', { class: 'empty-state' }, [
+                    el('div', { class: 'empty-icon' }, ['📝']),
+                    el('h3', {}, [noFilters ? 'No tasks yet' : 'No matching tasks']),
+                    el('p', {}, [noFilters ? 'Add your first task above to get started!' : 'Try adjusting your filters.'])
+                ]);
+                list.appendChild(empty);
+                return;
+            }
+
+            filtered.forEach(todo => {
+                const due = formatDueDate(todo.due_date);
+
+                const item = el('div', { class: `todo-item ${todo.completed ? 'completed' : ''}` }, [
+                    el('div', { class: 'checkbox-wrapper' }, [
+                        el('input', {
+                            type: 'checkbox',
+                            checked: !!todo.completed,
+                            title: 'Toggle completion',
+                            onchange: () => toggleTodo(todo.id)
+                        }),
+                        el('span', { class: 'checkbox-custom' })
+                    ]),
+                    el('div', { class: 'todo-content' }, [
+                        el('div', { class: 'todo-title' }, [todo.title]),
+                        el('div', { class: 'todo-meta' }, [
+                            el('span', { class: `category-pill ${todo.category || 'personal'}` }, [getCategoryLabel(todo.category)]),
+                            ...(todo.description ? [el('span', { class: 'muted small' }, [todo.description.length > 50 ? todo.description.slice(0, 50) + '...' : todo.description])] : []),
+                            ...(due ? [el('span', { class: `due-date ${due.cls}` }, ['📅 ' + due.text])] : [])
+                        ])
+                    ]),
+                    el('span', { class: `priority-pill ${todo.priority}` }, [todo.priority]),
+                    el('div', { class: 'todo-actions' }, [
+                        el('button', {
+                            class: 'btn ghost sm',
+                            title: 'Delete task',
+                            onclick: () => deleteTodo(todo.id)
+                        }, ['🗑️'])
+                    ])
+                ]);
+
+                list.appendChild(item);
+            });
+
+            updateStats();
+        }
+
+        async function loadTodos() {
+            try {
+                const data = await api('/api/todo/list');
+                TODOS = data || [];
+                renderTodos();
+            } catch (e) {
+                console.error('Failed to load todos:', e);
+                qs('#todoList').innerHTML = '<div class="muted">Failed to load tasks. Please try again.</div>';
+            }
+        }
+
+        async function createTodo() {
+            const title = qs('#todoTitle').value.trim();
+            const description = qs('#todoDescription').value.trim();
+            const priority = qs('#todoPriority').value;
+            const category = qs('#todoCategory').value;
+            const dueDate = qs('#todoDueDate').value || null;
+
+            if (!title) {
+                alert('Please enter a task title');
+                return;
+            }
+
+            try {
+                await api('/api/todo/create', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ title, description: description || null, priority, category, due_date: dueDate })
+                });
+
+                // Clear form
+                qs('#todoTitle').value = '';
+                qs('#todoDescription').value = '';
+                qs('#todoPriority').value = 'medium';
+                qs('#todoCategory').value = 'personal';
+                qs('#todoDueDate').value = '';
+
+                // Reload list
+                loadTodos();
+            } catch (e) {
+                alert('Failed to create task: ' + e.message);
+            }
+        }
+
+        async function toggleTodo(id) {
+            try {
+                await api('/api/todo/toggle', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                loadTodos();
+            } catch (e) {
+                alert('Failed to update task: ' + e.message);
+            }
+        }
+
+        async function deleteTodo(id) {
+            if (!confirm('Delete this task? This cannot be undone.')) return;
+            try {
+                await api('/api/todo/delete', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                loadTodos();
+            } catch (e) {
+                alert('Failed to delete task: ' + e.message);
+            }
+        }
+
+        async function refreshAuth() {
+            try {
+                const me = await api('/api/auth/me');
+                TODO_STATE = me || { loggedIn: false, user: null };
+
+                if (me.loggedIn) {
+                    qs('#authArea').innerHTML = '';
+                    qs('#authArea').appendChild(
+                        el('span', { class: 'muted' }, [me.user.email])
+                    );
+                    qs('#authArea').appendChild(
+                        el('button', {
+                            class: 'icon-btn',
+                            onclick: async () => {
+                                await api('/api/auth/logout', { method: 'POST' });
+                                location.reload();
+                            }
+                        }, ['Logout'])
+                    );
+
+                    setModeLabel('Signed in', 'account');
+
+                    // Show panels
+                    qs('#authPanel').style.display = 'none';
+                    qs('#createPanel').style.display = '';
+                    qs('#tasksPanel').style.display = '';
+                    qs('#statsRow').style.display = '';
+
+                    // Load todos
+                    loadTodos();
+                } else {
+                    qs('#authArea').innerHTML = '';
+                    qs('#authArea').appendChild(
+                        el('a', { href: '/auth/google/login', class: 'icon-btn' }, ['Login'])
+                    );
+
+                    setModeLabel('Not signed in', 'guest');
+
+                    // Show auth panel
+                    qs('#authPanel').style.display = '';
+                    qs('#createPanel').style.display = 'none';
+                    qs('#tasksPanel').style.display = 'none';
+                    qs('#statsRow').style.display = 'none';
+                }
+            } catch (e) {
+                console.error(e);
+                setModeLabel('Error checking access', 'guest');
+            }
+        }
+
+        // Event Listeners
+        applyTheme(preferredTheme());
+
+        qs('#toggleTheme').addEventListener('click', () => {
+            const current = root.getAttribute('data-theme') || preferredTheme();
+            applyTheme(current === 'dark' ? 'light' : 'dark');
+        });
+
+        qs('#createBtn').addEventListener('click', createTodo);
+        qs('#todoTitle').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') createTodo();
+        });
+
+        qs('#refreshBtn').addEventListener('click', loadTodos);
+        qs('#filterStatus').addEventListener('change', renderTodos);
+        qs('#filterPriority').addEventListener('change', renderTodos);
+        qs('#filterCategory').addEventListener('change', renderTodos);
+
+        // Initialize
+        refreshAuth();
+    </script>
+</body>
+
+</html>

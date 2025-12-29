@@ -1,5 +1,6 @@
 import { handleAuthRoutes } from './auth';
 import { handlePastebinApi, handlePastebinPage } from './pastebin';
+import { handleTodoApi } from './todo';
 import { handleTranscriptApi } from './routes/transcript';
 import { serveStatic } from './static';
 import type { Bindings, WorkerExport } from './types';
@@ -14,6 +15,9 @@ export default {
 
     const pastebinApiResponse = await handlePastebinApi(request, bindings, url);
     if (pastebinApiResponse) return pastebinApiResponse;
+
+    const todoApiResponse = await handleTodoApi(request, bindings, url);
+    if (todoApiResponse) return todoApiResponse;
 
     const transcriptResponse = await handleTranscriptApi(request, bindings, url);
     if (transcriptResponse) return transcriptResponse;
