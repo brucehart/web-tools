@@ -13,6 +13,8 @@ const PRETTY_ROUTES: Record<string, string> = {
   '/date/': '/date.html',
   '/llm-cost': '/llm-cost.html',
   '/llm-cost/': '/llm-cost.html',
+  '/goals': '/goals.html',
+  '/goals/': '/goals.html',
   '/yt-transcript': '/yt-transcript.html',
   '/yt-transcript/': '/yt-transcript.html',
   '/tiff-viewer': '/tiff-viewer.html',
