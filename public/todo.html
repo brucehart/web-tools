@@ -937,7 +937,7 @@
                 <div class="auth-icon">🔐</div>
                 <h3>Sign in to get started</h3>
                 <p>Your to-do items are saved to your account and synced across all your devices.</p>
-                <a href="/auth/google/login">
+                <a href="/auth/google/login?returnTo=/todo">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
                         <path
                             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -1331,7 +1331,7 @@
                 } else {
                     qs('#authArea').innerHTML = '';
                     qs('#authArea').appendChild(
-                        el('a', { href: '/auth/google/login', class: 'icon-btn' }, ['Login'])
+                        el('a', { href: '/auth/google/login?returnTo=/todo', class: 'icon-btn' }, ['Login'])
                     );
 
                     setModeLabel('Not signed in', 'guest');

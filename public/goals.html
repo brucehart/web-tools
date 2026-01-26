@@ -363,7 +363,7 @@
     .weekday-row,
     .days {
       display: grid;
-      grid-template-columns: repeat(7, 1fr);
+      grid-template-columns: repeat(7, minmax(0, 1fr));
     }
 
     .weekday {
@@ -376,6 +376,7 @@
     }
 
     .day-cell {
+      min-width: 0;
       min-height: 70px;
       border: 1px solid var(--border);
       background: transparent;
@@ -397,18 +398,18 @@
     }
 
     .day-cell[data-status="complete"] .status-dot {
-      background: var(--success);
       color: var(--success);
+      border-color: transparent;
     }
 
     .day-cell[data-status="partial"] .status-dot {
-      background: var(--warning);
       color: var(--warning);
+      border-color: transparent;
     }
 
     .day-cell[data-status="missed"] .status-dot {
-      background: var(--danger);
       color: var(--danger);
+      border-color: transparent;
     }
 
     .day-cell[data-status="none"] .status-dot {
@@ -423,19 +424,20 @@
     }
 
     .status-dot {
-      width: 28px;
-      height: 28px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       display: grid;
       place-items: center;
       background: transparent;
       border: 1px dashed var(--border);
-      font-size: 0.85rem;
+      font-size: 0.7rem;
     }
 
     .status-label {
       font-size: 0.75rem;
       color: var(--muted);
+      text-align: center;
     }
 
     .spacer {
@@ -556,9 +558,9 @@
 
     const STATUS_SEQUENCE = ['none', 'complete', 'partial', 'missed'];
     const STATUS_ICON = {
-      complete: '✔',
-      partial: '•',
-      missed: '✖',
+      complete: '✓',
+      partial: '●',
+      missed: '✕',
       none: ''
     };
     const STATUS_LABEL = {
@@ -707,11 +709,7 @@
         dot.className = 'status-dot';
         dot.textContent = STATUS_ICON[status];
 
-        const label = document.createElement('div');
-        label.className = 'status-label';
-        label.textContent = STATUS_LABEL[status];
-
-        button.append(dayNumber, dot, label);
+        button.append(dayNumber, dot);
         button.setAttribute('aria-label', `Day ${day}: ${STATUS_LABEL[status]}`);
 
         button.addEventListener('click', async () => {
@@ -720,7 +718,6 @@
           const nextStatus = STATUS_SEQUENCE[nextIndex];
           button.dataset.status = nextStatus;
           dot.textContent = STATUS_ICON[nextStatus];
-          label.textContent = STATUS_LABEL[nextStatus];
           button.setAttribute('aria-label', `Day ${day}: ${STATUS_LABEL[nextStatus]}`);
 
           const previous = current;
@@ -732,7 +729,6 @@
             updateLocalStatus(goal.id, key, previous);
             button.dataset.status = previous;
             dot.textContent = STATUS_ICON[previous];
-            label.textContent = STATUS_LABEL[previous];
             button.setAttribute('aria-label', `Day ${day}: ${STATUS_LABEL[previous]}`);
             setSyncMessage('Could not save status: ' + error.message);
           }
