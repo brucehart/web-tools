@@ -170,12 +170,9 @@
     </style>
   </head>
   <body class="wt" data-wt-tool="actuary" data-wt-title="Actuary">
-    <div class="wt-header" role="banner"></div>
-    <template id="wtHeaderExtra">
-      <button id="exampleBtn" class="wt-btn wt-btn-ghost" type="button">Use comic example</button>
-    </template>
+	    <div class="wt-header" role="banner"></div>
 
-    <section class="hero wt-page">
+	    <section class="hero wt-page">
       <div>
         <p class="eyebrow">Actuary Calculator</p>
         <h1>XKCD-style group mortality odds</h1>
@@ -537,19 +534,10 @@
           window.clearTimeout(groupInput._timer);
           groupInput._timer = window.setTimeout(run, 120);
         });
-        // `exampleBtn` is injected into the shared header from a <template>,
-        // so it doesn't exist until after the shared toolkit initializes.
-        window.addEventListener('DOMContentLoaded', () => {
-          const btn = document.getElementById('exampleBtn');
-          if (!btn) return;
-          btn.addEventListener('click', () => {
-            groupInput.value = '63m 80m 75f 73m 10';
-            run();
-          });
-        });
-        $('clearBtn').addEventListener('click', () => {
-          groupInput.value = '';
-          perPerson.innerHTML = '';
+	
+	        $('clearBtn').addEventListener('click', () => {
+	          groupInput.value = '';
+	          perPerson.innerHTML = '';
           anyStats.innerHTML = '';
           allStats.innerHTML = '';
           probAnyHorizon.textContent = '--';
