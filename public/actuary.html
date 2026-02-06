@@ -4,44 +4,27 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Actuary Calculator</title>
+    <link rel="stylesheet" href="/shared/toolkit.css" />
+    <script defer src="/shared/toolkit.js"></script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500&display=swap');
       :root {
-        color-scheme: light dark;
-        --bg: #0d1220;
-        --fg: #e6eef7;
-        --panel: rgba(255, 255, 255, 0.06);
-        --panel-border: rgba(255, 255, 255, 0.12);
-        --muted: #9fb1c7;
-        --accent: #7af2c1;
-        --accent-2: #f3bb62;
-        --danger: #ff8b8b;
-      }
-      @media (prefers-color-scheme: light) {
-        :root {
-          --bg: #f6f8fb;
-          --fg: #0c1320;
-          --panel: rgba(255, 255, 255, 0.9);
-          --panel-border: #d9e2ef;
-          --muted: #4a5568;
-          --accent: #1ca584;
-          --accent-2: #f2993a;
-          --danger: #c0392b;
-        }
+        --panel: var(--wt-panel);
+        --panel-border: var(--wt-border);
+        --muted: var(--wt-muted);
+        --accent: var(--wt-accent);
+        --accent-2: var(--wt-accent-2);
+        --danger: var(--wt-danger);
       }
       * { box-sizing: border-box; }
       html, body { height: 100%; margin: 0; }
       body {
-        font-family: 'Space Grotesk', 'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
-        background: radial-gradient(circle at 15% 20%, rgba(117, 184, 255, 0.15), transparent 38%),
-                    radial-gradient(circle at 85% 10%, rgba(255, 196, 104, 0.22), transparent 40%),
-                    radial-gradient(circle at 60% 70%, rgba(116, 255, 214, 0.14), transparent 40%),
-                    var(--bg);
+        font-family: inherit;
+        background: transparent;
         color: var(--fg);
         min-height: 100vh;
       }
       a { color: inherit; text-decoration: none; }
-      header.hero {
+      .hero {
         padding: 1.4rem 1rem 1rem;
         display: flex;
         align-items: center;
@@ -186,8 +169,10 @@
       }
     </style>
   </head>
-  <body>
-    <header class="hero">
+  <body class="wt" data-wt-tool="actuary" data-wt-title="Actuary">
+	    <div class="wt-header" role="banner"></div>
+
+	    <section class="hero wt-page">
       <div>
         <p class="eyebrow">Actuary Calculator</p>
         <h1>XKCD-style group mortality odds</h1>
@@ -197,13 +182,9 @@
           original <code>actuary.py</code> script: probabilities for someone in the group, everyone in the group, and a specific horizon.
         </p>
       </div>
-      <div class="hero-actions">
-        <a class="pill" href="/" title="Home">🏠 Home</a>
-        <button id="exampleBtn" class="pill" type="button">Use comic example</button>
-      </div>
-    </header>
+    </section>
 
-    <main>
+    <main class="wt-page" style="padding-top: 0;">
       <section class="panel">
         <h2>Group setup</h2>
         <div class="field">
@@ -553,13 +534,10 @@
           window.clearTimeout(groupInput._timer);
           groupInput._timer = window.setTimeout(run, 120);
         });
-        $('exampleBtn').addEventListener('click', () => {
-          groupInput.value = '63m 80m 75f 73m 10';
-          run();
-        });
-        $('clearBtn').addEventListener('click', () => {
-          groupInput.value = '';
-          perPerson.innerHTML = '';
+	
+	        $('clearBtn').addEventListener('click', () => {
+	          groupInput.value = '';
+	          perPerson.innerHTML = '';
           anyStats.innerHTML = '';
           allStats.innerHTML = '';
           probAnyHorizon.textContent = '--';

@@ -6,54 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>To-Do List</title>
     <meta name="description" content="A beautiful to-do list app with priorities, due dates, and cloud sync." />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/shared/toolkit.css" />
+    <script defer src="/shared/toolkit.js"></script>
     <style>
         :root {
-            color-scheme: light;
-            --bg: #f4f6fb;
-            --fg: #0f172a;
-            --header-bg: #0f172a;
-            --header-fg: #f8fafc;
-            --panel: #ffffff;
-            --border: #d7dce5;
-            --pane-bg: #ffffff;
-            --muted: #52607a;
-            --accent: #2f7cf6;
-            --accent-soft: #e8f1ff;
-            --accent-gradient: linear-gradient(135deg, #2f7cf6 0%, #7c3aed 100%);
-            --success: #10b981;
+            --accent-gradient: linear-gradient(135deg, var(--accent) 0%, var(--wt-accent-2) 100%);
+            --success: var(--wt-success);
             --success-soft: rgba(16, 185, 129, 0.12);
-            --warning: #f59e0b;
+            --warning: var(--wt-warning);
             --warning-soft: rgba(245, 158, 11, 0.12);
-            --danger: #ef4444;
+            --danger: var(--wt-danger);
             --danger-soft: rgba(239, 68, 68, 0.12);
-            --shadow: 0 14px 30px rgba(12, 30, 65, 0.16);
-            --shadow-sm: 0 4px 12px rgba(12, 30, 65, 0.08);
         }
 
         [data-theme="dark"] {
-            color-scheme: dark;
-            --bg: #0b1020;
-            --fg: #e5edff;
-            --header-bg: #0f172a;
-            --header-fg: #f8fafc;
-            --panel: #0f172a;
-            --border: #1f2742;
-            --pane-bg: #0f172a;
-            --muted: #91a1c4;
-            --accent: #7aa2f7;
-            --accent-soft: rgba(122, 162, 247, 0.12);
-            --accent-gradient: linear-gradient(135deg, #7aa2f7 0%, #a78bfa 100%);
-            --success: #34d399;
             --success-soft: rgba(52, 211, 153, 0.15);
-            --warning: #fbbf24;
             --warning-soft: rgba(251, 191, 36, 0.15);
-            --danger: #f87171;
             --danger-soft: rgba(248, 113, 113, 0.15);
-            --shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
-            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
         * {
@@ -66,13 +35,7 @@
             margin: 0;
         }
 
-        body {
-            background: radial-gradient(circle at 20% 20%, rgba(47, 124, 246, 0.08), transparent 25%),
-                radial-gradient(circle at 80% 0%, rgba(124, 58, 237, 0.08), transparent 25%),
-                var(--bg);
-            color: var(--fg);
-            font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif;
-        }
+        body { background: transparent; color: var(--fg); font-family: inherit; }
 
         /* Header */
         .app-header {
@@ -823,17 +786,13 @@
     </style>
 </head>
 
-<body>
-    <header class="app-header">
-        <h1><span>✅</span> To-Do List</h1>
-        <div class="actions">
-            <a href="/" class="icon-btn" title="Home" aria-label="Home">🏠</a>
-            <button id="toggleTheme" class="icon-btn" title="Toggle theme">🌙</button>
-            <div id="authArea" class="row"></div>
-        </div>
-    </header>
+<body class="wt" data-wt-tool="todo" data-wt-title="To-Do">
+    <div class="wt-header" role="banner"></div>
+    <template id="wtHeaderExtra">
+        <div id="authArea" class="row"></div>
+    </template>
 
-    <div class="page">
+    <div class="page wt-page">
 
         <!-- Stats Row -->
         <div class="stats-row" id="statsRow" style="display: none;">
@@ -1004,23 +963,10 @@
         </div>
     </div>
 
-    <script>
-        const qs = (sel) => document.querySelector(sel);
-        const THEME_KEY = 'todo_theme';
-        const root = document.documentElement;
-
-        function preferredTheme() {
-            const saved = localStorage.getItem(THEME_KEY);
-            if (saved === 'light' || saved === 'dark') return saved;
-            return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
-        }
-
-        function applyTheme(theme) {
-            root.setAttribute('data-theme', theme);
-            localStorage.setItem(THEME_KEY, theme);
-            const btn = document.getElementById('toggleTheme');
-            if (btn) btn.textContent = (theme === 'dark') ? '☀️' : '🌙';
-        }
+	    <script>
+	        const qs = (sel) => document.querySelector(sel);
+	        const root = document.documentElement;
+	        // Theme is owned by `public/shared/toolkit.js`.
 
         async function api(path, opts = {}) {
             const res = await fetch(path, Object.assign({ credentials: 'include' }, opts));
@@ -1308,13 +1254,13 @@
                     qs('#authArea').appendChild(
                         el('span', { class: 'muted' }, [me.user.email])
                     );
-                    qs('#authArea').appendChild(
-                        el('button', {
-                            class: 'icon-btn',
-                            onclick: async () => {
-                                await api('/api/auth/logout', { method: 'POST' });
-                                location.reload();
-                            }
+	                    qs('#authArea').appendChild(
+	                        el('button', {
+	                            class: 'wt-btn wt-btn-ghost',
+	                            onclick: async () => {
+	                                await api('/api/auth/logout', { method: 'POST' });
+	                                location.reload();
+	                            }
                         }, ['Logout'])
                     );
 
@@ -1328,11 +1274,11 @@
 
                     // Load todos
                     loadTodos();
-                } else {
-                    qs('#authArea').innerHTML = '';
-                    qs('#authArea').appendChild(
-                        el('a', { href: '/auth/google/login?returnTo=' + encodeURIComponent(location.pathname + location.search), class: 'icon-btn' }, ['Login'])
-                    );
+	                } else {
+	                    qs('#authArea').innerHTML = '';
+	                    qs('#authArea').appendChild(
+	                        el('a', { href: '/auth/google/login?returnTo=' + encodeURIComponent(location.pathname + location.search), class: 'wt-btn wt-btn-primary' }, ['Login'])
+	                    );
 
                     setModeLabel('Not signed in', 'guest');
 
@@ -1348,15 +1294,10 @@
             }
         }
 
-        // Event Listeners
-        applyTheme(preferredTheme());
+	        // Event Listeners
+	        // Theme toggle lives in the shared header.
 
-        qs('#toggleTheme').addEventListener('click', () => {
-            const current = root.getAttribute('data-theme') || preferredTheme();
-            applyTheme(current === 'dark' ? 'light' : 'dark');
-        });
-
-        qs('#createBtn').addEventListener('click', createTodo);
+	        qs('#createBtn').addEventListener('click', createTodo);
         qs('#todoTitle').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') createTodo();
         });
@@ -1376,9 +1317,11 @@
             }
         });
 
-        // Initialize
-        refreshAuth();
-    </script>
-</body>
+	        // Initialize
+	        window.addEventListener('DOMContentLoaded', () => {
+	            refreshAuth();
+	        });
+	    </script>
+	</body>
 
 </html>

@@ -1,0 +1,335 @@
+:root {
+  /* Web Tools UI Kit: shared design tokens */
+  color-scheme: light dark;
+
+  /* Typography */
+  --wt-font-sans: 'Avenir Next', Avenir, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --wt-font-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --wt-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+
+  /* Light */
+  --wt-bg: #f6f7fb;
+  --wt-fg: #0b1221;
+  --wt-muted: #52607a;
+  --wt-border: rgba(15, 23, 42, 0.12);
+  --wt-panel: rgba(255, 255, 255, 0.82);
+  --wt-panel-solid: #ffffff;
+  --wt-surface: rgba(255, 255, 255, 0.65);
+  --wt-input: rgba(255, 255, 255, 0.85);
+  --wt-accent: #2563eb;
+  --wt-accent-2: #0ea5e9;
+  --wt-accent-hover: #1d4ed8;
+  --wt-accent-soft: rgba(37, 99, 235, 0.12);
+  --wt-danger: #e11d48;
+  --wt-success: #16a34a;
+  --wt-warning: #d97706;
+
+  --wt-shadow-sm: 0 2px 12px rgba(2, 6, 23, 0.08);
+  --wt-shadow-md: 0 18px 50px rgba(2, 6, 23, 0.14);
+  --wt-radius-sm: 10px;
+  --wt-radius-md: 16px;
+  --wt-radius-lg: 20px;
+
+  /* Aliases for existing pages (keep pages working while unifying look) */
+  --bg: var(--wt-bg);
+  --fg: var(--wt-fg);
+  --text: var(--wt-fg);
+  --muted: var(--wt-muted);
+  --border: var(--wt-border);
+  --panel: var(--wt-panel-solid);
+  --pane-bg: var(--wt-panel-solid);
+  --header-bg: rgba(255, 255, 255, 0.72);
+  --header-fg: var(--wt-fg);
+  --accent: var(--wt-accent);
+  --accent-hover: var(--wt-accent-hover);
+  --accent-soft: var(--wt-accent-soft);
+  --shadow: var(--wt-shadow-md);
+  --shadow-sm: var(--wt-shadow-sm);
+
+  --bg-body: var(--wt-bg);
+  --bg-card: var(--wt-panel-solid);
+  --fg-primary: var(--wt-fg);
+  --fg-secondary: var(--wt-muted);
+  --input-bg: var(--wt-input);
+
+  --bg-app: var(--wt-bg);
+  --bg-panel: var(--wt-panel-solid);
+  --text-main: var(--wt-fg);
+  --text-muted: var(--wt-muted);
+  --primary: var(--wt-accent);
+  --primary-hover: var(--wt-accent-hover);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --wt-bg: #070b16;
+  --wt-fg: #e6edff;
+  --wt-muted: #96a3c1;
+  --wt-border: rgba(226, 237, 255, 0.12);
+  --wt-panel: rgba(15, 23, 42, 0.82);
+  --wt-panel-solid: #0f172a;
+  --wt-surface: rgba(15, 23, 42, 0.56);
+  --wt-input: rgba(9, 14, 30, 0.72);
+  --wt-accent: #7aa2f7;
+  --wt-accent-2: #22d3ee;
+  --wt-accent-hover: #9bb7ff;
+  --wt-accent-soft: rgba(122, 162, 247, 0.14);
+
+  --wt-danger: #fb7185;
+  --wt-success: #34d399;
+  --wt-warning: #fbbf24;
+
+  --wt-shadow-sm: 0 2px 14px rgba(0, 0, 0, 0.4);
+  --wt-shadow-md: 0 26px 60px rgba(0, 0, 0, 0.55);
+
+  --header-bg: rgba(15, 23, 42, 0.78);
+  --header-fg: var(--wt-fg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body.wt {
+  margin: 0;
+  font-family: var(--wt-font-sans);
+  color: var(--wt-fg);
+  background:
+    radial-gradient(1000px 500px at 10% 0%, rgba(37, 99, 235, 0.16), transparent 55%),
+    radial-gradient(900px 600px at 90% 15%, rgba(14, 165, 233, 0.12), transparent 55%),
+    radial-gradient(900px 700px at 60% 85%, rgba(37, 99, 235, 0.08), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55), transparent 42%),
+    var(--wt-bg);
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body.wt {
+    background-attachment: fixed;
+  }
+}
+
+.wt-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid var(--wt-border);
+  background: var(--header-bg);
+  color: var(--header-fg);
+  backdrop-filter: blur(14px);
+}
+
+.wt-header-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.wt-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.wt-brand a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.wt-logo-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: rgba(127, 127, 127, 0.06);
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.wt-logo-link:hover {
+  background: rgba(127, 127, 127, 0.12);
+  border-color: rgba(127, 127, 127, 0.25);
+}
+
+.wt-logo-link:active {
+  transform: translateY(1px);
+}
+
+.wt-logo {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+
+.wt-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.wt-toolname {
+  font-size: 0.9rem;
+  color: var(--wt-muted);
+  border-left: 1px solid var(--wt-border);
+  padding-left: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 52vw;
+}
+
+.wt-spacer {
+  flex: 1;
+  min-width: 12px;
+}
+
+.wt-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+}
+
+.wt-extra {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wt-header #authArea {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wt-header #authArea span {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Normalize pill sizing when used inside the global header (mode indicators, etc.) */
+.wt-header .pill {
+  font-size: 0.88rem;
+  padding: 6px 10px;
+  border-radius: 999px;
+  line-height: 1;
+}
+
+.wt-btn,
+.wt-btn:visited {
+  appearance: none;
+  border: 1px solid var(--wt-border);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.wt-btn:hover {
+  border-color: rgba(127, 127, 127, 0.35);
+  background: rgba(127, 127, 127, 0.12);
+}
+
+.wt-btn:active {
+  transform: translateY(1px);
+}
+
+.wt-btn.wt-btn-primary {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.92), rgba(14, 165, 233, 0.82));
+  border-color: rgba(37, 99, 235, 0.65);
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.25);
+  color: #fff;
+  font-weight: 650;
+}
+
+.wt-btn.wt-btn-primary:hover {
+  border-color: rgba(14, 165, 233, 0.75);
+}
+
+.wt-btn.wt-btn-ghost {
+  background: transparent;
+  border-style: dashed;
+}
+
+.wt-btn.wt-btn-danger {
+  background: rgba(225, 29, 72, 0.1);
+  border-color: rgba(225, 29, 72, 0.4);
+  color: var(--wt-danger);
+  font-weight: 600;
+}
+
+.wt-select {
+  border: 1px solid var(--wt-border);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  border-radius: 12px;
+  padding: 8px 10px;
+  font: inherit;
+}
+
+.wt-page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 18px 14px 40px;
+}
+
+/* Basic form normalization inside WT pages */
+body.wt input,
+body.wt select,
+body.wt textarea {
+  font: inherit;
+  color: inherit;
+}
+
+body.wt input:focus,
+body.wt select:focus,
+body.wt textarea:focus,
+body.wt button:focus {
+  outline: 2px solid var(--wt-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 560px) {
+  .wt-toolname {
+    display: none;
+  }
+  .wt-header-inner {
+    flex-wrap: wrap;
+  }
+  .wt-actions {
+    flex-wrap: wrap;
+  }
+}

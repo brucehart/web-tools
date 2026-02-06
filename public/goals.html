@@ -6,25 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Daily Goal Tracker</title>
   <meta name="description" content="Track multiple daily goals with a calendar view and simple status markers." />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared/toolkit.css" />
+  <script defer src="/shared/toolkit.js"></script>
   <style>
     :root {
-      color-scheme: light;
-      --bg: #0f172a;
-      --panel: #0b1221;
-      --card: #111a2e;
-      --muted: #94a3b8;
-      --text: #e2e8f0;
-      --border: #1e293b;
-      --accent: #60a5fa;
-      --accent-strong: #2563eb;
-      --success: #22c55e;
-      --warning: #facc15;
-      --danger: #f87171;
-      --shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
-      --shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.25);
+      --card: var(--panel);
+      --accent-strong: var(--accent-hover);
+      --success: var(--wt-success);
+      --warning: var(--wt-warning);
+      --danger: var(--wt-danger);
+      --shadow-soft: var(--shadow-sm);
     }
 
     * {
@@ -33,10 +24,8 @@
 
     body {
       margin: 0;
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background: radial-gradient(circle at 20% 20%, rgba(96, 165, 250, 0.16), transparent 25%),
-        radial-gradient(circle at 80% 0%, rgba(37, 99, 235, 0.12), transparent 20%),
-        var(--bg);
+      font-family: inherit;
+      background: transparent;
       color: var(--text);
       min-height: 100vh;
     }
@@ -490,8 +479,9 @@
   </style>
 </head>
 
-<body>
-  <div class="page">
+<body class="wt" data-wt-tool="goals" data-wt-title="Goals">
+  <div class="wt-header" role="banner"></div>
+  <div class="page wt-page">
     <div class="page-header">
       <div>
         <p class="eyebrow">Habits · Focus</p>
@@ -499,10 +489,6 @@
         <p class="lede">Track multiple goals, update your status each day, and see your month at a glance.</p>
       </div>
       <div class="account" id="accountArea">
-        <a class="home-link" href="/">
-          <span aria-hidden="true">←</span>
-          Back to Web Tools
-        </a>
         <a id="loginButton" class="pill" href="/auth/google/login">
           <span class="avatar">G</span>
           <span>Sign in</span>
