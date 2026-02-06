@@ -3,6 +3,16 @@ import { badRequest, json } from './utils/http';
 import { urlSafeRandom } from './utils/random';
 import type { Bindings, HandlerResult } from './types';
 
+function safeNextPath(next: string | null): string | null {
+  if (!next) return null;
+  const s = String(next).trim();
+  if (!s.startsWith('/')) return null;
+  if (s.startsWith('//')) return null;
+  // Basic hardening: keep redirects on-origin and avoid path traversal-ish inputs.
+  if (s.includes('\\') || s.includes('\n') || s.includes('\r')) return null;
+  return s;
+}
+
 export async function getSessionUser(
   req: Request,
   env: Bindings,
@@ -66,6 +76,7 @@ export async function handleAuthRoutes(
     const redirect = env.OAUTH_REDIRECT_URL;
     if (!clientId || !redirect) return badRequest('Google OAuth not configured', 500);
     const state = urlSafeRandom(16);
+    const next = safeNextPath(url.searchParams.get('next'));
     const oauthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     oauthUrl.searchParams.set('client_id', clientId);
     oauthUrl.searchParams.set('redirect_uri', redirect);
@@ -80,6 +91,15 @@ export async function handleAuthRoutes(
       sameSite: 'Lax',
       maxAge: 600,
     });
+    if (next) {
+      setCookie(res, 'oauth_next', next, {
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'Lax',
+        maxAge: 600,
+      });
+    }
     return res;
   }
 
@@ -124,8 +144,10 @@ export async function handleAuthRoutes(
     const token = urlSafeRandom(24);
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toUTCString();
     await env.DB.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').bind(token, sub, expiresAt).run();
-    const res = new Response(null, { status: 302, headers: { location: '/pastebin' } });
+    const next = safeNextPath(getCookies(request)['oauth_next'] || null) || '/pastebin';
+    const res = new Response(null, { status: 302, headers: { location: next } });
     setCookie(res, 'oauth_state', '', { path: '/', maxAge: 0 });
+    setCookie(res, 'oauth_next', '', { path: '/', maxAge: 0 });
     setCookie(res, env.SESSION_COOKIE_NAME || 'wt_session', token, {
       path: '/',
       httpOnly: true,

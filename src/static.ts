@@ -9,6 +9,8 @@ const PRETTY_ROUTES: Record<string, string> = {
   '/euler/': '/euler.html',
   '/pastebin': '/pastebin.html',
   '/pastebin/': '/pastebin.html',
+  '/todo': '/todo.html',
+  '/todo/': '/todo.html',
   '/date': '/date.html',
   '/date/': '/date.html',
   '/llm-cost': '/llm-cost.html',

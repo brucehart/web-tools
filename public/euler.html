@@ -4,48 +4,82 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Euler Preview (Project Euler Forum)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <style>
       :root {
-        color-scheme: light dark;
-        --bg: #ffffff;
-        --fg: #111111;
-        --header-bg: #2f2f2f;
-        --header-fg: #f3f3f3;
-        --border: #cfcfcf;
-        --pane-bg: #f6f6f6;
-        --muted: #666666;
-        --accent: #7aa2f7;
+        color-scheme: light;
+        --bg: #f4f6fb;
+        --fg: #0f172a;
+        --header-bg: #0f172a;
+        --header-fg: #f8fafc;
+        --panel: #ffffff;
+        --border: #d7dce5;
+        --pane-bg: #ffffff;
+        --muted: #52607a;
+        --accent: #2f7cf6;
+        --accent-soft: #e8f1ff;
+        --shadow: 0 14px 30px rgba(12, 30, 65, 0.16);
         --red: #d93025;
         --green: #188038;
       }
       [data-theme="dark"] {
-        --bg: #121212;
-        --fg: #eaeaea;
-        --header-bg: #2f2f2f;
-        --header-fg: #f3f3f3;
-        --border: #3a3a3a;
-        --pane-bg: #1a1a1a;
-        --muted: #9aa0a6;
+        color-scheme: dark;
+        --bg: #0b1020;
+        --fg: #e5edff;
+        --header-bg: #0f172a;
+        --header-fg: #f8fafc;
+        --panel: #0f172a;
+        --border: #1f2742;
+        --pane-bg: #0f172a;
+        --muted: #91a1c4;
         --accent: #7aa2f7;
+        --accent-soft: rgba(122, 162, 247, 0.12);
+        --shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
         --red: #ff6b6b;
         --green: #4caf50;
       }
       * { box-sizing: border-box; }
       html, body { height: 100%; margin: 0; }
-      body { background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; }
-      header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); background: var(--header-bg); color: var(--header-fg); position: sticky; top: 0; z-index: 10; }
-      header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
-      header .actions { display: flex; gap: 8px; align-items: center; }
-      .icon-btn { appearance: none; border: 1px solid var(--border); background: transparent; color: inherit; padding: 6px 10px; border-radius: 8px; font-size: 0.9rem; line-height: 1; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-      .icon-btn:hover { background: rgba(127,127,127,0.12); }
-      .tabs { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 48px; z-index: 9; }
+      body {
+        background: radial-gradient(circle at 20% 20%, rgba(47,124,246,0.08), transparent 25%),
+          radial-gradient(circle at 80% 0%, rgba(122,162,247,0.08), transparent 25%),
+          var(--bg);
+        color: var(--fg);
+        font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif;
+      }
+      .app-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 0.85rem 1.25rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--header-bg);
+        color: var(--header-fg);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.24);
+      }
+      .app-header h1 { margin: 0; font-size: 1.05rem; letter-spacing: 0.5px; text-transform: uppercase; }
+      .app-header .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+      .icon-btn { appearance: none; border: 1px solid var(--border); background: rgba(255,255,255,0.08); color: inherit; padding: 6px 10px; border-radius: 10px; font-size: 0.9rem; line-height: 1; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; text-decoration: none; }
+      .icon-btn:hover { background: rgba(255,255,255,0.12); }
+      .icon { width: 16px; height: 16px; display: inline-block; }
+      .icon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .pill { font-size: .85rem; border: 1px solid var(--border); border-radius: 999px; padding: .25rem .65rem; background: var(--accent-soft); }
+      .pill.accent { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+      .tabs { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); position: sticky; top: 54px; z-index: 9; backdrop-filter: blur(8px); }
       .tab-list { display: flex; gap: 6px; flex-wrap: wrap; }
       .tab { padding: 6px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--pane-bg); cursor: pointer; user-select: none; color: inherit; }
-      .tab.active { background: transparent; border-color: var(--accent); color: inherit; box-shadow: 0 0 0 2px rgba(122,162,247,0.2) inset; }
+      .tab.active { background: transparent; border-color: var(--accent); color: inherit; box-shadow: 0 0 0 2px rgba(47,124,246,0.22) inset; }
       .tab input.tab-rename { font: inherit; color: inherit; background: transparent; border: 0; outline: none; padding: 0; margin: 0; min-width: 60px; width: 12ch; }
       .tabs .spacer { flex: 1; }
-      .container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; height: calc(100% - 48px); padding: 12px; }
-      .pane { height: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--pane-bg); overflow: hidden; }
+      .page { max-width: 1400px; margin: 0 auto; padding: 14px; height: calc(100% - 54px); }
+      .container { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; height: calc(100% - 56px); }
+      .pane { height: 100%; border: 1px solid var(--border); border-radius: 14px; background: var(--pane-bg); overflow: hidden; box-shadow: var(--shadow); }
       textarea { width: 100%; height: 100%; padding: 1rem; border: 0; outline: none; resize: none; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 14px; line-height: 1.5; background: transparent; color: inherit; }
       #preview { overflow: auto; padding: 1rem; }
       .pe-quote { border-left: 3px solid var(--border); margin: .75rem 0; padding: .5rem .75rem; background: rgba(127,127,127,0.06); }
@@ -85,12 +119,24 @@
     <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js"></script>
   </head>
   <body>
-    <header>
-      <h1>Euler Preview (Project Euler)</h1>
+    <header class="app-header">
+      <h1>Euler Preview</h1>
       <div class="actions">
-        <a href="/" class="icon-btn" title="Home" aria-label="Home">🏠</a>
+        <span id="modePill" class="pill">Checking…</span>
+        <a href="/" class="icon-btn" title="Home" aria-label="Home">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M9 22V12h6v10"/></svg>
+          </span>
+          Home
+        </a>
         <button id="copyHtml" class="icon-btn" title="Copy rendered HTML">Copy HTML</button>
-        <button id="toggleTheme" class="icon-btn" title="Toggle theme">🌙</button>
+        <button id="toggleTheme" class="icon-btn" title="Toggle theme" type="button">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
+          </span>
+          Theme
+        </button>
+        <div id="authArea"></div>
       </div>
     </header>
     <nav class="tabs">
@@ -101,6 +147,7 @@
       <button id="deleteTab" class="icon-btn" title="Delete document">Delete</button>
     </nav>
 
+    <div class="page">
     <div class="container">
       <section class="pane">
         <textarea id="input" placeholder="Paste Project Euler forum text here...">[h1]Welcome[/h1]
@@ -134,13 +181,16 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
       </section>
       <section id="preview" class="pane"></section>
     </div>
+    </div>
     
 
     <script>
       (function() {
+        const TOOL = 'euler';
         const THEME_KEY = 'euler_theme';
-        const STORAGE_KEY = 'euler_docs_v1';
-        const ACTIVE_KEY = 'euler_active_v1';
+        const LOCAL_STORAGE_KEY = 'euler_docs_v1';
+        const LOCAL_ACTIVE_KEY = 'euler_active_v1';
+        const REMOTE_ACTIVE_KEY = 'euler_active_remote_v1';
         const root = document.documentElement;
         function preferredTheme() {
           const saved = localStorage.getItem(THEME_KEY);
@@ -151,7 +201,14 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
           root.setAttribute('data-theme', theme);
           localStorage.setItem(THEME_KEY, theme);
           const btn = document.getElementById('toggleTheme');
-          if (btn) btn.textContent = (theme === 'dark') ? '☀️' : '🌙';
+          if (btn) {
+            const icon = btn.querySelector('svg');
+            if (icon) {
+              icon.innerHTML = (theme === 'dark')
+                ? '<path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/>'
+                : '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>';
+            }
+          }
           // Swap highlight.js theme for readability in dark/light
           const link = document.getElementById('hljs-theme');
           if (link && link.tagName === 'LINK') {
@@ -166,7 +223,84 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
         const newBtn = document.getElementById('newTab');
         const renameBtn = document.getElementById('renameTab');
         const deleteBtn = document.getElementById('deleteTab');
+        const authArea = document.getElementById('authArea');
+        const modePill = document.getElementById('modePill');
         if (!input || !preview) return;
+
+        async function api(path, opts={}) {
+          const res = await fetch(path, Object.assign({ credentials: 'include' }, opts));
+          if (!res.ok) throw new Error(await res.text());
+          return res.json();
+        }
+
+        let AUTH = { loggedIn: false, user: null };
+        let MODE = 'local'; // 'local' | 'account'
+
+        let docs = [];
+        let active = '';
+
+        function loadLocalState() {
+          let d = [];
+          try { d = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]'); } catch {}
+          let a = localStorage.getItem(LOCAL_ACTIVE_KEY) || (d[0]?.id ?? '');
+          return { docs: d, active: a };
+        }
+        function saveLocalState(d, a) {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(d));
+          if (a) localStorage.setItem(LOCAL_ACTIVE_KEY, a);
+        }
+
+        function setModePill() {
+          if (!modePill) return;
+          if (MODE === 'account') {
+            modePill.textContent = 'Account storage';
+            modePill.classList.add('accent');
+          } else {
+            modePill.textContent = 'Local only';
+            modePill.classList.remove('accent');
+          }
+        }
+
+        async function refreshAuth() {
+          try {
+            const me = await api('/api/auth/me');
+            AUTH = { loggedIn: !!me.loggedIn, user: me.user || null };
+          } catch {
+            AUTH = { loggedIn: false, user: null };
+          }
+          MODE = AUTH.loggedIn ? 'account' : 'local';
+          setModePill();
+          renderAuth();
+        }
+
+        function renderAuth() {
+          if (!authArea) return;
+          authArea.innerHTML = '';
+          if (!AUTH.loggedIn) {
+            const next = encodeURIComponent(location.pathname + location.search);
+            const a = document.createElement('a');
+            a.className = 'icon-btn';
+            a.href = `/auth/google/login?next=${next}`;
+            a.textContent = 'Sign in';
+            authArea.appendChild(a);
+            return;
+          }
+          const u = AUTH.user || {};
+          const span = document.createElement('span');
+          span.style.fontSize = '0.9rem';
+          span.style.opacity = '0.9';
+          span.textContent = (u.email || u.name || 'Signed in');
+          const btn = document.createElement('button');
+          btn.className = 'icon-btn';
+          btn.type = 'button';
+          btn.textContent = 'Sign out';
+          btn.addEventListener('click', async () => {
+            try { await api('/api/auth/logout', { method: 'POST' }); } catch {}
+            location.reload();
+          });
+          authArea.appendChild(span);
+          authArea.appendChild(btn);
+        }
 
         // Map common aliases to highlight.js language IDs
         function normalizeLang(lang) {
@@ -188,27 +322,8 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
           return map[id] || id;
         }
 
-        // --- Tabs & Storage ---
-        function loadState() {
-          let docs = [];
-          try { docs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch {}
-          let active = localStorage.getItem(ACTIVE_KEY) || (docs[0]?.id ?? '');
-          return { docs, active };
-        }
-        function saveState(docs, active) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
-          if (active) localStorage.setItem(ACTIVE_KEY, active);
-        }
         function uid() { return 'd_' + Math.random().toString(36).slice(2, 9); }
-
         const DEFAULT_CONTENT = `[h1]Welcome[/h1]\n\nYou can use [b]BBCode[/b], inline TeX like $E=mc^2$, and blocks:\n\n$$\n\\int_{-\\infty}^{\\infty} e^{-x^2} \\, dx = \\sqrt{\\pi}\n$$\n\n[quote=\"euler\"]Obvious is the most dangerous word in mathematics.[/quote]\n\n[collapse=Code Example]\n[code=python]\n# Code highlighting demo\ndef fib(n):\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a\nprint(fib(10))\n[/code]\n[/collapse]\n\nList:[list=1]\n[*] First\n[*] Second\n[/list]\n\nHidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].\n`;
-
-        let { docs, active } = loadState();
-        if (!Array.isArray(docs) || docs.length === 0) {
-          docs = [{ id: uid(), title: 'Welcome', content: input.value || DEFAULT_CONTENT }];
-          active = docs[0].id;
-          saveState(docs, active);
-        }
         function getActive() { return docs.find(d => d.id === active) || docs[0]; }
 
         function escapeHtml(s) {
@@ -339,7 +454,7 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
             const val = (commit ? inputEl.value : original).trim();
             if (commit) {
               doc.title = val || original;
-              saveState(docs, active);
+              persistRename(doc).catch(() => {});
             }
             renderTabs();
             const newBtnRef = tabList.querySelector(`button.tab[data-id="${docId}"]`);
@@ -364,40 +479,41 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
             b.setAttribute('role', 'tab');
             b.setAttribute('aria-selected', String(doc.id === active));
             b.addEventListener('click', () => {
-              const current = getActive();
-              if (current) current.content = input.value;
-              active = doc.id;
-              saveState(docs, active);
-              input.value = doc.content || '';
-              render();
-              renderTabs();
+              switchToDoc(doc.id).catch(() => {});
             });
             b.addEventListener('dblclick', (e) => {
               e.preventDefault();
               e.stopPropagation();
-              if (active !== doc.id) {
-                const current = getActive();
-                if (current) current.content = input.value;
-                active = doc.id;
-                saveState(docs, active);
-                input.value = doc.content || '';
-                render();
-                renderTabs();
-              }
+              if (active !== doc.id) return switchToDoc(doc.id).then(() => setTimeout(() => startInlineRename(doc.id), 0));
               setTimeout(() => startInlineRename(doc.id), 0);
             });
             tabList.appendChild(b);
           });
         }
 
-        function newDoc() {
+        async function newDoc() {
+          if (MODE === 'account') {
+            const count = docs.length + 1;
+            const res = await api('/api/pages/create', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ tool: TOOL, title: `Doc ${count}`, content: '' }),
+            });
+            docs.unshift({ id: res.id, title: `Doc ${count}`, content: '' });
+            active = res.id;
+            localStorage.setItem(REMOTE_ACTIVE_KEY, active);
+            input.value = '';
+            renderTabs();
+            render();
+            return;
+          }
           const count = docs.length + 1;
           const doc = { id: uid(), title: `Doc ${count}`, content: '' };
           const current = getActive();
           if (current) current.content = input.value;
           docs.push(doc);
           active = doc.id;
-          saveState(docs, active);
+          saveLocalState(docs, active);
           input.value = '';
           render();
           renderTabs();
@@ -410,26 +526,115 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
           startInlineRename(current.id);
         }
 
-        function deleteDoc() {
+        async function deleteDoc() {
           if (docs.length <= 1) { alert('At least one document must remain.'); return; }
           const current = getActive();
           if (!current) return;
           const idx = docs.findIndex(d => d.id === current.id);
-          if (idx >= 0) {
+          if (idx < 0) return;
+          if (MODE === 'account') {
+            await api('/api/pages/delete', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ id: current.id }),
+            });
             docs.splice(idx, 1);
             active = docs[Math.max(0, idx - 1)].id;
-            saveState(docs, active);
+            localStorage.setItem(REMOTE_ACTIVE_KEY, active);
+            await ensureLoaded(active);
             input.value = getActive().content || '';
             render();
             renderTabs();
+            return;
           }
+          docs.splice(idx, 1);
+          active = docs[Math.max(0, idx - 1)].id;
+          saveLocalState(docs, active);
+          input.value = getActive().content || '';
+          render();
+          renderTabs();
+        }
+
+        async function loadAccountDocs() {
+          const list = await api(`/api/pages/list?tool=${encodeURIComponent(TOOL)}`);
+          docs = (list || []).map(r => ({ id: r.id, title: r.title, content: null }));
+          if (!docs.length) {
+            const created = await api('/api/pages/create', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ tool: TOOL, title: 'Welcome', content: input.value || DEFAULT_CONTENT }),
+            });
+            docs = [{ id: created.id, title: 'Welcome', content: input.value || DEFAULT_CONTENT }];
+            active = created.id;
+            localStorage.setItem(REMOTE_ACTIVE_KEY, active);
+            return;
+          }
+          const wanted = localStorage.getItem(REMOTE_ACTIVE_KEY) || '';
+          active = docs.some(d => d.id === wanted) ? wanted : docs[0].id;
+          localStorage.setItem(REMOTE_ACTIVE_KEY, active);
+          await ensureLoaded(active);
+          input.value = getActive().content || '';
+        }
+
+        function loadLocalDocs() {
+          let st = loadLocalState();
+          docs = st.docs;
+          active = st.active;
+          if (!Array.isArray(docs) || docs.length === 0) {
+            docs = [{ id: uid(), title: 'Welcome', content: input.value || DEFAULT_CONTENT }];
+            active = docs[0].id;
+            saveLocalState(docs, active);
+          }
+          input.value = getActive().content || '';
+        }
+
+        async function ensureLoaded(docId) {
+          const doc = docs.find(d => d.id === docId);
+          if (!doc) return;
+          if (MODE !== 'account') return;
+          if (typeof doc.content === 'string') return;
+          const full = await api(`/api/pages/get?id=${encodeURIComponent(docId)}`);
+          doc.title = full.title || doc.title;
+          doc.content = full.content || '';
+        }
+
+        async function switchToDoc(docId) {
+          const current = getActive();
+          if (current) {
+            current.content = input.value;
+            if (MODE === 'account') {
+              api('/api/pages/update', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ id: current.id, content: current.content }),
+              }).catch(() => {});
+            } else {
+              saveLocalState(docs, active);
+            }
+          }
+          active = docId;
+          if (MODE === 'account') localStorage.setItem(REMOTE_ACTIVE_KEY, active);
+          await ensureLoaded(active);
+          input.value = getActive().content || '';
+          render();
+          renderTabs();
+        }
+
+        async function persistRename(doc) {
+          if (MODE === 'account') {
+            await api('/api/pages/update', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ id: doc.id, title: doc.title }),
+            });
+            return;
+          }
+          saveLocalState(docs, active);
         }
 
         if (newBtn) newBtn.addEventListener('click', newDoc);
         if (renameBtn) renameBtn.addEventListener('click', renameDoc);
         if (deleteBtn) deleteBtn.addEventListener('click', deleteDoc);
-
-        input.value = getActive().content || '';
 
         const render = () => {
           const raw = input.value || '';
@@ -473,9 +678,17 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
             const current = getActive();
             if (current) {
               current.content = input.value;
-              saveState(docs, active);
+              if (MODE === 'account') {
+                api('/api/pages/update', {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({ id: current.id, content: current.content }),
+                }).catch(() => {});
+              } else {
+                saveLocalState(docs, active);
+              }
             }
-          }, 200);
+          }, 450);
         });
 
         const copyBtn = document.getElementById('copyHtml');
@@ -506,8 +719,13 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
           });
         }
 
-        renderTabs();
-        render();
+        (async () => {
+          await refreshAuth();
+          if (MODE === 'account') await loadAccountDocs();
+          else loadLocalDocs();
+          renderTabs();
+          render();
+        })();
       })();
     </script>
   </body>
