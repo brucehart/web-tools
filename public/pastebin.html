@@ -438,10 +438,12 @@
         }
       }
 
-      refreshAuth();
-      loadPublic();
-      updateComposerMeta();
-      maybeView();
-    </script>
-  </body>
-  </html>
+	      window.addEventListener('DOMContentLoaded', () => {
+	        refreshAuth();
+	        loadPublic();
+	        updateComposerMeta();
+	        maybeView();
+	      });
+	    </script>
+	  </body>
+	  </html>
