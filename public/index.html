@@ -5,34 +5,21 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Web Tools</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared/toolkit.css" />
+  <script defer src="/shared/toolkit.js"></script>
   <style>
     :root {
-      --bg-color: #f8f9fa;
-      --card-bg: #ffffff;
-      --text-primary: #1a1a1a;
-      --text-secondary: #666666;
-      --accent-color: #2563eb;
-      --accent-hover: #1d4ed8;
-      --border-color: #e5e7eb;
-      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --bg-color: var(--bg);
+      --card-bg: var(--panel);
+      --text-primary: var(--fg);
+      --text-secondary: var(--muted);
+      --accent-color: var(--accent);
+      --accent-hover: var(--wt-accent-hover);
+      --border-color: var(--border);
+      --shadow-sm: var(--wt-shadow-sm);
+      --shadow-md: var(--wt-shadow-sm);
+      --shadow-lg: var(--wt-shadow-md);
       --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg-color: #0f172a;
-        --card-bg: #1e293b;
-        --text-primary: #f1f5f9;
-        --text-secondary: #94a3b8;
-        --accent-color: #3b82f6;
-        --accent-hover: #60a5fa;
-        --border-color: #334155;
-      }
     }
 
     * {
@@ -40,8 +27,8 @@
     }
 
     body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background-color: var(--bg-color);
+      font-family: inherit;
+      background-color: transparent;
       color: var(--text-primary);
       margin: 0;
       min-height: 100vh;
@@ -50,7 +37,7 @@
       line-height: 1.5;
     }
 
-    header {
+    .home-hero {
       background: var(--card-bg);
       border-bottom: 1px solid var(--border-color);
       padding: 2rem 1rem;
@@ -68,10 +55,14 @@
       margin: 0 0 0.5rem;
       font-size: 2.5rem;
       font-weight: 700;
+      color: var(--accent-color);
       background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
       -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
       letter-spacing: -0.025em;
+    }
+
+    @supports (-webkit-text-fill-color: transparent) and (-webkit-background-clip: text) {
+      h1 { -webkit-text-fill-color: transparent; }
     }
 
     .subtitle {
@@ -201,8 +192,9 @@
   </style>
 </head>
 
-<body>
-  <header>
+<body class="wt" data-wt-tool="home" data-wt-title="Home">
+  <div class="wt-header" role="banner"></div>
+  <section class="home-hero">
     <div class="container">
       <h1>Web Tools</h1>
       <p class="subtitle">A collection of useful developer and utility tools</p>
@@ -216,9 +208,9 @@
         <input type="text" class="search-input" placeholder="Search tools..." id="searchInput" autofocus>
       </div>
     </div>
-  </header>
+  </section>
 
-  <main class="container">
+  <main class="container wt-page" style="padding-top: 26px;">
     <div class="grid" id="toolsGrid">
       <a class="tile" href="/markdown" data-keywords="markdown md preview mathjax latex">
         <div class="tile-icon">

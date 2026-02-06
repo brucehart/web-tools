@@ -4,19 +4,21 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LLM Cost Calculator</title>
+    <link rel="stylesheet" href="/shared/toolkit.css" />
+    <script defer src="/shared/toolkit.js"></script>
     <style>
       :root {
-        --bg-color: #0f172a;
-        --card-bg: #1e293b;
-        --text-primary: #f1f5f9;
-        --text-secondary: #94a3b8;
-        --accent-color: #3b82f6;
-        --accent-hover: #2563eb;
-        --border-color: #334155;
-        --input-bg: #0f172a;
-        --success-color: #10b981;
-        --danger-color: #ef4444;
-        --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        --bg-color: var(--bg);
+        --card-bg: var(--panel);
+        --text-primary: var(--fg);
+        --text-secondary: var(--muted);
+        --accent-color: var(--accent);
+        --accent-hover: var(--accent-hover);
+        --border-color: var(--border);
+        --input-bg: var(--input-bg);
+        --success-color: var(--wt-success);
+        --danger-color: var(--wt-danger);
+        --font-family: inherit;
       }
 
       * { box-sizing: border-box; }
@@ -24,7 +26,7 @@
       body {
         margin: 0;
         font-family: var(--font-family);
-        background-color: var(--bg-color);
+        background-color: transparent;
         color: var(--text-primary);
         line-height: 1.5;
         min-height: 100vh;
@@ -310,15 +312,9 @@
 
     </style>
   </head>
-  <body>
-    <header>
-      <h1>LLM Cost Calculator</h1>
-      <nav>
-        <a href="/" class="nav-link">← Back to Tools</a>
-      </nav>
-    </header>
-
-    <main>
+  <body class="wt" data-wt-tool="llm-cost" data-wt-title="LLM Cost">
+    <div class="wt-header" role="banner"></div>
+    <main class="wt-page">
       <!-- Usage Section -->
       <section class="card">
         <h2>Token Usage</h2>

@@ -1,41 +1,15 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Pastebin</title>
-    <style>
-      :root {
-        color-scheme: light;
-        --bg: #f4f6fb;
-        --fg: #0f172a;
-        --header-bg: #0f172a;
-        --header-fg: #f8fafc;
-        --panel: #ffffff;
-        --border: #d7dce5;
-        --pane-bg: #ffffff;
-        --muted: #52607a;
-        --accent: #2f7cf6;
-        --accent-soft: #e8f1ff;
-        --shadow: 0 14px 30px rgba(12, 30, 65, 0.16);
-      }
-      [data-theme="dark"] {
-        color-scheme: dark;
-        --bg: #0b1020;
-        --fg: #e5edff;
-        --header-bg: #0f172a;
-        --header-fg: #f8fafc;
-        --panel: #0f172a;
-        --border: #1f2742;
-        --pane-bg: #0f172a;
-        --muted: #91a1c4;
-        --accent: #7aa2f7;
-        --accent-soft: rgba(122, 162, 247, 0.12);
-        --shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
-      }
-      * { box-sizing: border-box; }
-      html, body { height: 100%; margin: 0; }
-      body { background: radial-gradient(circle at 20% 20%, rgba(47,124,246,0.08), transparent 25%), radial-gradient(circle at 80% 0%, rgba(122,162,247,0.08), transparent 25%), var(--bg); color: var(--fg); font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; }
+	    <meta charset="utf-8" />
+	    <meta name="viewport" content="width=device-width, initial-scale=1" />
+	    <title>Pastebin</title>
+	    <link rel="stylesheet" href="/shared/toolkit.css" />
+	    <script defer src="/shared/toolkit.js"></script>
+	    <style>
+	      * { box-sizing: border-box; }
+	      html, body { height: 100%; margin: 0; }
+	      body { background: transparent; color: var(--fg); font-family: inherit; }
       .app-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border); background: var(--header-bg); color: var(--header-fg); position: sticky; top: 0; z-index: 10; box-shadow: 0 4px 16px rgba(0,0,0,0.24); }
       .app-header h1 { margin: 0; font-size: 1.05rem; letter-spacing: 0.5px; text-transform: uppercase; }
       .app-header .actions { display: flex; gap: 8px; align-items: center; }
@@ -86,17 +60,13 @@
       @media (max-width: 1100px) { main { grid-template-columns: 1fr; } .topline { grid-template-columns: 1fr; } }
       @media (max-width: 600px) { .app-header h1 { font-size: 1rem; } textarea { min-height: 200px; } }
     </style>
-  </head>
-  <body>
-    <header class="app-header">
-      <h1>Pastebin</h1>
-      <div class="actions">
-        <a href="/" class="icon-btn" title="Home" aria-label="Home">🏠</a>
-        <button id="toggleTheme" class="icon-btn" title="Toggle theme">🌙</button>
-        <div id="authArea" class="row"></div>
-      </div>
-    </header>
-    <div class="page">
+	  </head>
+	  <body class="wt" data-wt-tool="pastebin" data-wt-title="Pastebin">
+	    <div class="wt-header" role="banner"></div>
+	    <template id="wtHeaderExtra">
+	      <div id="authArea" class="row"></div>
+	    </template>
+	    <div class="page wt-page">
       <section class="topline panel">
         <div>
           <div class="kicker">Share snippets without friction</div>
@@ -181,26 +151,14 @@
           <div class="list" id="publicList"><div class="muted">Loading…</div></div>
         </section>
       </main>
-    </div>
-    <script>
-      const qs = (sel) => document.querySelector(sel);
-      const THEME_KEY = 'pb_theme';
-      const root = document.documentElement;
-      function preferredTheme() {
-        const saved = localStorage.getItem(THEME_KEY);
-        if (saved === 'light' || saved === 'dark') return saved;
-        return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
-      }
-      function applyTheme(theme) {
-        root.setAttribute('data-theme', theme);
-        localStorage.setItem(THEME_KEY, theme);
-        const btn = document.getElementById('toggleTheme');
-        if (btn) btn.textContent = (theme === 'dark') ? '☀️' : '🌙';
-      }
-      async function api(path, opts={}) {
-        const res = await fetch(path, Object.assign({credentials:'include'}, opts));
-        if (!res.ok) throw new Error(await res.text());
-        return res.json();
+	    </div>
+	    <script>
+	      const qs = (sel) => document.querySelector(sel);
+	      const root = document.documentElement;
+	      async function api(path, opts={}) {
+	        const res = await fetch(path, Object.assign({credentials:'include'}, opts));
+	        if (!res.ok) throw new Error(await res.text());
+	        return res.json();
       }
       function el(tag, attrs={}, children=[]) { const e = document.createElement(tag); Object.entries(attrs).forEach(([k,v])=>{ if(k==='class') e.className=v; else if(k==='href'||k==='target'||k==='rel') e.setAttribute(k,v); else e[k]=v; }); children.forEach(c=> e.appendChild(typeof c==='string'?document.createTextNode(c):c)); return e; }
       function uid(prefix='l_') { return prefix + Math.random().toString(36).slice(2, 10); }
@@ -243,20 +201,20 @@
         try {
           const me = await api('/api/auth/me');
           PB_STATE = me || { loggedIn: false, allowed: false, user: null };
-          if (me.loggedIn) {
-            qs('#authArea').innerHTML = '';
-            qs('#authArea').append(
-              el('span', { class: 'muted' }, [me.user.email]),
-              el('button', { onclick: async()=>{ await api('/api/auth/logout', { method: 'POST' }); location.reload(); } }, ['Logout'])
-            );
-            setModeLabel('Account storage', 'account');
-            updateStorageHint('Saving to your account with shareable links.');
-            loadMine();
-          } else {
-            qs('#authArea').innerHTML = '';
-            qs('#authArea').append(
-              el('a', { href: '/auth/google/login?returnTo=' + encodeURIComponent(location.pathname + location.search) }, ['Login with Google'])
-            );
+	          if (me.loggedIn) {
+	            qs('#authArea').innerHTML = '';
+	            qs('#authArea').append(
+	              el('span', { class: 'muted' }, [me.user.email]),
+	              el('button', { class: 'wt-btn wt-btn-ghost', onclick: async()=>{ await api('/api/auth/logout', { method: 'POST' }); location.reload(); } }, ['Logout'])
+	            );
+	            setModeLabel('Account storage', 'account');
+	            updateStorageHint('Saving to your account with shareable links.');
+	            loadMine();
+	          } else {
+	            qs('#authArea').innerHTML = '';
+	            qs('#authArea').append(
+	              el('a', { class: 'wt-btn wt-btn-primary', href: '/auth/google/login?returnTo=' + encodeURIComponent(location.pathname + location.search) }, ['Login with Google'])
+	            );
             const list = qs('#mineList');
             if (list) list.innerHTML = '';
             renderLocalMine();
@@ -414,25 +372,21 @@
         }
       }
 
-      const toggleBtn = document.getElementById('toggleTheme');
-      qs('#createBtn').addEventListener('click', createPaste);
-      qs('#clearBtn').addEventListener('click', clearForm);
-      qs('#copyResultBtn').addEventListener('click', () => { if (LAST_LINK) copyText(LAST_LINK, qs('#copyResultBtn')); });
-      qs('#mineFilter').addEventListener('input', (ev) => filterListByQuery(qs('#mineList'), ev.target.value));
+	      qs('#createBtn').addEventListener('click', createPaste);
+	      qs('#clearBtn').addEventListener('click', clearForm);
+	      qs('#copyResultBtn').addEventListener('click', () => { if (LAST_LINK) copyText(LAST_LINK, qs('#copyResultBtn')); });
+	      qs('#mineFilter').addEventListener('input', (ev) => filterListByQuery(qs('#mineList'), ev.target.value));
       qs('#refreshMineBtn').addEventListener('click', () => { if (PB_STATE && PB_STATE.loggedIn) loadMine(); else renderLocalMine(); });
       qs('#publicRefreshBtn').addEventListener('click', loadPublic);
-      qs('#copyViewLink').addEventListener('click', () => { if (CURRENT_VIEW_LINK) copyText(CURRENT_VIEW_LINK, qs('#copyViewLink')); });
-      qs('#copyViewContent').addEventListener('click', () => { if (CURRENT_VIEW_CONTENT) copyText(CURRENT_VIEW_CONTENT, qs('#copyViewContent')); });
-      qs('#content').addEventListener('input', updateComposerMeta);
-      applyTheme(preferredTheme());
-      if (toggleBtn) toggleBtn.addEventListener('click', () => {
-        const current = root.getAttribute('data-theme') || preferredTheme();
-        applyTheme(current === 'dark' ? 'light' : 'dark');
-      });
-      async function maybeView() {
-        const injected = window.PASTE_ID;
-        const m = !injected && location.pathname.match(/\/pastebin\/p\/([^\/?#]+)/);
-        const urlObj = new URL(location.href);
+	      qs('#copyViewLink').addEventListener('click', () => { if (CURRENT_VIEW_LINK) copyText(CURRENT_VIEW_LINK, qs('#copyViewLink')); });
+	      qs('#copyViewContent').addEventListener('click', () => { if (CURRENT_VIEW_CONTENT) copyText(CURRENT_VIEW_CONTENT, qs('#copyViewContent')); });
+	      qs('#content').addEventListener('input', updateComposerMeta);
+
+	      // Theme + header are owned by `public/shared/toolkit.js`.
+	      async function maybeView() {
+	        const injected = window.PASTE_ID;
+	        const m = !injected && location.pathname.match(/\/pastebin\/p\/([^\/?#]+)/);
+	        const urlObj = new URL(location.href);
         const id = injected || (m ? m[1].replace(/\/$/, '') : urlObj.searchParams.get('id'));
         const hashMatch = (location.hash||'').match(/local=([^&]+)/);
         const lid = urlObj.searchParams.get('lid') || (hashMatch ? hashMatch[1] : '');
