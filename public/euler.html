@@ -280,7 +280,7 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
             const next = encodeURIComponent(location.pathname + location.search);
             const a = document.createElement('a');
             a.className = 'icon-btn';
-            a.href = `/auth/google/login?next=${next}`;
+            a.href = `/auth/google/login?returnTo=${next}`;
             a.textContent = 'Sign in';
             authArea.appendChild(a);
             return;

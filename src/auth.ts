@@ -3,16 +3,6 @@ import { badRequest, json } from './utils/http';
 import { urlSafeRandom } from './utils/random';
 import type { Bindings, HandlerResult } from './types';
 
-function safeNextPath(next: string | null): string | null {
-  if (!next) return null;
-  const s = String(next).trim();
-  if (!s.startsWith('/')) return null;
-  if (s.startsWith('//')) return null;
-  // Basic hardening: keep redirects on-origin and avoid path traversal-ish inputs.
-  if (s.includes('\\') || s.includes('\n') || s.includes('\r')) return null;
-  return s;
-}
-
 export async function getSessionUser(
   req: Request,
   env: Bindings,
@@ -38,6 +28,16 @@ export async function requireUser(req: Request, env: Bindings): Promise<{ id: st
 
 export function isAllowedEmail(email?: string | null): boolean {
   return (email || '').toLowerCase() === 'bruce.hart@gmail.com';
+}
+
+function normalizeReturnTo(value: string | null): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('/')) return null;
+  if (trimmed.startsWith('//')) return null;
+  if (trimmed.includes('\\')) return null;
+  if (trimmed.includes('\n') || trimmed.includes('\r')) return null;
+  return trimmed;
 }
 
 export async function requireAllowedUser(
@@ -75,8 +75,9 @@ export async function handleAuthRoutes(
     const clientId = env.GOOGLE_CLIENT_ID;
     const redirect = env.OAUTH_REDIRECT_URL;
     if (!clientId || !redirect) return badRequest('Google OAuth not configured', 500);
+    // Support both ?returnTo=... (newer) and ?next=... (older/tools built on the previous convention).
+    const returnTo = normalizeReturnTo(url.searchParams.get('returnTo') || url.searchParams.get('next'));
     const state = urlSafeRandom(16);
-    const next = safeNextPath(url.searchParams.get('next'));
     const oauthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     oauthUrl.searchParams.set('client_id', clientId);
     oauthUrl.searchParams.set('redirect_uri', redirect);
@@ -91,14 +92,16 @@ export async function handleAuthRoutes(
       sameSite: 'Lax',
       maxAge: 600,
     });
-    if (next) {
-      setCookie(res, 'oauth_next', next, {
+    if (returnTo) {
+      setCookie(res, 'oauth_return_to', returnTo, {
         path: '/',
         httpOnly: true,
         secure: true,
         sameSite: 'Lax',
         maxAge: 600,
       });
+    } else {
+      setCookie(res, 'oauth_return_to', '', { path: '/', maxAge: 0 });
     }
     return res;
   }
@@ -144,10 +147,10 @@ export async function handleAuthRoutes(
     const token = urlSafeRandom(24);
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toUTCString();
     await env.DB.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').bind(token, sub, expiresAt).run();
-    const next = safeNextPath(getCookies(request)['oauth_next'] || null) || '/pastebin';
-    const res = new Response(null, { status: 302, headers: { location: next } });
+    const returnTo = normalizeReturnTo(getCookies(request)['oauth_return_to']);
+    const res = new Response(null, { status: 302, headers: { location: returnTo || '/pastebin' } });
     setCookie(res, 'oauth_state', '', { path: '/', maxAge: 0 });
-    setCookie(res, 'oauth_next', '', { path: '/', maxAge: 0 });
+    setCookie(res, 'oauth_return_to', '', { path: '/', maxAge: 0 });
     setCookie(res, env.SESSION_COOKIE_NAME || 'wt_session', token, {
       path: '/',
       httpOnly: true,

@@ -1,0 +1,881 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Daily Goal Tracker</title>
+  <meta name="description" content="Track multiple daily goals with a calendar view and simple status markers." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #0f172a;
+      --panel: #0b1221;
+      --card: #111a2e;
+      --muted: #94a3b8;
+      --text: #e2e8f0;
+      --border: #1e293b;
+      --accent: #60a5fa;
+      --accent-strong: #2563eb;
+      --success: #22c55e;
+      --warning: #facc15;
+      --danger: #f87171;
+      --shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+      --shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(96, 165, 250, 0.16), transparent 25%),
+        radial-gradient(circle at 80% 0%, rgba(37, 99, 235, 0.12), transparent 20%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 18px 60px;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+
+    .account {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .pill:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .pill .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+    }
+
+    .pill .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #60a5fa, #2563eb);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #0b1221;
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin: 0 0 6px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2.2rem;
+      line-height: 1.2;
+      color: #f8fafc;
+    }
+
+    .lede {
+      margin: 8px 0 0;
+      max-width: 600px;
+      color: var(--muted);
+    }
+
+    .home-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text);
+      text-decoration: none;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .home-link:hover {
+      transform: translateX(-2px);
+      border-color: var(--accent);
+    }
+
+    .panel {
+      background: linear-gradient(135deg, rgba(96, 165, 250, 0.12), rgba(37, 99, 235, 0.04)), var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 18px 18px 14px;
+      margin-bottom: 18px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-top: 12px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 12px;
+      border: 1px dashed var(--border);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .auth-card {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px dashed var(--border);
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--muted);
+    }
+
+    .auth-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: rgba(96, 165, 250, 0.16);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      color: var(--accent);
+    }
+
+    .auth-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .status-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+    }
+
+    .status-complete {
+      background: var(--success);
+    }
+
+    .status-partial {
+      background: var(--warning);
+    }
+
+    .status-missed {
+      background: var(--danger);
+    }
+
+    .form {
+      display: grid;
+      grid-template-columns: 1.4fr auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .field label {
+      display: block;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 1rem;
+    }
+
+    .field input:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    button.primary {
+      border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: var(--shadow-soft);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    button.primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(37, 99, 235, 0.32);
+    }
+
+    button.primary:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    button.ghost {
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.ghost:hover {
+      border-color: var(--accent);
+    }
+
+    .goals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .goal-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .goal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .goal-name {
+      margin: 0;
+      font-size: 1.1rem;
+      color: #f8fafc;
+      letter-spacing: -0.01em;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .calendar {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .calendar-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(96, 165, 250, 0.07);
+    }
+
+    .calendar-top h3 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0.2px;
+      color: #e2e8f0;
+    }
+
+    .weekday-row,
+    .days {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+
+    .weekday {
+      text-align: center;
+      padding: 8px 0;
+      font-size: 0.8rem;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .day-cell {
+      min-width: 0;
+      min-height: 70px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      padding: 8px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    }
+
+    .day-cell:hover {
+      background: rgba(96, 165, 250, 0.06);
+      transform: translateY(-1px);
+    }
+
+    .day-cell[data-status="complete"] .status-dot {
+      color: var(--success);
+      border-color: transparent;
+    }
+
+    .day-cell[data-status="partial"] .status-dot {
+      color: var(--warning);
+      border-color: transparent;
+    }
+
+    .day-cell[data-status="missed"] .status-dot {
+      color: var(--danger);
+      border-color: transparent;
+    }
+
+    .day-cell[data-status="none"] .status-dot {
+      background: transparent;
+      border: 1px dashed var(--border);
+      color: var(--muted);
+    }
+
+    .day-number {
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+
+    .status-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: transparent;
+      border: 1px dashed var(--border);
+      font-size: 0.7rem;
+    }
+
+    .status-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .spacer {
+      border: 1px solid var(--border);
+      min-height: 70px;
+      background: rgba(255, 255, 255, 0.01);
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .remove-btn {
+      appearance: none;
+      border: none;
+      background: rgba(248, 113, 113, 0.12);
+      color: #fecaca;
+      padding: 6px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      border: 1px solid rgba(248, 113, 113, 0.4);
+      transition: background 0.2s ease, transform 0.15s ease;
+    }
+
+    .remove-btn:hover {
+      background: rgba(248, 113, 113, 0.2);
+      transform: translateY(-1px);
+    }
+
+    @media (max-width: 640px) {
+      .form {
+        grid-template-columns: 1fr;
+      }
+
+      .goal-card {
+        padding: 14px;
+      }
+
+      .day-cell,
+      .spacer {
+        min-height: 64px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="page-header">
+      <div>
+        <p class="eyebrow">Habits · Focus</p>
+        <h1>Daily Goal Tracker</h1>
+        <p class="lede">Track multiple goals, update your status each day, and see your month at a glance.</p>
+      </div>
+      <div class="account" id="accountArea">
+        <a class="home-link" href="/">
+          <span aria-hidden="true">←</span>
+          Back to Web Tools
+        </a>
+        <a id="loginButton" class="pill" href="/auth/google/login">
+          <span class="avatar">G</span>
+          <span>Sign in</span>
+        </a>
+        <button id="logoutButton" type="button" class="pill" style="display: none">Logout</button>
+      </div>
+    </div>
+
+    <div id="authPanel" class="panel">
+      <div class="auth-card">
+        <div class="auth-icon">🔐</div>
+        <div>
+          <h3 style="margin: 0 0 4px">Sign in to sync your goals</h3>
+          <p class="muted" style="margin: 0">Google OAuth keeps your goals backed by the D1 database.</p>
+          <div class="auth-actions">
+            <a class="primary" href="/auth/google/login">Sign in</a>
+            <button type="button" class="ghost" id="refreshAuth">Refresh status</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="createPanel" class="panel" style="display: none">
+      <form id="goalForm" class="form">
+        <div class="field">
+          <label for="goalName">Goal name</label>
+          <input type="text" id="goalName" name="goalName" placeholder="e.g. Read 20 pages" required minlength="2">
+        </div>
+        <button type="submit" class="primary">Add goal</button>
+      </form>
+      <div class="legend">
+        <span><span class="status-swatch status-complete"></span> Completed</span>
+        <span><span class="status-swatch status-partial"></span> Partial</span>
+        <span><span class="status-swatch status-missed"></span> Missed</span>
+        <span>Click a day to cycle through statuses</span>
+      </div>
+      <p id="syncStatus" class="muted" style="margin: 10px 0 0; display: none"></p>
+    </div>
+
+    <div id="goalsContainer" class="goals-grid"></div>
+  </div>
+
+  <script>
+    const goalsContainer = document.getElementById('goalsContainer');
+    const goalForm = document.getElementById('goalForm');
+    const goalNameInput = document.getElementById('goalName');
+    const authPanel = document.getElementById('authPanel');
+    const createPanel = document.getElementById('createPanel');
+    const loginButton = document.getElementById('loginButton');
+    const logoutButton = document.getElementById('logoutButton');
+    const syncStatus = document.getElementById('syncStatus');
+    const refreshAuthBtn = document.getElementById('refreshAuth');
+
+    const STATUS_SEQUENCE = ['none', 'complete', 'partial', 'missed'];
+    const STATUS_ICON = {
+      complete: '✓',
+      partial: '●',
+      missed: '✕',
+      none: ''
+    };
+    const STATUS_LABEL = {
+      complete: 'Completed',
+      partial: 'Partial',
+      missed: 'Missed',
+      none: 'No status'
+    };
+
+    const state = {
+      goals: [],
+      loggedIn: false,
+      user: null,
+      loading: false
+    };
+
+    function setSyncMessage(message) {
+      if (!message) {
+        syncStatus.style.display = 'none';
+        syncStatus.textContent = '';
+        return;
+      }
+      syncStatus.textContent = message;
+      syncStatus.style.display = 'block';
+    }
+
+    async function api(path, options = {}) {
+      const res = await fetch(path, { credentials: 'same-origin', ...options });
+      const text = await res.text();
+      let data = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch (err) {
+        // response is not JSON; fall through
+      }
+
+      if (!res.ok) {
+        const message = (data && data.error) || text || res.statusText;
+        throw new Error(message || 'Request failed');
+      }
+
+      return data;
+    }
+
+    function formatDateKey(date) {
+      return date.toISOString().slice(0, 10);
+    }
+
+    function getCurrentMonthMeta() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const start = new Date(year, month, 1);
+      const end = new Date(year, month + 1, 0);
+      return {
+        year,
+        month,
+        start,
+        end,
+        label: start.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+      };
+    }
+
+    function setAccountUi() {
+      if (state.loggedIn && state.user) {
+        loginButton.href = '#';
+        loginButton.innerHTML = '<span class="dot"></span><span>' + (state.user.email || 'Signed in') + '</span>';
+        loginButton.onclick = (event) => event.preventDefault();
+        logoutButton.style.display = '';
+      } else {
+        loginButton.href = '/auth/google/login';
+        loginButton.innerHTML = '<span class="avatar">G</span><span>Sign in</span>';
+        loginButton.onclick = null;
+        logoutButton.style.display = 'none';
+      }
+    }
+
+    function updateLocalStatus(goalId, day, status) {
+      const goal = state.goals.find((g) => g.id === goalId);
+      if (!goal) return;
+      if (!goal.entries) goal.entries = {};
+      if (status === 'none') {
+        delete goal.entries[day];
+      } else {
+        goal.entries[day] = status;
+      }
+    }
+
+    async function saveEntry(goalId, day, status) {
+      await api('/api/goals/entry', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ goal_id: goalId, day, status })
+      });
+    }
+
+    function buildCalendar(goal, monthMeta) {
+      const calendar = document.createElement('div');
+      calendar.className = 'calendar';
+
+      const top = document.createElement('div');
+      top.className = 'calendar-top';
+      const heading = document.createElement('h3');
+      heading.textContent = monthMeta.label;
+      const hint = document.createElement('div');
+      hint.className = 'status-label';
+      hint.textContent = 'Tap a day to update your status';
+      top.append(heading, hint);
+
+      const weekdayRow = document.createElement('div');
+      weekdayRow.className = 'weekday-row';
+      const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      weekdays.forEach((day) => {
+        const el = document.createElement('div');
+        el.className = 'weekday';
+        el.textContent = day;
+        weekdayRow.appendChild(el);
+      });
+
+      const daysGrid = document.createElement('div');
+      daysGrid.className = 'days';
+
+      const startDay = monthMeta.start.getDay();
+      for (let i = 0; i < startDay; i += 1) {
+        const spacer = document.createElement('div');
+        spacer.className = 'spacer';
+        daysGrid.appendChild(spacer);
+      }
+
+      const totalDays = monthMeta.end.getDate();
+      for (let day = 1; day <= totalDays; day += 1) {
+        const date = new Date(monthMeta.year, monthMeta.month, day);
+        const key = formatDateKey(date);
+        const status = (goal.entries && goal.entries[key]) || 'none';
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'day-cell';
+        button.dataset.status = status;
+        button.dataset.key = key;
+
+        const dayNumber = document.createElement('div');
+        dayNumber.className = 'day-number';
+        dayNumber.textContent = String(day);
+
+        const dot = document.createElement('div');
+        dot.className = 'status-dot';
+        dot.textContent = STATUS_ICON[status];
+
+        button.append(dayNumber, dot);
+        button.setAttribute('aria-label', `Day ${day}: ${STATUS_LABEL[status]}`);
+
+        button.addEventListener('click', async () => {
+          const current = button.dataset.status || 'none';
+          const nextIndex = (STATUS_SEQUENCE.indexOf(current) + 1) % STATUS_SEQUENCE.length;
+          const nextStatus = STATUS_SEQUENCE[nextIndex];
+          button.dataset.status = nextStatus;
+          dot.textContent = STATUS_ICON[nextStatus];
+          button.setAttribute('aria-label', `Day ${day}: ${STATUS_LABEL[nextStatus]}`);
+
+          const previous = current;
+          updateLocalStatus(goal.id, key, nextStatus);
+
+          try {
+            await saveEntry(goal.id, key, nextStatus);
+          } catch (error) {
+            updateLocalStatus(goal.id, key, previous);
+            button.dataset.status = previous;
+            dot.textContent = STATUS_ICON[previous];
+            button.setAttribute('aria-label', `Day ${day}: ${STATUS_LABEL[previous]}`);
+            setSyncMessage('Could not save status: ' + error.message);
+          }
+        });
+
+        daysGrid.appendChild(button);
+      }
+
+      calendar.append(top, weekdayRow, daysGrid);
+      return calendar;
+    }
+
+    function renderGoals() {
+      goalsContainer.innerHTML = '';
+
+      if (!state.loggedIn) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = 'Sign in to view and sync your goals.';
+        goalsContainer.appendChild(empty);
+        return;
+      }
+
+      if (!state.goals.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = 'Add a goal to start tracking your daily progress.';
+        goalsContainer.appendChild(empty);
+        return;
+      }
+
+      const monthMeta = getCurrentMonthMeta();
+
+      state.goals.forEach((goal) => {
+        const card = document.createElement('article');
+        card.className = 'goal-card';
+
+        const head = document.createElement('div');
+        head.className = 'goal-head';
+
+        const title = document.createElement('h2');
+        title.className = 'goal-name';
+        title.textContent = goal.name;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-btn';
+        removeBtn.textContent = 'Remove';
+        removeBtn.addEventListener('click', async () => {
+          const confirmDelete = confirm('Remove this goal? Progress for it will be cleared.');
+          if (!confirmDelete) return;
+          try {
+            await api('/api/goals/delete', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ id: goal.id })
+            });
+            state.goals = state.goals.filter((item) => item.id !== goal.id);
+            renderGoals();
+          } catch (error) {
+            setSyncMessage('Could not delete goal: ' + error.message);
+          }
+        });
+
+        head.append(title, removeBtn);
+
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.textContent = 'Current month';
+
+        const calendar = buildCalendar(goal, monthMeta);
+
+        card.append(head, chip, calendar);
+        goalsContainer.appendChild(card);
+      });
+    }
+
+    async function loadGoals() {
+      if (!state.loggedIn) return;
+      setSyncMessage('Syncing goals...');
+      try {
+        const res = await api('/api/goals/list');
+        state.goals = (res && res.goals) || [];
+        setSyncMessage('');
+        renderGoals();
+      } catch (error) {
+        setSyncMessage('Could not load goals: ' + error.message);
+        renderGoals();
+      }
+    }
+
+    async function refreshAuth() {
+      try {
+        const me = await api('/api/auth/me');
+        state.loggedIn = !!(me && me.loggedIn);
+        state.user = (me && me.user) || null;
+        setAccountUi();
+
+        if (state.loggedIn) {
+          authPanel.style.display = 'none';
+          createPanel.style.display = '';
+          await loadGoals();
+        } else {
+          createPanel.style.display = 'none';
+          authPanel.style.display = '';
+          state.goals = [];
+          renderGoals();
+        }
+      } catch (error) {
+        setSyncMessage('Could not verify login: ' + error.message);
+        createPanel.style.display = 'none';
+      }
+    }
+
+    goalForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const name = goalNameInput.value.trim();
+      if (!name) return;
+
+      try {
+        await api('/api/goals/create', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        goalNameInput.value = '';
+        await loadGoals();
+      } catch (error) {
+        setSyncMessage('Could not add goal: ' + error.message);
+      }
+    });
+
+    logoutButton.addEventListener('click', async () => {
+      try {
+        await api('/api/auth/logout', { method: 'POST' });
+        location.reload();
+      } catch (error) {
+        setSyncMessage('Logout failed: ' + error.message);
+      }
+    });
+
+    refreshAuthBtn.addEventListener('click', () => {
+      refreshAuth();
+    });
+
+    refreshAuth();
+  </script>
+</body>
+
+</html>

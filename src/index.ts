@@ -2,6 +2,7 @@ import { handleAuthRoutes } from './auth';
 import { handleInternalTestRoutes } from './internal-test';
 import { handlePagesApi } from './pages';
 import { handlePastebinApi, handlePastebinPage } from './pastebin';
+import { handleGoalApi } from './goals';
 import { handleTodoApi } from './todo';
 import { handleTranscriptApi } from './routes/transcript';
 import { serveStatic } from './static';
@@ -23,6 +24,9 @@ export default {
 
     const pastebinApiResponse = await handlePastebinApi(request, bindings, url);
     if (pastebinApiResponse) return pastebinApiResponse;
+
+    const goalApiResponse = await handleGoalApi(request, bindings, url);
+    if (goalApiResponse) return goalApiResponse;
 
     const todoApiResponse = await handleTodoApi(request, bindings, url);
     if (todoApiResponse) return todoApiResponse;
