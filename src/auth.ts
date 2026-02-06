@@ -35,6 +35,7 @@ function normalizeReturnTo(value: string | null): string | null {
   const trimmed = value.trim();
   if (!trimmed.startsWith('/')) return null;
   if (trimmed.startsWith('//')) return null;
+  if (trimmed.includes('\\')) return null;
   if (trimmed.includes('\n') || trimmed.includes('\r')) return null;
   return trimmed;
 }
@@ -74,7 +75,8 @@ export async function handleAuthRoutes(
     const clientId = env.GOOGLE_CLIENT_ID;
     const redirect = env.OAUTH_REDIRECT_URL;
     if (!clientId || !redirect) return badRequest('Google OAuth not configured', 500);
-    const returnTo = normalizeReturnTo(url.searchParams.get('returnTo'));
+    // Support both ?returnTo=... (newer) and ?next=... (older/tools built on the previous convention).
+    const returnTo = normalizeReturnTo(url.searchParams.get('returnTo') || url.searchParams.get('next'));
     const state = urlSafeRandom(16);
     const oauthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     oauthUrl.searchParams.set('client_id', clientId);

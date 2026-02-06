@@ -1,4 +1,6 @@
 import { handleAuthRoutes } from './auth';
+import { handleInternalTestRoutes } from './internal-test';
+import { handlePagesApi } from './pages';
 import { handlePastebinApi, handlePastebinPage } from './pastebin';
 import { handleGoalApi } from './goals';
 import { handleTodoApi } from './todo';
@@ -11,8 +13,14 @@ export default {
     const bindings = env as unknown as Bindings;
     const url = new URL(request.url);
 
+    const internalTestResponse = await handleInternalTestRoutes(request, bindings, url);
+    if (internalTestResponse) return internalTestResponse;
+
     const authResponse = await handleAuthRoutes(request, bindings, url);
     if (authResponse) return authResponse;
+
+    const pagesApiResponse = await handlePagesApi(request, bindings, url);
+    if (pagesApiResponse) return pagesApiResponse;
 
     const pastebinApiResponse = await handlePastebinApi(request, bindings, url);
     if (pastebinApiResponse) return pastebinApiResponse;

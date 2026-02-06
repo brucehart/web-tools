@@ -1331,7 +1331,7 @@
                 } else {
                     qs('#authArea').innerHTML = '';
                     qs('#authArea').appendChild(
-                        el('a', { href: '/auth/google/login?returnTo=/todo', class: 'icon-btn' }, ['Login'])
+                        el('a', { href: '/auth/google/login?returnTo=' + encodeURIComponent(location.pathname + location.search), class: 'icon-btn' }, ['Login'])
                     );
 
                     setModeLabel('Not signed in', 'guest');

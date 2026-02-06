@@ -255,7 +255,7 @@
           } else {
             qs('#authArea').innerHTML = '';
             qs('#authArea').append(
-              el('a', { href: '/auth/google/login' }, ['Login with Google'])
+              el('a', { href: '/auth/google/login?returnTo=' + encodeURIComponent(location.pathname + location.search) }, ['Login with Google'])
             );
             const list = qs('#mineList');
             if (list) list.innerHTML = '';
