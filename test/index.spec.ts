@@ -17,6 +17,7 @@ describe('Tools index and Markdown viewer', () => {
     const body = await response.text();
     expect(body).toContain('<title>Web Tools</title>');
     expect(body).toContain('href="/markdown"');
+    expect(body).toContain('href="/diff"');
   });
 
   it('serves markdown viewer at /markdown (unit)', async () => {
@@ -29,6 +30,19 @@ describe('Tools index and Markdown viewer', () => {
     const body = await response.text();
     expect(body).toContain('<title>Markdown Viewer</title>');
     expect(body).toContain('textarea id="input"');
+  });
+
+  it('serves text diff at /diff (unit)', async () => {
+    const request = new IncomingRequest('http://example.com/diff');
+    const ctx = createExecutionContext();
+    const response = await worker.fetch(request, env, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    const body = await response.text();
+    expect(body).toContain('<title>Text Diff</title>');
+    expect(body).toContain('id="originalInput"');
+    expect(body).toContain('id="changedInput"');
   });
 
   it('serves index page (integration)', async () => {
@@ -45,6 +59,14 @@ describe('Tools index and Markdown viewer', () => {
     expect(response.headers.get('content-type')).toContain('text/html');
     const body = await response.text();
     expect(body).toContain('<title>Markdown Viewer</title>');
+  });
+
+  it('serves text diff (integration)', async () => {
+    const response = await SELF.fetch('https://example.com/diff');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    const body = await response.text();
+    expect(body).toContain('<title>Text Diff</title>');
   });
 
   it('serves actuary calculator at /actuary (unit)', async () => {

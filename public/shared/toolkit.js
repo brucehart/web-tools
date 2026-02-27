@@ -5,6 +5,7 @@
   const TOOLS = [
     { id: 'home', title: 'Home', href: '/' },
     { id: 'pastebin', title: 'Pastebin', href: '/pastebin' },
+    { id: 'diff', title: 'Text Diff', href: '/diff' },
     { id: 'yt-transcript', title: 'YouTube Transcript', href: '/yt-transcript' },
     { id: 'markdown', title: 'Markdown Viewer', href: '/markdown' },
     { id: 'euler', title: 'Euler Preview', href: '/euler' },

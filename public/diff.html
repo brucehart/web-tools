@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Text Diff</title>
+    <link rel="stylesheet" href="/shared/toolkit.css" />
+    <script defer src="/shared/toolkit.js"></script>
+    <style>
+      :root {
+        --panel: var(--wt-panel-solid);
+        --border: var(--wt-border);
+        --muted: var(--wt-muted);
+        --accent: var(--wt-accent);
+        --danger: var(--wt-danger);
+        --success: var(--wt-success);
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--wt-fg);
+      }
+
+      .layout {
+        display: grid;
+        gap: 14px;
+      }
+
+      .hero {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: var(--wt-shadow-sm);
+      }
+
+      .hero h1 {
+        margin: 0 0 6px;
+        font-size: 1.6rem;
+      }
+
+      .hero p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .editor-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: var(--wt-shadow-sm);
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border-bottom: 1px solid var(--border);
+        padding: 10px 12px;
+      }
+
+      .panel-head h2 {
+        margin: 0;
+        font-size: 0.95rem;
+      }
+
+      .meta {
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 260px;
+        border: 0;
+        padding: 14px;
+        background: transparent;
+        color: inherit;
+        resize: vertical;
+        font-family: var(--wt-font-mono);
+        font-size: 0.88rem;
+        line-height: 1.5;
+      }
+
+      textarea:focus {
+        outline: none;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .stat {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 5px 10px;
+        font-size: 0.84rem;
+        background: rgba(127, 127, 127, 0.06);
+      }
+
+      .stat-key {
+        color: var(--muted);
+      }
+
+      .warning {
+        margin: 0;
+        padding: 9px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(217, 119, 6, 0.3);
+        background: rgba(217, 119, 6, 0.1);
+        color: var(--wt-warning);
+        font-size: 0.9rem;
+      }
+
+      .warning[hidden] {
+        display: none;
+      }
+
+      .diff-wrap {
+        overflow: auto;
+        border-top: 1px solid var(--border);
+      }
+
+      .diff-output {
+        min-height: 130px;
+        font-family: var(--wt-font-mono);
+        font-size: 0.86rem;
+        line-height: 1.5;
+      }
+
+      .diff-empty {
+        padding: 18px;
+        color: var(--muted);
+      }
+
+      .diff-row {
+        display: grid;
+        grid-template-columns: 64px 64px 26px 1fr;
+        align-items: start;
+        border-bottom: 1px solid rgba(127, 127, 127, 0.12);
+      }
+
+      .ln {
+        padding: 4px 8px;
+        text-align: right;
+        color: var(--muted);
+        user-select: none;
+      }
+
+      .marker {
+        padding: 4px 6px;
+        text-align: center;
+        user-select: none;
+      }
+
+      .text {
+        margin: 0;
+        padding: 4px 10px;
+        white-space: pre;
+        overflow-x: auto;
+      }
+
+      .diff-row-equal {
+        background: transparent;
+      }
+
+      .diff-row-add {
+        background: color-mix(in srgb, var(--success) 12%, transparent);
+      }
+
+      .diff-row-add .marker {
+        color: var(--success);
+        font-weight: 700;
+      }
+
+      .diff-row-remove {
+        background: color-mix(in srgb, var(--danger) 11%, transparent);
+      }
+
+      .diff-row-remove .marker {
+        color: var(--danger);
+        font-weight: 700;
+      }
+
+      .diff-row-modify .text {
+        font-weight: 600;
+      }
+
+      @media (max-width: 900px) {
+        .editor-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .diff-row {
+          grid-template-columns: 52px 52px 22px 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body class="wt" data-wt-tool="diff" data-wt-title="Text Diff">
+    <div class="wt-header" role="banner"></div>
+
+    <main class="wt-page layout">
+      <section class="hero">
+        <h1>Text Diff</h1>
+        <p>Compare original and changed text line by line with git-style output.</p>
+      </section>
+
+      <section class="editor-grid">
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Original Text</h2>
+            <span id="originalLines" class="meta">0 lines</span>
+          </div>
+          <textarea
+            id="originalInput"
+            spellcheck="false"
+            placeholder="Paste the original text here..."
+          ></textarea>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Changed Text</h2>
+            <span id="changedLines" class="meta">0 lines</span>
+          </div>
+          <textarea
+            id="changedInput"
+            spellcheck="false"
+            placeholder="Paste the updated text here..."
+          ></textarea>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div class="controls">
+            <button id="compareBtn" class="wt-btn wt-btn-primary" type="button">Compare</button>
+            <button id="swapBtn" class="wt-btn" type="button">Swap</button>
+            <button id="clearBtn" class="wt-btn wt-btn-ghost" type="button">Clear</button>
+          </div>
+          <div class="stats">
+            <span class="stat"><span class="stat-key">Added</span><span id="addedCount">0</span></span>
+            <span class="stat"><span class="stat-key">Removed</span><span id="removedCount">0</span></span>
+            <span class="stat"><span class="stat-key">Changed</span><span id="changedCount">0</span></span>
+            <span class="stat"><span class="stat-key">Unchanged</span><span id="unchangedCount">0</span></span>
+          </div>
+        </div>
+        <p id="warning" class="warning" hidden></p>
+        <div class="diff-wrap">
+          <div id="diffOutput" class="diff-output"></div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const STORAGE_ORIGINAL = 'wt_diff_original';
+      const STORAGE_CHANGED = 'wt_diff_changed';
+      const SOFT_LINE_LIMIT = 10000;
+      const HARD_CELL_LIMIT = 4000000;
+
+      const originalInput = document.getElementById('originalInput');
+      const changedInput = document.getElementById('changedInput');
+      const compareBtn = document.getElementById('compareBtn');
+      const swapBtn = document.getElementById('swapBtn');
+      const clearBtn = document.getElementById('clearBtn');
+      const warningEl = document.getElementById('warning');
+      const diffOutput = document.getElementById('diffOutput');
+
+      const addedCount = document.getElementById('addedCount');
+      const removedCount = document.getElementById('removedCount');
+      const changedCount = document.getElementById('changedCount');
+      const unchangedCount = document.getElementById('unchangedCount');
+      const originalLinesEl = document.getElementById('originalLines');
+      const changedLinesEl = document.getElementById('changedLines');
+
+      function normalizeNewlines(text) {
+        return String(text || '').replace(/\r\n?/g, '\n');
+      }
+
+      function toLines(text) {
+        const normalized = normalizeNewlines(text);
+        return normalized === '' ? [] : normalized.split('\n');
+      }
+
+      function setWarning(message) {
+        if (!message) {
+          warningEl.hidden = true;
+          warningEl.textContent = '';
+          return;
+        }
+        warningEl.hidden = false;
+        warningEl.textContent = message;
+      }
+
+      function setStats(stats) {
+        addedCount.textContent = String(stats.added);
+        removedCount.textContent = String(stats.removed);
+        changedCount.textContent = String(stats.changed);
+        unchangedCount.textContent = String(stats.unchanged);
+      }
+
+      function renderEmptyState(message) {
+        diffOutput.innerHTML = '';
+        const empty = document.createElement('div');
+        empty.className = 'diff-empty';
+        empty.textContent = message;
+        diffOutput.appendChild(empty);
+      }
+
+      function createRow(type, item, isModified) {
+        const row = document.createElement('div');
+        const classes = ['diff-row'];
+        if (type === 'equal') classes.push('diff-row-equal');
+        if (type === 'add') classes.push('diff-row-add');
+        if (type === 'remove') classes.push('diff-row-remove');
+        if (isModified) classes.push('diff-row-modify');
+        row.className = classes.join(' ');
+
+        const left = document.createElement('span');
+        left.className = 'ln';
+        left.textContent = item.oldNo === null ? '' : String(item.oldNo);
+
+        const right = document.createElement('span');
+        right.className = 'ln';
+        right.textContent = item.newNo === null ? '' : String(item.newNo);
+
+        const marker = document.createElement('span');
+        marker.className = 'marker';
+        marker.textContent = type === 'add' ? '+' : type === 'remove' ? '-' : ' ';
+
+        const text = document.createElement('pre');
+        text.className = 'text';
+        text.textContent = item.line === '' ? ' ' : item.line;
+
+        row.append(left, right, marker, text);
+        return row;
+      }
+
+      function buildLineDiff(originalLines, changedLines) {
+        const n = originalLines.length;
+        const m = changedLines.length;
+        const cellCount = (n + 1) * (m + 1);
+        if (cellCount > HARD_CELL_LIMIT) {
+          return {
+            error:
+              'Inputs are too large for in-browser diffing. Reduce the text size or compare in smaller sections.',
+          };
+        }
+
+        const table = Array.from({ length: n + 1 }, () => new Uint32Array(m + 1));
+        for (let i = 1; i <= n; i++) {
+          for (let j = 1; j <= m; j++) {
+            if (originalLines[i - 1] === changedLines[j - 1]) {
+              table[i][j] = table[i - 1][j - 1] + 1;
+            } else {
+              table[i][j] = Math.max(table[i - 1][j], table[i][j - 1]);
+            }
+          }
+        }
+
+        let i = n;
+        let j = m;
+        const ops = [];
+
+        while (i > 0 || j > 0) {
+          if (i > 0 && j > 0 && originalLines[i - 1] === changedLines[j - 1]) {
+            ops.push({ type: 'equal', line: originalLines[i - 1], oldNo: i, newNo: j });
+            i--;
+            j--;
+            continue;
+          }
+
+          if (j > 0 && (i === 0 || table[i][j - 1] >= table[i - 1][j])) {
+            ops.push({ type: 'add', line: changedLines[j - 1], oldNo: null, newNo: j });
+            j--;
+            continue;
+          }
+
+          ops.push({ type: 'remove', line: originalLines[i - 1], oldNo: i, newNo: null });
+          i--;
+        }
+
+        ops.reverse();
+        return { ops };
+      }
+
+      function groupOperations(ops) {
+        const groups = [];
+        let index = 0;
+
+        while (index < ops.length) {
+          const op = ops[index];
+
+          if (op.type === 'equal') {
+            const items = [];
+            while (index < ops.length && ops[index].type === 'equal') {
+              items.push(ops[index]);
+              index++;
+            }
+            groups.push({ type: 'equal', items });
+            continue;
+          }
+
+          if (op.type === 'remove') {
+            const removed = [];
+            while (index < ops.length && ops[index].type === 'remove') {
+              removed.push(ops[index]);
+              index++;
+            }
+
+            const added = [];
+            while (index < ops.length && ops[index].type === 'add') {
+              added.push(ops[index]);
+              index++;
+            }
+
+            if (added.length > 0) {
+              groups.push({ type: 'modify', removed, added });
+            } else {
+              groups.push({ type: 'remove', items: removed });
+            }
+            continue;
+          }
+
+          const items = [];
+          while (index < ops.length && ops[index].type === 'add') {
+            items.push(ops[index]);
+            index++;
+          }
+          groups.push({ type: 'add', items });
+        }
+
+        return groups;
+      }
+
+      function summarize(groups) {
+        const stats = { added: 0, removed: 0, changed: 0, unchanged: 0 };
+
+        for (const group of groups) {
+          if (group.type === 'equal') {
+            stats.unchanged += group.items.length;
+            continue;
+          }
+
+          if (group.type === 'add') {
+            stats.added += group.items.length;
+            continue;
+          }
+
+          if (group.type === 'remove') {
+            stats.removed += group.items.length;
+            continue;
+          }
+
+          const paired = Math.min(group.removed.length, group.added.length);
+          stats.changed += paired;
+          stats.removed += Math.max(group.removed.length - paired, 0);
+          stats.added += Math.max(group.added.length - paired, 0);
+        }
+
+        return stats;
+      }
+
+      function renderDiff(groups) {
+        diffOutput.innerHTML = '';
+        if (groups.length === 0) {
+          renderEmptyState('No changes to show.');
+          return;
+        }
+
+        const fragment = document.createDocumentFragment();
+
+        for (const group of groups) {
+          if (group.type === 'equal') {
+            for (const item of group.items) fragment.appendChild(createRow('equal', item, false));
+            continue;
+          }
+
+          if (group.type === 'add') {
+            for (const item of group.items) fragment.appendChild(createRow('add', item, false));
+            continue;
+          }
+
+          if (group.type === 'remove') {
+            for (const item of group.items) fragment.appendChild(createRow('remove', item, false));
+            continue;
+          }
+
+          for (const item of group.removed) fragment.appendChild(createRow('remove', item, true));
+          for (const item of group.added) fragment.appendChild(createRow('add', item, true));
+        }
+
+        diffOutput.appendChild(fragment);
+      }
+
+      function updateLineCounts() {
+        originalLinesEl.textContent = `${toLines(originalInput.value).length} lines`;
+        changedLinesEl.textContent = `${toLines(changedInput.value).length} lines`;
+      }
+
+      function saveInputs() {
+        try {
+          localStorage.setItem(STORAGE_ORIGINAL, originalInput.value);
+          localStorage.setItem(STORAGE_CHANGED, changedInput.value);
+        } catch {
+          // Ignore localStorage failures.
+        }
+      }
+
+      function loadInputs() {
+        try {
+          originalInput.value = localStorage.getItem(STORAGE_ORIGINAL) || '';
+          changedInput.value = localStorage.getItem(STORAGE_CHANGED) || '';
+        } catch {
+          originalInput.value = '';
+          changedInput.value = '';
+        }
+      }
+
+      function compare() {
+        const originalLines = toLines(originalInput.value);
+        const changedLines = toLines(changedInput.value);
+        const totalLines = originalLines.length + changedLines.length;
+
+        setWarning('');
+        if (totalLines > SOFT_LINE_LIMIT) {
+          setWarning(
+            `Large input detected (${totalLines} lines total). Comparison may be slower than usual.`,
+          );
+        }
+
+        if (originalLines.length === 0 && changedLines.length === 0) {
+          setStats({ added: 0, removed: 0, changed: 0, unchanged: 0 });
+          renderEmptyState('Enter text in both panels, then click Compare.');
+          return;
+        }
+
+        const result = buildLineDiff(originalLines, changedLines);
+        if (result.error) {
+          setStats({ added: 0, removed: 0, changed: 0, unchanged: 0 });
+          renderEmptyState(result.error);
+          return;
+        }
+
+        const groups = groupOperations(result.ops);
+        const stats = summarize(groups);
+        setStats(stats);
+        renderDiff(groups);
+      }
+
+      function swapInputs() {
+        const currentOriginal = originalInput.value;
+        originalInput.value = changedInput.value;
+        changedInput.value = currentOriginal;
+        saveInputs();
+        updateLineCounts();
+        compare();
+      }
+
+      function clearAll() {
+        originalInput.value = '';
+        changedInput.value = '';
+        saveInputs();
+        setWarning('');
+        updateLineCounts();
+        setStats({ added: 0, removed: 0, changed: 0, unchanged: 0 });
+        renderEmptyState('Enter text in both panels, then click Compare.');
+      }
+
+      function onInputChange() {
+        saveInputs();
+        updateLineCounts();
+      }
+
+      loadInputs();
+      updateLineCounts();
+      setStats({ added: 0, removed: 0, changed: 0, unchanged: 0 });
+      renderEmptyState('Enter text in both panels, then click Compare.');
+
+      compareBtn.addEventListener('click', compare);
+      swapBtn.addEventListener('click', swapInputs);
+      clearBtn.addEventListener('click', clearAll);
+
+      originalInput.addEventListener('input', onInputChange);
+      changedInput.addEventListener('input', onInputChange);
+
+      // Quick keyboard shortcut for compare when editing.
+      function onCompareShortcut(event) {
+        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+          event.preventDefault();
+          compare();
+        }
+      }
+
+      originalInput.addEventListener('keydown', onCompareShortcut);
+      changedInput.addEventListener('keydown', onCompareShortcut);
+    </script>
+  </body>
+</html>
