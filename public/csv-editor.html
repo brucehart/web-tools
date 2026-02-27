@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CSV Viewer &amp; Editor</title>
+    <link rel="stylesheet" href="/shared/toolkit.css" />
+    <script defer src="/shared/toolkit.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsuites@5.12.0/dist/jsuites.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@5.0.4/dist/jspreadsheet.min.css"
+    />
+    <style>
+      :root {
+        --panel: var(--wt-panel-solid);
+        --border: var(--wt-border);
+        --muted: var(--wt-muted);
+        --accent: var(--wt-accent);
+        --success: var(--wt-success);
+        --danger: var(--wt-danger);
+        --warning: var(--wt-warning);
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--wt-fg);
+      }
+
+      .layout {
+        display: grid;
+        gap: 14px;
+      }
+
+      .hero {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: var(--wt-shadow-sm);
+      }
+
+      .hero h1 {
+        margin: 0 0 6px;
+        font-size: 1.6rem;
+      }
+
+      .hero p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: var(--wt-shadow-sm);
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border-bottom: 1px solid var(--border);
+        padding: 10px 12px;
+      }
+
+      .panel-head h2 {
+        margin: 0;
+        font-size: 0.95rem;
+      }
+
+      .panel-body {
+        padding: 12px;
+        display: grid;
+        gap: 12px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 160px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: transparent;
+        color: inherit;
+        font-family: var(--wt-font-mono);
+        font-size: 0.88rem;
+        line-height: 1.45;
+        padding: 10px;
+        resize: vertical;
+      }
+
+      textarea:focus,
+      select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
+      }
+
+      .controls-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .checkbox-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+      }
+
+      .status {
+        margin: 0;
+        font-size: 0.9rem;
+        min-height: 1.3rem;
+        color: var(--muted);
+      }
+
+      .status.success {
+        color: var(--success);
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      .warning {
+        margin: 0;
+        padding: 8px 10px;
+        border-radius: 10px;
+        border: 1px solid color-mix(in srgb, var(--warning) 45%, var(--border));
+        color: var(--warning);
+        background: color-mix(in srgb, var(--warning) 12%, transparent);
+        font-size: 0.86rem;
+      }
+
+      .warning[hidden] {
+        display: none;
+      }
+
+      .grid-head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .group {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .group label {
+        font-size: 0.86rem;
+        color: var(--muted);
+      }
+
+      select {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 7px 9px;
+        background: transparent;
+        color: inherit;
+      }
+
+      #gridMeta {
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      #sheetHost {
+        border-top: 1px solid var(--border);
+        min-height: 300px;
+      }
+
+      #sheetHost .jss_container {
+        border: 0;
+      }
+
+      #sheetHost .jss_content {
+        background: transparent;
+      }
+
+      #sheetHost .jss_worksheet td,
+      #sheetHost .jss_worksheet thead td {
+        color: var(--wt-fg);
+      }
+
+      @media (max-width: 900px) {
+        .grid-head {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body class="wt" data-wt-tool="csv-editor" data-wt-title="CSV Viewer &amp; Editor">
+    <div class="wt-header" role="banner"></div>
+
+    <main class="wt-page layout">
+      <section class="hero">
+        <h1>CSV Viewer &amp; Editor</h1>
+        <p>
+          Paste CSV (with or without headers), edit in an Excel-like grid, then export CSV or copy
+          data for Excel/Google Sheets.
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Import CSV</h2>
+        </div>
+        <div class="panel-body">
+          <textarea
+            id="csvInput"
+            spellcheck="false"
+            placeholder="Paste CSV here...&#10;name,score,city&#10;Alice,91,New York&#10;Bob,87,Seattle"
+          ></textarea>
+          <div class="controls-row">
+            <label class="checkbox-wrap">
+              <input id="firstRowHeader" type="checkbox" checked />
+              First row is header
+            </label>
+            <button id="importBtn" class="wt-btn wt-btn-primary" type="button">Import</button>
+            <button id="clearBtn" class="wt-btn wt-btn-ghost" type="button">Clear</button>
+          </div>
+          <p id="status" class="status">Paste CSV and click Import.</p>
+          <p id="warning" class="warning" hidden></p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Spreadsheet Grid</h2>
+          <span id="gridMeta">0 rows x 0 columns</span>
+        </div>
+        <div class="panel-body">
+          <div class="grid-head">
+            <div class="group">
+              <button id="addRowBtn" class="wt-btn" type="button">Add Row</button>
+              <button id="deleteRowBtn" class="wt-btn wt-btn-danger" type="button">Delete Row</button>
+              <button id="addColBtn" class="wt-btn" type="button">Add Column</button>
+              <button id="deleteColBtn" class="wt-btn wt-btn-danger" type="button">Delete Column</button>
+            </div>
+            <div class="group">
+              <label for="exportDelimiter">Export delimiter</label>
+              <select id="exportDelimiter">
+                <option value="comma">Comma (,)</option>
+                <option value="semicolon">Semicolon (;)</option>
+                <option value="tab">Tab</option>
+              </select>
+              <button id="downloadCsvBtn" class="wt-btn wt-btn-primary" type="button">Download CSV</button>
+              <button id="copyTsvBtn" class="wt-btn" type="button">Copy for Sheets/Excel</button>
+            </div>
+          </div>
+          <div id="sheetHost" aria-label="CSV spreadsheet editor"></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsuites@5.12.0/dist/jsuites.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@5.0.4/dist/index.min.js"></script>
+
+    <script>
+      (function() {
+        const STORAGE_KEY = 'wt_csv_editor_v1';
+        const WARN_ROWS = 20000;
+
+        const csvInput = document.getElementById('csvInput');
+        const firstRowHeader = document.getElementById('firstRowHeader');
+        const importBtn = document.getElementById('importBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const addRowBtn = document.getElementById('addRowBtn');
+        const deleteRowBtn = document.getElementById('deleteRowBtn');
+        const addColBtn = document.getElementById('addColBtn');
+        const deleteColBtn = document.getElementById('deleteColBtn');
+        const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+        const copyTsvBtn = document.getElementById('copyTsvBtn');
+        const exportDelimiter = document.getElementById('exportDelimiter');
+
+        const statusEl = document.getElementById('status');
+        const warningEl = document.getElementById('warning');
+        const gridMeta = document.getElementById('gridMeta');
+        const sheetHost = document.getElementById('sheetHost');
+
+        let worksheet = null;
+        let headerMode = true;
+        let saveTimer = 0;
+
+        function setStatus(message, tone) {
+          statusEl.textContent = message;
+          statusEl.classList.remove('success', 'error');
+          if (tone === 'success') statusEl.classList.add('success');
+          if (tone === 'error') statusEl.classList.add('error');
+        }
+
+        function setWarning(message) {
+          if (!message) {
+            warningEl.hidden = true;
+            warningEl.textContent = '';
+            return;
+          }
+          warningEl.hidden = false;
+          warningEl.textContent = message;
+        }
+
+        function ensureLibraries() {
+          if (!window.Papa) throw new Error('CSV parser failed to load. Refresh and try again.');
+          if (!window.jspreadsheet) throw new Error('Spreadsheet engine failed to load. Refresh and try again.');
+          if (!window.jSuites) throw new Error('Spreadsheet UI dependency failed to load. Refresh and try again.');
+        }
+
+        function normalizeCell(value) {
+          return value == null ? '' : String(value);
+        }
+
+        function columnLabel(index) {
+          let n = Number(index) + 1;
+          let label = '';
+          while (n > 0) {
+            const mod = (n - 1) % 26;
+            label = String.fromCharCode(65 + mod) + label;
+            n = Math.floor((n - 1) / 26);
+          }
+          return label;
+        }
+
+        function trimTrailingEmptyRows(rows) {
+          const copy = rows.slice();
+          while (copy.length > 0) {
+            const last = copy[copy.length - 1] || [];
+            const hasData = last.some((cell) => normalizeCell(cell).length > 0);
+            if (hasData) break;
+            copy.pop();
+          }
+          return copy;
+        }
+
+        function normalizeRows(rows) {
+          const normalized = (rows || []).map((row) => (Array.isArray(row) ? row.map(normalizeCell) : [normalizeCell(row)]));
+          return trimTrailingEmptyRows(normalized);
+        }
+
+        function toRectangular(rows, columnCount) {
+          const count = Math.max(Number(columnCount) || 0, 1);
+          return rows.map((row) => {
+            const cells = Array.isArray(row) ? row.map(normalizeCell) : [normalizeCell(row)];
+            while (cells.length < count) cells.push('');
+            if (cells.length > count) return cells.slice(0, count);
+            return cells;
+          });
+        }
+
+        function buildGridShape(rows, withHeaders) {
+          const normalizedRows = normalizeRows(rows);
+
+          if (normalizedRows.length === 0) {
+            return {
+              headers: ['Column A'],
+              data: [],
+            };
+          }
+
+          if (withHeaders) {
+            const headerRow = normalizedRows[0] || [];
+            const dataRows = normalizedRows.slice(1);
+            const dataMax = dataRows.reduce((max, row) => Math.max(max, row.length), 0);
+            const colCount = Math.max(1, headerRow.length, dataMax);
+            const headers = Array.from({ length: colCount }, (_, i) => {
+              const value = normalizeCell(headerRow[i] || '').trim();
+              return value || `Column ${columnLabel(i)}`;
+            });
+            return {
+              headers,
+              data: toRectangular(dataRows, colCount),
+            };
+          }
+
+          const colCount = Math.max(1, normalizedRows.reduce((max, row) => Math.max(max, row.length), 0));
+          return {
+            headers: Array.from({ length: colCount }, (_, i) => `Column ${columnLabel(i)}`),
+            data: toRectangular(normalizedRows, colCount),
+          };
+        }
+
+        function delimiterFromSelection(value) {
+          if (value === 'semicolon') return ';';
+          if (value === 'tab') return '\t';
+          return ',';
+        }
+
+        function delimiterLabel(value) {
+          if (value === 'semicolon') return 'semicolon';
+          if (value === 'tab') return 'tab';
+          return 'comma';
+        }
+
+        function safeSelectedIndexes(values) {
+          if (!Array.isArray(values)) return [];
+          return values
+            .map((item) => Number(item))
+            .filter((item) => Number.isInteger(item) && item >= 0)
+            .sort((a, b) => b - a);
+        }
+
+        function readHeaders() {
+          if (!worksheet) return [];
+          const raw = worksheet.getHeaders(true);
+          if (Array.isArray(raw)) return raw.map(normalizeCell);
+          if (typeof raw === 'string') return raw.split(',').map(normalizeCell);
+          return [];
+        }
+
+        function readData(highlighted) {
+          if (!worksheet) return [];
+          const matrix = worksheet.getData(Boolean(highlighted), false) || [];
+          return matrix.map((row) => (Array.isArray(row) ? row.map(normalizeCell) : [normalizeCell(row)]));
+        }
+
+        function allRowsFromGrid() {
+          const headers = readHeaders();
+          const data = readData(false);
+          if (headerMode) return [headers, ...data];
+          return data;
+        }
+
+        function hasMeaningfulSelection(matrix) {
+          if (!Array.isArray(matrix) || matrix.length === 0) return false;
+          return matrix.some((row) => Array.isArray(row) && row.length > 0);
+        }
+
+        function updateGridMeta() {
+          const rowCount = readData(false).length;
+          const colCount = readHeaders().length;
+          gridMeta.textContent = `${rowCount} rows x ${colCount} columns`;
+
+          if (rowCount > WARN_ROWS) {
+            setWarning(
+              `Large dataset detected (${rowCount} rows). Editing may be slower depending on browser memory.`,
+            );
+          } else {
+            setWarning('');
+          }
+        }
+
+        function scheduleSave() {
+          window.clearTimeout(saveTimer);
+          saveTimer = window.setTimeout(saveState, 250);
+        }
+
+        function destroySheet() {
+          if (sheetHost && sheetHost.spreadsheet && window.jspreadsheet) {
+            window.jspreadsheet.destroy(sheetHost);
+          }
+          worksheet = null;
+        }
+
+        function renderGrid(headers, data) {
+          ensureLibraries();
+          destroySheet();
+
+          const normalizedHeaders = (headers || []).map((value, index) => {
+            const next = normalizeCell(value).trim();
+            return next || `Column ${columnLabel(index)}`;
+          });
+          if (normalizedHeaders.length === 0) normalizedHeaders.push('Column A');
+
+          const normalizedData = toRectangular(data || [], normalizedHeaders.length);
+          const columns = normalizedHeaders.map((title, index) => ({
+            title,
+            name: `c${index}`,
+            type: 'text',
+            width: 140,
+          }));
+
+          const instances = window.jspreadsheet(sheetHost, {
+            tabs: false,
+            toolbar: false,
+            onafterchanges: function() {
+              updateGridMeta();
+              scheduleSave();
+            },
+            onchangeheader: function() {
+              scheduleSave();
+            },
+            oninsertrow: function() {
+              updateGridMeta();
+              scheduleSave();
+            },
+            ondeleterow: function() {
+              updateGridMeta();
+              scheduleSave();
+            },
+            oninsertcolumn: function() {
+              updateGridMeta();
+              scheduleSave();
+            },
+            ondeletecolumn: function() {
+              updateGridMeta();
+              scheduleSave();
+            },
+            worksheets: [
+              {
+                worksheetName: 'CSV',
+                data: normalizedData,
+                columns,
+                editable: true,
+                columnSorting: true,
+                filters: true,
+                selectionCopy: true,
+                tableOverflow: true,
+                tableHeight: '500px',
+                minDimensions: [normalizedHeaders.length, Math.max(normalizedData.length, 10)],
+                csvDelimiter: delimiterFromSelection(exportDelimiter.value),
+              },
+            ],
+          });
+
+          worksheet = instances && instances[0] ? instances[0] : null;
+          updateGridMeta();
+        }
+
+        function parseCsvText(text) {
+          ensureLibraries();
+          const parsed = window.Papa.parse(String(text || ''), {
+            skipEmptyLines: false,
+          });
+
+          const errors = (parsed.errors || []).filter((error) => error && error.code !== 'UndetectableDelimiter');
+          if (errors.length > 0) {
+            const first = errors[0];
+            const line = typeof first.row === 'number' ? `line ${first.row + 1}` : 'input';
+            throw new Error(`CSV parse error at ${line}: ${first.message || 'invalid CSV'}`);
+          }
+
+          const rows = normalizeRows(Array.isArray(parsed.data) ? parsed.data : []);
+          return rows;
+        }
+
+        function importCsv() {
+          try {
+            const rows = parseCsvText(csvInput.value);
+            const grid = buildGridShape(rows, headerMode);
+            renderGrid(grid.headers, grid.data);
+            saveState();
+            setStatus(
+              `Imported ${grid.data.length} data rows with ${grid.headers.length} columns (${headerMode ? 'header mode on' : 'header mode off'}).`,
+              'success',
+            );
+          } catch (error) {
+            setStatus(error && error.message ? error.message : 'Failed to import CSV.', 'error');
+          }
+        }
+
+        function clearAll() {
+          csvInput.value = '';
+          const initial = buildGridShape([], headerMode);
+          renderGrid(initial.headers, initial.data);
+          setStatus('Cleared input and reset grid.', 'success');
+          saveState();
+        }
+
+        function onHeaderModeToggle() {
+          const next = Boolean(firstRowHeader.checked);
+          if (next === headerMode) {
+            saveState();
+            return;
+          }
+
+          const rows = allRowsFromGrid();
+          headerMode = next;
+          const grid = buildGridShape(rows, headerMode);
+          renderGrid(grid.headers, grid.data);
+          setStatus(
+            headerMode
+              ? 'Reinterpreted data: first row is now treated as headers.'
+              : 'Reinterpreted data: all rows are now treated as data rows.',
+            'success',
+          );
+          saveState();
+        }
+
+        function addRow() {
+          if (!worksheet) return;
+          worksheet.insertRow(1);
+          updateGridMeta();
+          scheduleSave();
+        }
+
+        function addColumn() {
+          if (!worksheet) return;
+          worksheet.insertColumn(1);
+          updateGridMeta();
+          scheduleSave();
+        }
+
+        function deleteRow() {
+          if (!worksheet) return;
+          const selectedRows = safeSelectedIndexes(worksheet.getSelectedRows && worksheet.getSelectedRows());
+          const currentRows = readData(false).length;
+          if (selectedRows.length > 0) {
+            for (const rowIndex of selectedRows) worksheet.deleteRow(rowIndex, 1);
+            updateGridMeta();
+            scheduleSave();
+            return;
+          }
+          if (currentRows > 0) {
+            worksheet.deleteRow(currentRows - 1, 1);
+            updateGridMeta();
+            scheduleSave();
+          }
+        }
+
+        function deleteColumn() {
+          if (!worksheet) return;
+          const selectedColumns = safeSelectedIndexes(
+            worksheet.getSelectedColumns && worksheet.getSelectedColumns(),
+          );
+          const currentCols = readHeaders().length;
+          if (selectedColumns.length > 0) {
+            for (const colIndex of selectedColumns) worksheet.deleteColumn(colIndex, 1);
+            updateGridMeta();
+            scheduleSave();
+            return;
+          }
+          if (currentCols > 1) {
+            worksheet.deleteColumn(currentCols - 1, 1);
+            updateGridMeta();
+            scheduleSave();
+          }
+        }
+
+        function matrixForExport() {
+          const data = readData(false);
+          if (headerMode) {
+            const headers = readHeaders();
+            return [headers, ...data];
+          }
+          return data;
+        }
+
+        function downloadCsv() {
+          if (!worksheet) return;
+          const matrix = matrixForExport();
+          const delimiter = delimiterFromSelection(exportDelimiter.value);
+          const csv = window.Papa.unparse(matrix, {
+            delimiter,
+            newline: '\r\n',
+          });
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'csv-editor-export.csv';
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+          setStatus(`CSV downloaded using ${delimiterLabel(exportDelimiter.value)} delimiter.`, 'success');
+        }
+
+        async function writeClipboard(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+            return;
+          }
+
+          const temp = document.createElement('textarea');
+          temp.value = text;
+          temp.setAttribute('readonly', 'readonly');
+          temp.style.position = 'fixed';
+          temp.style.left = '-9999px';
+          document.body.appendChild(temp);
+          temp.select();
+          const ok = document.execCommand('copy');
+          temp.remove();
+          if (!ok) throw new Error('Clipboard copy failed.');
+        }
+
+        async function copyForSheets() {
+          if (!worksheet) return;
+
+          const selected = readData(true);
+          let matrix = selected;
+          if (!hasMeaningfulSelection(selected)) {
+            matrix = readData(false);
+            if (headerMode) matrix = [readHeaders(), ...matrix];
+          }
+
+          const tsv = window.Papa.unparse(matrix, {
+            delimiter: '\t',
+            newline: '\r\n',
+          });
+
+          try {
+            await writeClipboard(tsv);
+            setStatus('Copied TSV data to clipboard for Excel/Google Sheets.', 'success');
+          } catch (error) {
+            setStatus(
+              error && error.message ? error.message : 'Unable to copy data to clipboard.',
+              'error',
+            );
+          }
+        }
+
+        function readState() {
+          const defaults = {
+            rawInput: '',
+            headerMode: true,
+            exportDelimiter: 'comma',
+            headers: ['Column A'],
+            data: [],
+          };
+
+          try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return defaults;
+            const parsed = JSON.parse(raw);
+            const delimiterValue =
+              parsed.exportDelimiter === 'semicolon' || parsed.exportDelimiter === 'tab'
+                ? parsed.exportDelimiter
+                : 'comma';
+            return {
+              rawInput: typeof parsed.rawInput === 'string' ? parsed.rawInput : defaults.rawInput,
+              headerMode: parsed.headerMode !== false,
+              exportDelimiter: delimiterValue,
+              headers: Array.isArray(parsed.headers) ? parsed.headers.map(normalizeCell) : defaults.headers,
+              data: Array.isArray(parsed.data) ? parsed.data : defaults.data,
+            };
+          } catch {
+            return defaults;
+          }
+        }
+
+        function saveState() {
+          try {
+            const payload = {
+              rawInput: csvInput.value,
+              headerMode,
+              exportDelimiter: exportDelimiter.value,
+              headers: readHeaders(),
+              data: readData(false),
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+          } catch {
+            // Ignore localStorage failures.
+          }
+        }
+
+        function restore() {
+          const state = readState();
+          csvInput.value = state.rawInput;
+          headerMode = state.headerMode;
+          firstRowHeader.checked = headerMode;
+          exportDelimiter.value = state.exportDelimiter;
+
+          const hasSavedGrid = Array.isArray(state.headers) && state.headers.length > 0;
+          if (hasSavedGrid) {
+            renderGrid(state.headers, state.data);
+            setStatus('Restored previous CSV editor session.', 'success');
+          } else {
+            const initial = buildGridShape([], headerMode);
+            renderGrid(initial.headers, initial.data);
+          }
+          updateGridMeta();
+        }
+
+        importBtn.addEventListener('click', importCsv);
+        clearBtn.addEventListener('click', clearAll);
+        firstRowHeader.addEventListener('change', onHeaderModeToggle);
+        addRowBtn.addEventListener('click', addRow);
+        addColBtn.addEventListener('click', addColumn);
+        deleteRowBtn.addEventListener('click', deleteRow);
+        deleteColBtn.addEventListener('click', deleteColumn);
+        downloadCsvBtn.addEventListener('click', downloadCsv);
+        copyTsvBtn.addEventListener('click', copyForSheets);
+        exportDelimiter.addEventListener('change', saveState);
+
+        csvInput.addEventListener('keydown', (event) => {
+          if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+            event.preventDefault();
+            importCsv();
+          }
+        });
+
+        try {
+          restore();
+        } catch (error) {
+          const message = error && error.message ? error.message : 'Failed to initialize spreadsheet grid.';
+          setStatus(message, 'error');
+        }
+      })();
+    </script>
+  </body>
+</html>

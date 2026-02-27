@@ -33,6 +33,11 @@ A minimal Cloudflare Worker that serves a small suite of browser tools.
   - Validate parsed data against JSON Schema (Ajv) with path-level error output.
   - Compare source/converted content using text and semantic diff modes.
 
+- CSV Viewer & Editor (`/csv-editor`)
+  - Paste CSV with or without headers and edit in an Excel-like grid.
+  - Supports row/column add/delete, selection copy, column sorting, and filters.
+  - Export with comma/semicolon/tab delimiters and copy TSV for Excel/Google Sheets.
+
 - LLM Cost Calculator (`/llm-cost`)
   - Paste token usage dumps (supports cached and reasoning tokens) and see per-run totals.
   - Enter pricing per token, per 1K, or per 1M for input, cached input, output, and reasoning tokens.
@@ -61,6 +66,7 @@ All tools include a Home button in the header to return to `/`.
 - `/pastebin` — Pastebin UI (create, list, login).
 - `/pastebin/p/:id` — View a specific paste (public or unlisted).
 - `/format-tools` — Data Format Converter + JSON Schema validator + diff view.
+- `/csv-editor` — CSV Viewer & Editor with spreadsheet grid and Excel/Sheets copy support.
 - `/llm-cost` — LLM Cost Calculator.
 - `/actuary` — Actuary Calculator.
 - `/tiff-viewer` — Multi-channel TIFF viewer (local UTIF decode, channel mixing, zoom).
@@ -74,6 +80,7 @@ All tools include a Home button in the header to return to `/`.
 - `public/euler.html` — Euler Preview page (BBCode → HTML, MathJax, tabs, Highlight.js with theme swap).
 - `public/pastebin.html` — Pastebin UI.
 - `public/format-tools.html` — Data format converter UI (JSON/YAML/TOML/CSV conversion, JSON Schema validation, text/semantic diff).
+- `public/csv-editor.html` — CSV viewer/editor UI (spreadsheet grid, header toggle, CSV export, TSV clipboard copy).
 - `public/llm-cost.html` — LLM Cost Calculator UI (usage parsing, pricing library in localStorage).
 - `public/actuary.html` — Actuary Calculator UI (Social Security actuarial tables ported from `actuary.py`).
 - `public/tiff-viewer.html` — TIFF viewer UI with channel toggles/colors, fit-to-width zoom, and local `UTIF.js` loader.

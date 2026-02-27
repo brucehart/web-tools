@@ -19,6 +19,7 @@ describe('Tools index and Markdown viewer', () => {
     expect(body).toContain('href="/markdown"');
     expect(body).toContain('href="/diff"');
     expect(body).toContain('href="/format-tools"');
+    expect(body).toContain('href="/csv-editor"');
   });
 
   it('serves markdown viewer at /markdown (unit)', async () => {
@@ -59,6 +60,19 @@ describe('Tools index and Markdown viewer', () => {
     expect(body).toContain('id="targetFormat"');
   });
 
+  it('serves csv viewer and editor at /csv-editor (unit)', async () => {
+    const request = new IncomingRequest('http://example.com/csv-editor');
+    const ctx = createExecutionContext();
+    const response = await worker.fetch(request, env, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    const body = await response.text();
+    expect(body).toContain('<title>CSV Viewer &amp; Editor</title>');
+    expect(body).toContain('id="csvInput"');
+    expect(body).toContain('id="sheetHost"');
+  });
+
   it('serves index page (integration)', async () => {
     const response = await SELF.fetch('https://example.com');
     expect(response.status).toBe(200);
@@ -89,6 +103,14 @@ describe('Tools index and Markdown viewer', () => {
     expect(response.headers.get('content-type')).toContain('text/html');
     const body = await response.text();
     expect(body).toContain('<title>Data Format Converter</title>');
+  });
+
+  it('serves csv viewer and editor (integration)', async () => {
+    const response = await SELF.fetch('https://example.com/csv-editor');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    const body = await response.text();
+    expect(body).toContain('<title>CSV Viewer &amp; Editor</title>');
   });
 
   it('serves actuary calculator at /actuary (unit)', async () => {

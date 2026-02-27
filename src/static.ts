@@ -13,6 +13,8 @@ const PRETTY_ROUTES: Record<string, string> = {
   '/diff/': '/diff.html',
   '/format-tools': '/format-tools.html',
   '/format-tools/': '/format-tools.html',
+  '/csv-editor': '/csv-editor.html',
+  '/csv-editor/': '/csv-editor.html',
   '/todo': '/todo.html',
   '/todo/': '/todo.html',
   '/date': '/date.html',
