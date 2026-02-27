@@ -28,6 +28,11 @@ A minimal Cloudflare Worker that serves a small suite of browser tools.
   - Public listing at `/pastebin` shows recent public pastes; your pastes appear after sign-in.
   - Direct links like `/pastebin/p/abcd1234` open a read-only view.
 
+- Data Format Converter (`/format-tools`)
+  - Parse, format, and convert JSON, YAML, TOML, and CSV.
+  - Validate parsed data against JSON Schema (Ajv) with path-level error output.
+  - Compare source/converted content using text and semantic diff modes.
+
 - LLM Cost Calculator (`/llm-cost`)
   - Paste token usage dumps (supports cached and reasoning tokens) and see per-run totals.
   - Enter pricing per token, per 1K, or per 1M for input, cached input, output, and reasoning tokens.
@@ -55,6 +60,7 @@ All tools include a Home button in the header to return to `/`.
 - `/euler` — Euler Preview (Project Euler forum flavor).
 - `/pastebin` — Pastebin UI (create, list, login).
 - `/pastebin/p/:id` — View a specific paste (public or unlisted).
+- `/format-tools` — Data Format Converter + JSON Schema validator + diff view.
 - `/llm-cost` — LLM Cost Calculator.
 - `/actuary` — Actuary Calculator.
 - `/tiff-viewer` — Multi-channel TIFF viewer (local UTIF decode, channel mixing, zoom).
@@ -67,6 +73,7 @@ All tools include a Home button in the header to return to `/`.
 - `public/markdown.html` — Markdown Preview page (Marked + DOMPurify + MathJax, tabs, Highlight.js with theme swap, copy button).
 - `public/euler.html` — Euler Preview page (BBCode → HTML, MathJax, tabs, Highlight.js with theme swap).
 - `public/pastebin.html` — Pastebin UI.
+- `public/format-tools.html` — Data format converter UI (JSON/YAML/TOML/CSV conversion, JSON Schema validation, text/semantic diff).
 - `public/llm-cost.html` — LLM Cost Calculator UI (usage parsing, pricing library in localStorage).
 - `public/actuary.html` — Actuary Calculator UI (Social Security actuarial tables ported from `actuary.py`).
 - `public/tiff-viewer.html` — TIFF viewer UI with channel toggles/colors, fit-to-width zoom, and local `UTIF.js` loader.

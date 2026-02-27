@@ -1,0 +1,1360 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Data Format Converter</title>
+    <link rel="stylesheet" href="/shared/toolkit.css" />
+    <script defer src="/shared/toolkit.js"></script>
+    <style>
+      :root {
+        --panel: var(--wt-panel-solid);
+        --border: var(--wt-border);
+        --muted: var(--wt-muted);
+        --accent: var(--wt-accent);
+        --danger: var(--wt-danger);
+        --success: var(--wt-success);
+        --warning: var(--wt-warning);
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--wt-fg);
+      }
+
+      .layout {
+        display: grid;
+        gap: 14px;
+      }
+
+      .hero {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: var(--wt-shadow-sm);
+      }
+
+      .hero h1 {
+        margin: 0 0 6px;
+        font-size: 1.6rem;
+      }
+
+      .hero p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: var(--wt-shadow-sm);
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border-bottom: 1px solid var(--border);
+        padding: 10px 12px;
+      }
+
+      .panel-head h2 {
+        margin: 0;
+        font-size: 0.95rem;
+      }
+
+      .controls-wrap {
+        padding: 12px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .controls-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+      }
+
+      select {
+        padding: 8px 10px;
+      }
+
+      textarea {
+        min-height: 260px;
+        padding: 12px;
+        resize: vertical;
+        font-family: var(--wt-font-mono);
+        font-size: 0.88rem;
+        line-height: 1.5;
+      }
+
+      textarea:focus,
+      select:focus,
+      .mode button:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+      }
+
+      .btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .status {
+        margin: 0;
+        min-height: 1.2rem;
+        font-size: 0.9rem;
+      }
+
+      .status-muted {
+        color: var(--muted);
+      }
+
+      .status-success {
+        color: var(--success);
+      }
+
+      .status-error {
+        color: var(--danger);
+      }
+
+      .editor-grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .pane-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border-bottom: 1px solid var(--border);
+        padding: 10px 12px;
+      }
+
+      .pane-head h3 {
+        margin: 0;
+        font-size: 0.92rem;
+      }
+
+      .meta {
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
+      .pane-body {
+        padding: 0 12px 12px;
+      }
+
+      .pane-body textarea {
+        border-radius: 12px;
+      }
+
+      .pane-body textarea[readonly] {
+        background: rgba(127, 127, 127, 0.05);
+      }
+
+      .validation-grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: 1.2fr 1fr;
+        padding: 12px;
+      }
+
+      .validation-box {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        background: rgba(127, 127, 127, 0.04);
+      }
+
+      .validation-box h3 {
+        margin: 0 0 8px;
+        font-size: 0.9rem;
+      }
+
+      .validation-summary {
+        margin: 0;
+        font-size: 0.9rem;
+        min-height: 1.2rem;
+      }
+
+      .validation-summary.ok {
+        color: var(--success);
+      }
+
+      .validation-summary.bad {
+        color: var(--danger);
+      }
+
+      .validation-errors {
+        margin: 10px 0 0;
+        padding-left: 18px;
+        display: grid;
+        gap: 7px;
+        font-size: 0.86rem;
+      }
+
+      .validation-errors li {
+        line-height: 1.35;
+      }
+
+      .mode {
+        display: inline-flex;
+        gap: 8px;
+      }
+
+      .mode button {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: transparent;
+        color: inherit;
+        font-size: 0.84rem;
+        cursor: pointer;
+      }
+
+      .mode button.active {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent) inset;
+      }
+
+      .diff-meta {
+        border-bottom: 1px solid var(--border);
+        padding: 8px 12px;
+        color: var(--muted);
+        font-size: 0.84rem;
+        min-height: 1.2rem;
+      }
+
+      .diff-output {
+        max-height: 420px;
+        overflow: auto;
+        font-family: var(--wt-font-mono);
+        font-size: 0.84rem;
+        line-height: 1.45;
+      }
+
+      .diff-empty {
+        color: var(--muted);
+        padding: 14px;
+      }
+
+      .diff-row {
+        display: grid;
+        grid-template-columns: 64px 64px 24px 1fr;
+        border-bottom: 1px solid rgba(127, 127, 127, 0.12);
+      }
+
+      .ln {
+        padding: 4px 8px;
+        text-align: right;
+        color: var(--muted);
+        user-select: none;
+      }
+
+      .marker {
+        padding: 4px 6px;
+        text-align: center;
+        user-select: none;
+      }
+
+      .text {
+        margin: 0;
+        padding: 4px 10px;
+        white-space: pre;
+        overflow-x: auto;
+      }
+
+      .diff-row-add {
+        background: color-mix(in srgb, var(--success) 12%, transparent);
+      }
+
+      .diff-row-add .marker {
+        color: var(--success);
+        font-weight: 700;
+      }
+
+      .diff-row-remove {
+        background: color-mix(in srgb, var(--danger) 11%, transparent);
+      }
+
+      .diff-row-remove .marker {
+        color: var(--danger);
+        font-weight: 700;
+      }
+
+      .diff-row-modify .text {
+        font-weight: 600;
+      }
+
+      .semantic-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .semantic-table th,
+      .semantic-table td {
+        border-bottom: 1px solid rgba(127, 127, 127, 0.12);
+        vertical-align: top;
+        text-align: left;
+        padding: 7px 10px;
+      }
+
+      .semantic-table th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .chip {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 0.78rem;
+        white-space: nowrap;
+      }
+
+      .chip-add {
+        color: var(--success);
+        border-color: color-mix(in srgb, var(--success) 50%, var(--border));
+      }
+
+      .chip-remove {
+        color: var(--danger);
+        border-color: color-mix(in srgb, var(--danger) 50%, var(--border));
+      }
+
+      .chip-change,
+      .chip-type {
+        color: var(--warning);
+        border-color: color-mix(in srgb, var(--warning) 55%, var(--border));
+      }
+
+      @media (max-width: 980px) {
+        .editor-grid,
+        .validation-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .diff-row {
+          grid-template-columns: 52px 52px 22px 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body class="wt" data-wt-tool="format-tools" data-wt-title="Data Format Converter">
+    <div class="wt-header" role="banner"></div>
+
+    <main class="wt-page layout">
+      <section class="hero">
+        <h1>Data Format Converter</h1>
+        <p>Convert, validate, and diff JSON, YAML, TOML, and CSV directly in your browser.</p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Conversion</h2>
+        </div>
+        <div class="controls-wrap">
+          <div class="controls-grid">
+            <label>
+              Source Format
+              <select id="sourceFormat">
+                <option value="json">JSON</option>
+                <option value="yaml">YAML</option>
+                <option value="toml">TOML</option>
+                <option value="csv">CSV</option>
+              </select>
+            </label>
+            <label>
+              Target Format
+              <select id="targetFormat">
+                <option value="yaml">YAML</option>
+                <option value="json">JSON</option>
+                <option value="toml">TOML</option>
+                <option value="csv">CSV</option>
+              </select>
+            </label>
+          </div>
+          <div class="btn-row">
+            <button id="convertBtn" class="wt-btn wt-btn-primary" type="button">Convert</button>
+            <button id="swapBtn" class="wt-btn" type="button">Swap Formats</button>
+            <button id="clearBtn" class="wt-btn wt-btn-ghost" type="button">Clear</button>
+          </div>
+          <p id="status" class="status status-muted">Enter source data and click Convert.</p>
+        </div>
+      </section>
+
+      <section class="editor-grid">
+        <article class="panel">
+          <div class="pane-head">
+            <h3>Source Input</h3>
+            <span id="sourceMeta" class="meta">0 chars</span>
+          </div>
+          <div class="pane-body">
+            <textarea
+              id="sourceInput"
+              spellcheck="false"
+              placeholder="Paste source data in the selected source format..."
+            ></textarea>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="pane-head">
+            <h3>Converted Output</h3>
+            <span id="outputMeta" class="meta">0 chars</span>
+          </div>
+          <div class="pane-body">
+            <textarea id="outputInput" spellcheck="false" readonly placeholder="Converted output appears here..."></textarea>
+          </div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>JSON Schema Validation</h2>
+          <button id="validateBtn" class="wt-btn" type="button">Validate</button>
+        </div>
+        <div class="validation-grid">
+          <article class="panel" style="box-shadow: none;">
+            <div class="pane-head">
+              <h3>Schema (JSON)</h3>
+            </div>
+            <div class="pane-body">
+              <textarea id="schemaInput" spellcheck="false" placeholder="Paste JSON Schema here..."></textarea>
+            </div>
+          </article>
+
+          <aside class="validation-box" aria-live="polite">
+            <h3>Result</h3>
+            <p id="validationSummary" class="validation-summary">Enter a schema and click Validate.</p>
+            <ul id="validationErrors" class="validation-errors"></ul>
+          </aside>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Diff View</h2>
+          <div class="mode" role="tablist" aria-label="Diff mode">
+            <button id="textModeBtn" type="button" data-mode="text" aria-selected="true">Text Diff</button>
+            <button id="semanticModeBtn" type="button" data-mode="semantic" aria-selected="false">Semantic Diff</button>
+          </div>
+        </div>
+        <div id="diffMeta" class="diff-meta">Diff will appear after conversion.</div>
+        <div id="diffOutput" class="diff-output">
+          <div class="diff-empty">Convert data to view differences.</div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ltd/j-toml@1.38.0/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ajv-dist@8.17.1/dist/ajv2020.bundle.js"></script>
+
+    <script>
+      (function() {
+        const STORAGE_KEY = 'wt_format_tools_state_v1';
+        const MAX_DIFF_CELLS = 4000000;
+        const SOFT_DIFF_LINE_LIMIT = 10000;
+        const VALID_FORMATS = new Set(['json', 'yaml', 'toml', 'csv']);
+
+        const sourceFormat = document.getElementById('sourceFormat');
+        const targetFormat = document.getElementById('targetFormat');
+        const convertBtn = document.getElementById('convertBtn');
+        const swapBtn = document.getElementById('swapBtn');
+        const clearBtn = document.getElementById('clearBtn');
+
+        const sourceInput = document.getElementById('sourceInput');
+        const outputInput = document.getElementById('outputInput');
+        const sourceMeta = document.getElementById('sourceMeta');
+        const outputMeta = document.getElementById('outputMeta');
+        const statusEl = document.getElementById('status');
+
+        const schemaInput = document.getElementById('schemaInput');
+        const validateBtn = document.getElementById('validateBtn');
+        const validationSummary = document.getElementById('validationSummary');
+        const validationErrors = document.getElementById('validationErrors');
+
+        const textModeBtn = document.getElementById('textModeBtn');
+        const semanticModeBtn = document.getElementById('semanticModeBtn');
+        const diffMeta = document.getElementById('diffMeta');
+        const diffOutput = document.getElementById('diffOutput');
+
+        let diffMode = 'text';
+        let lastConversion = null;
+
+        function normalizeNewlines(text) {
+          return String(text || '').replace(/\r\n?/g, '\n');
+        }
+
+        function toLines(text) {
+          const normalized = normalizeNewlines(text);
+          return normalized === '' ? [] : normalized.split('\n');
+        }
+
+        function showStatus(message, tone) {
+          statusEl.textContent = message;
+          statusEl.className = 'status';
+          if (tone === 'success') {
+            statusEl.classList.add('status-success');
+          } else if (tone === 'error') {
+            statusEl.classList.add('status-error');
+          } else {
+            statusEl.classList.add('status-muted');
+          }
+        }
+
+        function updateCharMeta() {
+          sourceMeta.textContent = `${sourceInput.value.length} chars`;
+          outputMeta.textContent = `${outputInput.value.length} chars`;
+        }
+
+        function updateValidationSummary(text, isOk) {
+          validationSummary.textContent = text;
+          validationSummary.classList.remove('ok', 'bad');
+          if (isOk === true) validationSummary.classList.add('ok');
+          if (isOk === false) validationSummary.classList.add('bad');
+        }
+
+        function clearValidationErrors() {
+          validationErrors.innerHTML = '';
+        }
+
+        function getErrorMessage(err) {
+          if (!err) return 'Unknown error';
+          if (typeof err === 'string') return err;
+          return err.message ? String(err.message) : String(err);
+        }
+
+        function readState() {
+          const defaults = {
+            sourceFormat: 'json',
+            targetFormat: 'yaml',
+            sourceText: '',
+            outputText: '',
+            schemaText: '',
+            diffMode: 'text',
+          };
+
+          try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return defaults;
+            const parsed = JSON.parse(raw);
+            return {
+              sourceFormat: VALID_FORMATS.has(parsed.sourceFormat) ? parsed.sourceFormat : defaults.sourceFormat,
+              targetFormat: VALID_FORMATS.has(parsed.targetFormat) ? parsed.targetFormat : defaults.targetFormat,
+              sourceText: typeof parsed.sourceText === 'string' ? parsed.sourceText : defaults.sourceText,
+              outputText: typeof parsed.outputText === 'string' ? parsed.outputText : defaults.outputText,
+              schemaText: typeof parsed.schemaText === 'string' ? parsed.schemaText : defaults.schemaText,
+              diffMode: parsed.diffMode === 'semantic' ? 'semantic' : 'text',
+            };
+          } catch {
+            return defaults;
+          }
+        }
+
+        function writeState() {
+          try {
+            const payload = {
+              sourceFormat: sourceFormat.value,
+              targetFormat: targetFormat.value,
+              sourceText: sourceInput.value,
+              outputText: outputInput.value,
+              schemaText: schemaInput.value,
+              diffMode,
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+          } catch {
+            // Ignore storage failures.
+          }
+        }
+
+        function ensureLibraries() {
+          if (!window.jsyaml) {
+            throw new Error('YAML library failed to load. Refresh and try again.');
+          }
+          if (!window.TOML) {
+            throw new Error('TOML library failed to load. Refresh and try again.');
+          }
+          if (!window.Papa) {
+            throw new Error('CSV library failed to load. Refresh and try again.');
+          }
+          if (!window.ajv2020) {
+            throw new Error('Schema validation library failed to load. Refresh and try again.');
+          }
+        }
+
+        function normalizeParsedValue(value) {
+          if (value === undefined) return null;
+          return value;
+        }
+
+        function parseCsv(text) {
+          const result = window.Papa.parse(text, {
+            header: true,
+            skipEmptyLines: false,
+          });
+
+          if (Array.isArray(result.errors) && result.errors.length > 0) {
+            const first = result.errors.find((item) => item && item.code !== 'UndetectableDelimiter') || result.errors[0];
+            const row = typeof first.row === 'number' ? `row ${first.row + 1}` : 'input';
+            throw new Error(`CSV parse error at ${row}: ${first.message}`);
+          }
+
+          const fields = Array.isArray(result.meta && result.meta.fields) ? result.meta.fields : [];
+          if (fields.length === 0) {
+            throw new Error('CSV requires a header row.');
+          }
+
+          const trimmedFields = fields.map((field) => String(field || '').trim());
+          if (trimmedFields.some((field) => field.length === 0)) {
+            throw new Error('CSV header fields cannot be blank.');
+          }
+
+          const unique = new Set(trimmedFields);
+          if (unique.size !== trimmedFields.length) {
+            throw new Error('CSV header fields must be unique.');
+          }
+
+          const rows = Array.isArray(result.data) ? result.data : [];
+          return rows.map((row) => {
+            const normalized = {};
+            for (let i = 0; i < trimmedFields.length; i++) {
+              const key = trimmedFields[i];
+              normalized[key] = row[key] == null ? '' : row[key];
+            }
+            return normalized;
+          });
+        }
+
+        function parseInput(format, text) {
+          const sourceText = String(text || '');
+          if (sourceText.trim() === '') {
+            throw new Error('Source input is empty.');
+          }
+
+          if (format === 'json') {
+            return normalizeParsedValue(JSON.parse(sourceText));
+          }
+          if (format === 'yaml') {
+            return normalizeParsedValue(window.jsyaml.load(sourceText));
+          }
+          if (format === 'toml') {
+            return normalizeParsedValue(window.TOML.parse(sourceText, { joiner: '\n', bigint: false }));
+          }
+          if (format === 'csv') {
+            return normalizeParsedValue(parseCsv(sourceText));
+          }
+          throw new Error(`Unsupported source format: ${format}`);
+        }
+
+        function isPlainObject(value) {
+          return Object.prototype.toString.call(value) === '[object Object]';
+        }
+
+        function toJsonLike(value) {
+          if (value === null) return null;
+          if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
+          if (Array.isArray(value)) return value.map((item) => toJsonLike(item));
+          if (isPlainObject(value)) {
+            const out = {};
+            for (const key of Object.keys(value)) {
+              out[key] = toJsonLike(value[key]);
+            }
+            return out;
+          }
+          if (value instanceof Date) return value.toISOString();
+          return String(value);
+        }
+
+        function coerceRowsForCsv(value) {
+          if (!Array.isArray(value)) {
+            throw new Error('CSV output requires an array of objects.');
+          }
+
+          for (const row of value) {
+            if (!isPlainObject(row)) {
+              throw new Error('CSV output requires each array item to be an object.');
+            }
+          }
+
+          const keys = [];
+          const keySet = new Set();
+          for (const row of value) {
+            for (const key of Object.keys(row)) {
+              if (!keySet.has(key)) {
+                keySet.add(key);
+                keys.push(key);
+              }
+            }
+          }
+
+          if (keys.length === 0) {
+            throw new Error('CSV output requires at least one object key for the header row.');
+          }
+
+          const data = value.map((row) => {
+            return keys.map((key) => {
+              const current = row[key];
+              if (current == null) return '';
+              if (typeof current === 'string' || typeof current === 'number' || typeof current === 'boolean') {
+                return String(current);
+              }
+              return JSON.stringify(toJsonLike(current));
+            });
+          });
+
+          return { fields: keys, data };
+        }
+
+        function formatOutput(format, value) {
+          const normalizedValue = toJsonLike(value);
+
+          if (format === 'json') {
+            return JSON.stringify(normalizedValue, null, 2);
+          }
+          if (format === 'yaml') {
+            return window.jsyaml.dump(normalizedValue, {
+              noRefs: true,
+              lineWidth: 120,
+            });
+          }
+          if (format === 'toml') {
+            if (!isPlainObject(normalizedValue)) {
+              throw new Error('TOML output requires an object at the root level.');
+            }
+            return window.TOML.stringify(normalizedValue, { newline: '\n' });
+          }
+          if (format === 'csv') {
+            const rows = coerceRowsForCsv(normalizedValue);
+            return window.Papa.unparse(rows);
+          }
+
+          throw new Error(`Unsupported target format: ${format}`);
+        }
+
+        function renderDiffEmpty(message) {
+          diffOutput.innerHTML = '';
+          const empty = document.createElement('div');
+          empty.className = 'diff-empty';
+          empty.textContent = message;
+          diffOutput.appendChild(empty);
+        }
+
+        function createTextDiffRow(type, item, isModified) {
+          const row = document.createElement('div');
+          const classes = ['diff-row'];
+          if (type === 'add') classes.push('diff-row-add');
+          if (type === 'remove') classes.push('diff-row-remove');
+          if (isModified) classes.push('diff-row-modify');
+          row.className = classes.join(' ');
+
+          const left = document.createElement('span');
+          left.className = 'ln';
+          left.textContent = item.oldNo == null ? '' : String(item.oldNo);
+
+          const right = document.createElement('span');
+          right.className = 'ln';
+          right.textContent = item.newNo == null ? '' : String(item.newNo);
+
+          const marker = document.createElement('span');
+          marker.className = 'marker';
+          marker.textContent = type === 'add' ? '+' : type === 'remove' ? '-' : ' ';
+
+          const text = document.createElement('pre');
+          text.className = 'text';
+          text.textContent = item.line === '' ? ' ' : item.line;
+
+          row.append(left, right, marker, text);
+          return row;
+        }
+
+        function buildLineDiff(originalLines, changedLines) {
+          const n = originalLines.length;
+          const m = changedLines.length;
+          const cellCount = (n + 1) * (m + 1);
+          if (cellCount > MAX_DIFF_CELLS) {
+            return {
+              error: 'Diff is too large to compute in-browser. Reduce content size and try again.',
+            };
+          }
+
+          const table = Array.from({ length: n + 1 }, () => new Uint32Array(m + 1));
+
+          for (let i = 1; i <= n; i++) {
+            for (let j = 1; j <= m; j++) {
+              if (originalLines[i - 1] === changedLines[j - 1]) {
+                table[i][j] = table[i - 1][j - 1] + 1;
+              } else {
+                table[i][j] = Math.max(table[i - 1][j], table[i][j - 1]);
+              }
+            }
+          }
+
+          let i = n;
+          let j = m;
+          const ops = [];
+
+          while (i > 0 || j > 0) {
+            if (i > 0 && j > 0 && originalLines[i - 1] === changedLines[j - 1]) {
+              ops.push({ type: 'equal', line: originalLines[i - 1], oldNo: i, newNo: j });
+              i--;
+              j--;
+              continue;
+            }
+
+            if (j > 0 && (i === 0 || table[i][j - 1] >= table[i - 1][j])) {
+              ops.push({ type: 'add', line: changedLines[j - 1], oldNo: null, newNo: j });
+              j--;
+              continue;
+            }
+
+            ops.push({ type: 'remove', line: originalLines[i - 1], oldNo: i, newNo: null });
+            i--;
+          }
+
+          ops.reverse();
+          return { ops };
+        }
+
+        function groupOperations(ops) {
+          const groups = [];
+          let index = 0;
+
+          while (index < ops.length) {
+            const op = ops[index];
+
+            if (op.type === 'equal') {
+              const items = [];
+              while (index < ops.length && ops[index].type === 'equal') {
+                items.push(ops[index]);
+                index++;
+              }
+              groups.push({ type: 'equal', items });
+              continue;
+            }
+
+            if (op.type === 'remove') {
+              const removed = [];
+              while (index < ops.length && ops[index].type === 'remove') {
+                removed.push(ops[index]);
+                index++;
+              }
+
+              const added = [];
+              while (index < ops.length && ops[index].type === 'add') {
+                added.push(ops[index]);
+                index++;
+              }
+
+              if (added.length > 0) {
+                groups.push({ type: 'modify', removed, added });
+              } else {
+                groups.push({ type: 'remove', items: removed });
+              }
+              continue;
+            }
+
+            const items = [];
+            while (index < ops.length && ops[index].type === 'add') {
+              items.push(ops[index]);
+              index++;
+            }
+            groups.push({ type: 'add', items });
+          }
+
+          return groups;
+        }
+
+        function summarizeGroups(groups) {
+          const stats = { added: 0, removed: 0, changed: 0, unchanged: 0 };
+
+          for (const group of groups) {
+            if (group.type === 'equal') {
+              stats.unchanged += group.items.length;
+              continue;
+            }
+            if (group.type === 'add') {
+              stats.added += group.items.length;
+              continue;
+            }
+            if (group.type === 'remove') {
+              stats.removed += group.items.length;
+              continue;
+            }
+
+            const paired = Math.min(group.removed.length, group.added.length);
+            stats.changed += paired;
+            stats.removed += Math.max(group.removed.length - paired, 0);
+            stats.added += Math.max(group.added.length - paired, 0);
+          }
+
+          return stats;
+        }
+
+        function renderTextDiff(sourceText, outputText) {
+          const sourceLines = toLines(sourceText);
+          const outputLines = toLines(outputText);
+
+          if (sourceLines.length + outputLines.length > SOFT_DIFF_LINE_LIMIT) {
+            diffMeta.textContent = 'Large diff detected. Rendering may be slower than usual.';
+          }
+
+          if (sourceLines.length === 0 && outputLines.length === 0) {
+            diffMeta.textContent = 'No text to diff yet.';
+            renderDiffEmpty('Provide source input and convert to see text diff.');
+            return;
+          }
+
+          const result = buildLineDiff(sourceLines, outputLines);
+          if (result.error) {
+            diffMeta.textContent = 'Text diff unavailable for this size.';
+            renderDiffEmpty(result.error);
+            return;
+          }
+
+          const groups = groupOperations(result.ops);
+          const stats = summarizeGroups(groups);
+          diffMeta.textContent =
+            `Added ${stats.added}, Removed ${stats.removed}, Changed ${stats.changed}, Unchanged ${stats.unchanged}`;
+
+          diffOutput.innerHTML = '';
+          const fragment = document.createDocumentFragment();
+
+          for (const group of groups) {
+            if (group.type === 'equal') {
+              for (const item of group.items) fragment.appendChild(createTextDiffRow('equal', item, false));
+              continue;
+            }
+            if (group.type === 'add') {
+              for (const item of group.items) fragment.appendChild(createTextDiffRow('add', item, false));
+              continue;
+            }
+            if (group.type === 'remove') {
+              for (const item of group.items) fragment.appendChild(createTextDiffRow('remove', item, false));
+              continue;
+            }
+            for (const item of group.removed) fragment.appendChild(createTextDiffRow('remove', item, true));
+            for (const item of group.added) fragment.appendChild(createTextDiffRow('add', item, true));
+          }
+
+          diffOutput.appendChild(fragment);
+        }
+
+        function valueKind(value) {
+          if (Array.isArray(value)) return 'array';
+          if (value === null) return 'null';
+          return typeof value;
+        }
+
+        function appendPath(path, key) {
+          if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)) {
+            return `${path}.${key}`;
+          }
+          return `${path}[${JSON.stringify(key)}]`;
+        }
+
+        function preview(value) {
+          if (value === undefined) return 'undefined';
+          if (typeof value === 'string') return JSON.stringify(value);
+          if (typeof value === 'number' || typeof value === 'boolean' || value === null) return String(value);
+          try {
+            const json = JSON.stringify(toJsonLike(value));
+            if (json.length > 140) return `${json.slice(0, 137)}...`;
+            return json;
+          } catch {
+            return String(value);
+          }
+        }
+
+        function pushChange(changes, type, path, before, after) {
+          changes.push({ type, path, before, after });
+        }
+
+        function semanticDiff(left, right, path, changes) {
+          if (Object.is(left, right)) return;
+
+          const leftKind = valueKind(left);
+          const rightKind = valueKind(right);
+
+          if (leftKind !== rightKind) {
+            pushChange(changes, 'type-changed', path, left, right);
+            return;
+          }
+
+          if (leftKind === 'array') {
+            const maxLen = Math.max(left.length, right.length);
+            for (let i = 0; i < maxLen; i++) {
+              const childPath = `${path}[${i}]`;
+              if (i >= left.length) {
+                pushChange(changes, 'added', childPath, undefined, right[i]);
+              } else if (i >= right.length) {
+                pushChange(changes, 'removed', childPath, left[i], undefined);
+              } else {
+                semanticDiff(left[i], right[i], childPath, changes);
+              }
+            }
+            return;
+          }
+
+          if (leftKind === 'object') {
+            const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+            const orderedKeys = Array.from(keys).sort();
+            for (const key of orderedKeys) {
+              const hasLeft = Object.prototype.hasOwnProperty.call(left, key);
+              const hasRight = Object.prototype.hasOwnProperty.call(right, key);
+              const childPath = appendPath(path, key);
+              if (!hasLeft && hasRight) {
+                pushChange(changes, 'added', childPath, undefined, right[key]);
+              } else if (hasLeft && !hasRight) {
+                pushChange(changes, 'removed', childPath, left[key], undefined);
+              } else {
+                semanticDiff(left[key], right[key], childPath, changes);
+              }
+            }
+            return;
+          }
+
+          pushChange(changes, 'changed', path, left, right);
+        }
+
+        function chipForType(type) {
+          const span = document.createElement('span');
+          span.className = 'chip';
+
+          if (type === 'added') {
+            span.classList.add('chip-add');
+            span.textContent = 'added';
+            return span;
+          }
+          if (type === 'removed') {
+            span.classList.add('chip-remove');
+            span.textContent = 'removed';
+            return span;
+          }
+          if (type === 'type-changed') {
+            span.classList.add('chip-type');
+            span.textContent = 'type-changed';
+            return span;
+          }
+
+          span.classList.add('chip-change');
+          span.textContent = 'changed';
+          return span;
+        }
+
+        function renderSemanticDiff() {
+          if (!lastConversion) {
+            diffMeta.textContent = 'Diff will appear after conversion.';
+            renderDiffEmpty('Convert data to view semantic differences.');
+            return;
+          }
+
+          if (lastConversion.roundTripError) {
+            diffMeta.textContent = 'Unable to compute semantic diff.';
+            renderDiffEmpty(lastConversion.roundTripError);
+            return;
+          }
+
+          const changes = [];
+          semanticDiff(lastConversion.sourceValue, lastConversion.roundTripValue, '$', changes);
+
+          if (changes.length === 0) {
+            diffMeta.textContent = 'No semantic differences detected.';
+            renderDiffEmpty('Source and converted data represent the same structure.');
+            return;
+          }
+
+          diffMeta.textContent = `${changes.length} semantic change${changes.length === 1 ? '' : 's'} detected.`;
+          diffOutput.innerHTML = '';
+
+          const table = document.createElement('table');
+          table.className = 'semantic-table';
+          const thead = document.createElement('thead');
+          const headRow = document.createElement('tr');
+          for (const label of ['Type', 'Path', 'Before', 'After']) {
+            const th = document.createElement('th');
+            th.textContent = label;
+            headRow.appendChild(th);
+          }
+          thead.appendChild(headRow);
+
+          const tbody = document.createElement('tbody');
+          for (const change of changes) {
+            const tr = document.createElement('tr');
+
+            const typeCell = document.createElement('td');
+            typeCell.appendChild(chipForType(change.type));
+
+            const pathCell = document.createElement('td');
+            pathCell.textContent = change.path;
+
+            const beforeCell = document.createElement('td');
+            beforeCell.textContent = preview(change.before);
+
+            const afterCell = document.createElement('td');
+            afterCell.textContent = preview(change.after);
+
+            tr.append(typeCell, pathCell, beforeCell, afterCell);
+            tbody.appendChild(tr);
+          }
+
+          table.append(thead, tbody);
+          diffOutput.appendChild(table);
+        }
+
+        function renderDiff() {
+          if (!lastConversion) {
+            diffMeta.textContent = 'Diff will appear after conversion.';
+            renderDiffEmpty('Convert data to view differences.');
+            return;
+          }
+
+          if (diffMode === 'semantic') {
+            renderSemanticDiff();
+          } else {
+            renderTextDiff(lastConversion.sourceText, lastConversion.outputText);
+          }
+        }
+
+        function setDiffMode(nextMode) {
+          diffMode = nextMode === 'semantic' ? 'semantic' : 'text';
+          const textActive = diffMode === 'text';
+
+          textModeBtn.classList.toggle('active', textActive);
+          semanticModeBtn.classList.toggle('active', !textActive);
+          textModeBtn.setAttribute('aria-selected', String(textActive));
+          semanticModeBtn.setAttribute('aria-selected', String(!textActive));
+
+          writeState();
+          renderDiff();
+        }
+
+        function runConversion() {
+          ensureLibraries();
+
+          try {
+            const sourceValue = parseInput(sourceFormat.value, sourceInput.value);
+            const outputText = formatOutput(targetFormat.value, sourceValue);
+            outputInput.value = outputText;
+            updateCharMeta();
+
+            let roundTripValue = null;
+            let roundTripError = '';
+            try {
+              roundTripValue = parseInput(targetFormat.value, outputText);
+            } catch (err) {
+              roundTripError = `Converted output could not be parsed as ${targetFormat.value.toUpperCase()}: ${getErrorMessage(err)}`;
+            }
+
+            lastConversion = {
+              sourceText: normalizeNewlines(sourceInput.value),
+              outputText: normalizeNewlines(outputText),
+              sourceValue,
+              roundTripValue,
+              roundTripError,
+            };
+
+            showStatus(`Converted ${sourceFormat.value.toUpperCase()} to ${targetFormat.value.toUpperCase()}.`, 'success');
+            renderDiff();
+          } catch (err) {
+            outputInput.value = '';
+            updateCharMeta();
+            lastConversion = null;
+            showStatus(getErrorMessage(err), 'error');
+            renderDiff();
+          }
+
+          writeState();
+        }
+
+        function swapFormats() {
+          const currentSourceFormat = sourceFormat.value;
+          const currentTargetFormat = targetFormat.value;
+          sourceFormat.value = currentTargetFormat;
+          targetFormat.value = currentSourceFormat;
+
+          if (outputInput.value.trim().length > 0) {
+            sourceInput.value = outputInput.value;
+          }
+
+          updateCharMeta();
+          runConversion();
+        }
+
+        function clearAll() {
+          sourceInput.value = '';
+          outputInput.value = '';
+          schemaInput.value = '';
+          clearValidationErrors();
+          updateValidationSummary('Enter a schema and click Validate.');
+          showStatus('Enter source data and click Convert.', 'muted');
+          lastConversion = null;
+          updateCharMeta();
+          renderDiff();
+          writeState();
+        }
+
+        function pointerToPath(pointer) {
+          if (!pointer) return '$';
+          const parts = pointer.split('/').slice(1).map((segment) => {
+            return segment.replace(/~1/g, '/').replace(/~0/g, '~');
+          });
+
+          let path = '$';
+          for (const part of parts) {
+            if (/^\d+$/.test(part)) {
+              path += `[${part}]`;
+            } else {
+              path = appendPath(path, part);
+            }
+          }
+          return path;
+        }
+
+        function validateSchema() {
+          ensureLibraries();
+          clearValidationErrors();
+
+          if (schemaInput.value.trim() === '') {
+            updateValidationSummary('Schema is empty.', false);
+            return;
+          }
+
+          let schema;
+          try {
+            schema = JSON.parse(schemaInput.value);
+          } catch (err) {
+            updateValidationSummary(`Schema parse error: ${getErrorMessage(err)}`, false);
+            return;
+          }
+
+          let data;
+          try {
+            data = parseInput(sourceFormat.value, sourceInput.value);
+          } catch (err) {
+            updateValidationSummary(`Data parse error: ${getErrorMessage(err)}`, false);
+            return;
+          }
+
+          try {
+            const Ajv2020 = window.ajv2020;
+            const ajv = new Ajv2020({
+              allErrors: true,
+              strict: false,
+            });
+            const validate = ajv.compile(schema);
+            const valid = validate(data);
+
+            if (valid) {
+              updateValidationSummary('Valid: data matches schema.', true);
+              return;
+            }
+
+            const errors = Array.isArray(validate.errors) ? validate.errors : [];
+            updateValidationSummary(`Invalid: ${errors.length} validation error${errors.length === 1 ? '' : 's'}.`, false);
+
+            const fragment = document.createDocumentFragment();
+            for (const issue of errors) {
+              const item = document.createElement('li');
+              let path = pointerToPath(issue.instancePath || '');
+              if (
+                issue.keyword === 'required' &&
+                issue.params &&
+                typeof issue.params.missingProperty === 'string'
+              ) {
+                path = appendPath(path, issue.params.missingProperty);
+              }
+              const message = issue.message ? String(issue.message) : 'validation error';
+              item.textContent = `${path}: ${message}`;
+              fragment.appendChild(item);
+            }
+            validationErrors.appendChild(fragment);
+          } catch (err) {
+            updateValidationSummary(`Validation setup error: ${getErrorMessage(err)}`, false);
+          }
+        }
+
+        function onSourceInput() {
+          updateCharMeta();
+          writeState();
+        }
+
+        function onSchemaInput() {
+          writeState();
+        }
+
+        function onFormatChange() {
+          writeState();
+          if (sourceInput.value.trim().length > 0) {
+            runConversion();
+          }
+        }
+
+        function restoreFromStorage() {
+          const state = readState();
+          sourceFormat.value = state.sourceFormat;
+          targetFormat.value = state.targetFormat;
+          sourceInput.value = state.sourceText;
+          outputInput.value = state.outputText;
+          schemaInput.value = state.schemaText;
+          updateCharMeta();
+          setDiffMode(state.diffMode);
+
+          if (sourceInput.value.trim().length > 0) {
+            runConversion();
+          }
+        }
+
+        convertBtn.addEventListener('click', runConversion);
+        swapBtn.addEventListener('click', swapFormats);
+        clearBtn.addEventListener('click', clearAll);
+
+        sourceInput.addEventListener('input', onSourceInput);
+        schemaInput.addEventListener('input', onSchemaInput);
+        sourceFormat.addEventListener('change', onFormatChange);
+        targetFormat.addEventListener('change', onFormatChange);
+
+        validateBtn.addEventListener('click', validateSchema);
+        textModeBtn.addEventListener('click', () => setDiffMode('text'));
+        semanticModeBtn.addEventListener('click', () => setDiffMode('semantic'));
+
+        sourceInput.addEventListener('keydown', (event) => {
+          if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+            event.preventDefault();
+            runConversion();
+          }
+        });
+
+        restoreFromStorage();
+      })();
+    </script>
+  </body>
+</html>

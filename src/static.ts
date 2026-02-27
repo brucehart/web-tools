@@ -11,6 +11,8 @@ const PRETTY_ROUTES: Record<string, string> = {
   '/pastebin/': '/pastebin.html',
   '/diff': '/diff.html',
   '/diff/': '/diff.html',
+  '/format-tools': '/format-tools.html',
+  '/format-tools/': '/format-tools.html',
   '/todo': '/todo.html',
   '/todo/': '/todo.html',
   '/date': '/date.html',
