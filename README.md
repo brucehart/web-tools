@@ -33,6 +33,11 @@ A minimal Cloudflare Worker that serves a small suite of browser tools.
   - Validate parsed data against JSON Schema (Ajv) with path-level error output.
   - Compare source/converted content using text and semantic diff modes.
 
+- Base64 Encoder/Decoder (`/base64`)
+  - Drag and drop files (or choose files) to encode into raw Base64 and data URL forms.
+  - Decode raw Base64 or data URL input into binary and download with configurable filename and MIME type.
+  - Includes UTF-8 text to Base64 encode/decode helpers.
+
 - CSV Viewer & Editor (`/csv-editor`)
   - Paste CSV with or without headers and edit in an Excel-like grid.
   - Supports row/column add/delete, selection copy, column sorting, and filters.
@@ -66,6 +71,7 @@ All tools include a Home button in the header to return to `/`.
 - `/pastebin` — Pastebin UI (create, list, login).
 - `/pastebin/p/:id` — View a specific paste (public or unlisted).
 - `/format-tools` — Data Format Converter + JSON Schema validator + diff view.
+- `/base64` — Base64 Encoder/Decoder for files and text.
 - `/csv-editor` — CSV Viewer & Editor with spreadsheet grid and Excel/Sheets copy support.
 - `/llm-cost` — LLM Cost Calculator.
 - `/actuary` — Actuary Calculator.
@@ -80,6 +86,7 @@ All tools include a Home button in the header to return to `/`.
 - `public/euler.html` — Euler Preview page (BBCode → HTML, MathJax, tabs, Highlight.js with theme swap).
 - `public/pastebin.html` — Pastebin UI.
 - `public/format-tools.html` — Data format converter UI (JSON/YAML/TOML/CSV conversion, JSON Schema validation, text/semantic diff).
+- `public/base64.html` — Base64 tool UI (file drag/drop encoding, base64-to-file download decoding, text helpers).
 - `public/csv-editor.html` — CSV viewer/editor UI (spreadsheet grid, header toggle, CSV export, TSV clipboard copy).
 - `public/llm-cost.html` — LLM Cost Calculator UI (usage parsing, pricing library in localStorage).
 - `public/actuary.html` — Actuary Calculator UI (Social Security actuarial tables ported from `actuary.py`).

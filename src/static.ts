@@ -27,6 +27,8 @@ const PRETTY_ROUTES: Record<string, string> = {
   '/yt-transcript/': '/yt-transcript.html',
   '/tiff-viewer': '/tiff-viewer.html',
   '/tiff-viewer/': '/tiff-viewer.html',
+  '/base64': '/base64.html',
+  '/base64/': '/base64.html',
   '/actuary': '/actuary.html',
   '/actuary/': '/actuary.html',
 };

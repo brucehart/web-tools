@@ -6,6 +6,7 @@
     { id: 'home', title: 'Home', href: '/' },
     { id: 'pastebin', title: 'Pastebin', href: '/pastebin' },
     { id: 'diff', title: 'Text Diff', href: '/diff' },
+    { id: 'base64', title: 'Base64 Encoder/Decoder', href: '/base64' },
     { id: 'format-tools', title: 'Data Format Converter', href: '/format-tools' },
     { id: 'csv-editor', title: 'CSV Viewer & Editor', href: '/csv-editor' },
     { id: 'yt-transcript', title: 'YouTube Transcript', href: '/yt-transcript' },
