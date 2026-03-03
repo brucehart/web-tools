@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>URL Encode/Decode</title>
+    <link rel="stylesheet" href="/shared/toolkit.css" />
+    <script defer src="/shared/toolkit.js"></script>
+    <style>
+      :root {
+        --panel: var(--wt-panel-solid);
+        --border: var(--wt-border);
+        --muted: var(--wt-muted);
+        --accent: var(--wt-accent);
+        --danger: var(--wt-danger);
+        --success: var(--wt-success);
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--wt-fg);
+      }
+
+      .layout {
+        display: grid;
+        gap: 14px;
+      }
+
+      .hero {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: var(--wt-shadow-sm);
+      }
+
+      .hero h1 {
+        margin: 0 0 6px;
+        font-size: 1.6rem;
+      }
+
+      .hero p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: var(--wt-shadow-sm);
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border-bottom: 1px solid var(--border);
+        padding: 10px 12px;
+      }
+
+      .panel-head h2 {
+        margin: 0;
+        font-size: 0.95rem;
+      }
+
+      .section {
+        padding: 12px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .editor-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .field {
+        display: grid;
+        gap: 6px;
+      }
+
+      .field label {
+        color: var(--muted);
+        font-size: 0.84rem;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 240px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: transparent;
+        color: inherit;
+        font-family: var(--wt-font-mono);
+        font-size: 0.86rem;
+        line-height: 1.5;
+        padding: 10px;
+        resize: vertical;
+      }
+
+      textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+      }
+
+      textarea[readonly] {
+        background: rgba(127, 127, 127, 0.05);
+      }
+
+      .btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .status {
+        margin: 0;
+        min-height: 1.2rem;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .status.success {
+        color: var(--success);
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      @media (max-width: 900px) {
+        .editor-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body class="wt" data-wt-tool="url-encode-decode" data-wt-title="URL Encode/Decode">
+    <div class="wt-header" role="banner"></div>
+
+    <main class="wt-page layout">
+      <section class="hero">
+        <h1>URL Encode/Decode</h1>
+        <p>
+          Encode or decode URL components, then move output back to input to handle multiple levels.
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>URL Component Transformer</h2>
+          <div class="btn-row">
+            <button id="encodeBtn" class="wt-btn wt-btn-primary" type="button">Encode</button>
+            <button id="decodeBtn" class="wt-btn" type="button">Decode</button>
+            <button id="moveBtn" class="wt-btn" type="button">Move Output -&gt; Input</button>
+            <button id="swapBtn" class="wt-btn" type="button">Swap</button>
+            <button id="copyBtn" class="wt-btn" type="button">Copy Output</button>
+            <button id="clearBtn" class="wt-btn wt-btn-ghost" type="button">Clear</button>
+          </div>
+        </div>
+        <div class="section">
+          <div class="editor-grid">
+            <div class="field">
+              <label for="inputText">Input</label>
+              <textarea
+                id="inputText"
+                spellcheck="false"
+                placeholder="Enter text to encode or decode..."
+              ></textarea>
+            </div>
+            <div class="field">
+              <label for="outputText">Output</label>
+              <textarea
+                id="outputText"
+                readonly
+                spellcheck="false"
+                placeholder="Result appears here..."
+              ></textarea>
+            </div>
+          </div>
+          <p id="status" class="status"></p>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const inputText = document.getElementById('inputText');
+      const outputText = document.getElementById('outputText');
+      const status = document.getElementById('status');
+
+      const encodeBtn = document.getElementById('encodeBtn');
+      const decodeBtn = document.getElementById('decodeBtn');
+      const moveBtn = document.getElementById('moveBtn');
+      const swapBtn = document.getElementById('swapBtn');
+      const copyBtn = document.getElementById('copyBtn');
+      const clearBtn = document.getElementById('clearBtn');
+
+      function setStatus(message, kind) {
+        status.textContent = message || '';
+        status.className = 'status';
+        if (kind === 'success') status.classList.add('success');
+        if (kind === 'error') status.classList.add('error');
+      }
+
+      function copyText(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(text);
+        }
+        return new Promise((resolve, reject) => {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          const ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          if (ok) resolve();
+          else reject(new Error('Copy failed.'));
+        });
+      }
+
+      function transform(mode) {
+        const input = inputText.value;
+        if (!input) {
+          outputText.value = '';
+          setStatus('Input is empty.', '');
+          return;
+        }
+
+        if (mode === 'encode') {
+          outputText.value = encodeURIComponent(input);
+          setStatus('Encoded successfully.', 'success');
+          return;
+        }
+
+        try {
+          outputText.value = decodeURIComponent(input);
+          setStatus('Decoded successfully.', 'success');
+        } catch (err) {
+          const message = err && err.message ? err.message : 'Unable to decode input.';
+          setStatus(message, 'error');
+        }
+      }
+
+      encodeBtn.addEventListener('click', () => transform('encode'));
+      decodeBtn.addEventListener('click', () => transform('decode'));
+
+      moveBtn.addEventListener('click', () => {
+        if (!outputText.value) {
+          setStatus('No output available to move.', 'error');
+          return;
+        }
+        inputText.value = outputText.value;
+        outputText.value = '';
+        setStatus('Moved output into input.', 'success');
+      });
+
+      swapBtn.addEventListener('click', () => {
+        const left = inputText.value;
+        inputText.value = outputText.value;
+        outputText.value = left;
+        setStatus('Input and output swapped.', '');
+      });
+
+      copyBtn.addEventListener('click', async () => {
+        if (!outputText.value) {
+          setStatus('No output available to copy.', 'error');
+          return;
+        }
+        try {
+          await copyText(outputText.value);
+          setStatus('Output copied to clipboard.', 'success');
+        } catch (err) {
+          const message = err && err.message ? err.message : 'Copy failed.';
+          setStatus(message, 'error');
+        }
+      });
+
+      clearBtn.addEventListener('click', () => {
+        inputText.value = '';
+        outputText.value = '';
+        setStatus('', '');
+      });
+    </script>
+  </body>
+</html>

@@ -29,6 +29,8 @@ const PRETTY_ROUTES: Record<string, string> = {
   '/tiff-viewer/': '/tiff-viewer.html',
   '/base64': '/base64.html',
   '/base64/': '/base64.html',
+  '/url-encode-decode': '/url-encode-decode.html',
+  '/url-encode-decode/': '/url-encode-decode.html',
   '/actuary': '/actuary.html',
   '/actuary/': '/actuary.html',
 };

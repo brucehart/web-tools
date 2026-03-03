@@ -19,6 +19,7 @@ describe('Tools index and Markdown viewer', () => {
     expect(body).toContain('href="/markdown"');
     expect(body).toContain('href="/diff"');
     expect(body).toContain('href="/base64"');
+    expect(body).toContain('href="/url-encode-decode"');
     expect(body).toContain('href="/format-tools"');
     expect(body).toContain('href="/csv-editor"');
   });
@@ -74,6 +75,20 @@ describe('Tools index and Markdown viewer', () => {
     expect(body).toContain('id="decodeInput"');
   });
 
+  it('serves url encode/decode tool at /url-encode-decode (unit)', async () => {
+    const request = new IncomingRequest('http://example.com/url-encode-decode');
+    const ctx = createExecutionContext();
+    const response = await worker.fetch(request, env, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    const body = await response.text();
+    expect(body).toContain('<title>URL Encode/Decode</title>');
+    expect(body).toContain('id="inputText"');
+    expect(body).toContain('id="outputText"');
+    expect(body).toContain('id="moveBtn"');
+  });
+
   it('serves csv viewer and editor at /csv-editor (unit)', async () => {
     const request = new IncomingRequest('http://example.com/csv-editor');
     const ctx = createExecutionContext();
@@ -125,6 +140,14 @@ describe('Tools index and Markdown viewer', () => {
     expect(response.headers.get('content-type')).toContain('text/html');
     const body = await response.text();
     expect(body).toContain('<title>Base64 Encoder/Decoder</title>');
+  });
+
+  it('serves url encode/decode tool (integration)', async () => {
+    const response = await SELF.fetch('https://example.com/url-encode-decode');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    const body = await response.text();
+    expect(body).toContain('<title>URL Encode/Decode</title>');
   });
 
   it('serves csv viewer and editor (integration)', async () => {

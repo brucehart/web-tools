@@ -38,6 +38,11 @@ A minimal Cloudflare Worker that serves a small suite of browser tools.
   - Decode raw Base64 or data URL input into binary and download with configurable filename and MIME type.
   - Includes UTF-8 text to Base64 encode/decode helpers.
 
+- URL Encode/Decode (`/url-encode-decode`)
+  - Encode and decode URL components in the browser with `encodeURIComponent` / `decodeURIComponent`.
+  - Move output back into input for multi-level transforms without manual copy/paste.
+  - Includes swap, clear, and clipboard copy helpers for iterative workflows.
+
 - CSV Viewer & Editor (`/csv-editor`)
   - Paste CSV with or without headers and edit in an Excel-like grid.
   - Supports row/column add/delete, selection copy, column sorting, and filters.
@@ -72,6 +77,7 @@ All tools include a Home button in the header to return to `/`.
 - `/pastebin/p/:id` — View a specific paste (public or unlisted).
 - `/format-tools` — Data Format Converter + JSON Schema validator + diff view.
 - `/base64` — Base64 Encoder/Decoder for files and text.
+- `/url-encode-decode` — URL component encoder/decoder with iterative output-to-input flow.
 - `/csv-editor` — CSV Viewer & Editor with spreadsheet grid and Excel/Sheets copy support.
 - `/llm-cost` — LLM Cost Calculator.
 - `/actuary` — Actuary Calculator.
@@ -87,6 +93,7 @@ All tools include a Home button in the header to return to `/`.
 - `public/pastebin.html` — Pastebin UI.
 - `public/format-tools.html` — Data format converter UI (JSON/YAML/TOML/CSV conversion, JSON Schema validation, text/semantic diff).
 - `public/base64.html` — Base64 tool UI (file drag/drop encoding, base64-to-file download decoding, text helpers).
+- `public/url-encode-decode.html` — URL encode/decode UI with iterative output-to-input actions.
 - `public/csv-editor.html` — CSV viewer/editor UI (spreadsheet grid, header toggle, CSV export, TSV clipboard copy).
 - `public/llm-cost.html` — LLM Cost Calculator UI (usage parsing, pricing library in localStorage).
 - `public/actuary.html` — Actuary Calculator UI (Social Security actuarial tables ported from `actuary.py`).
