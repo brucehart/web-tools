@@ -1,137 +1,192 @@
 # Web Tools
 
-A minimal Cloudflare Worker that serves a small suite of browser tools.
+A Cloudflare Worker that serves a suite of browser-based developer and utility tools. Most pages run entirely in the browser; account-backed features use Cloudflare D1 plus Google OAuth.
 
 ## Tools
-- Markdown Preview (`/markdown`)
-  - GitHub-flavored Markdown via `marked`.
-  - MathJax for inline `$...$` and block `$$...$$`.
-  - Sanitized output with `DOMPurify`.
-  - Dual-pane editor/preview, theme toggle with persistence.
-  - Tabs with rename/new/delete stored in `localStorage`.
-  - Syntax highlighting via Highlight.js (full build) with language alias normalization and dark/light theme swapping.
-  - Copy rendered HTML to clipboard.
+
+- Markdown Viewer (`/markdown`)
+  - GitHub-flavored Markdown via `marked`, sanitized with `DOMPurify`, and rendered with MathJax.
+  - Syntax highlighting via Highlight.js with light/dark theme swapping.
+  - Multi-document tabs stored locally or synced to D1 for signed-in users via `/api/pages/*`.
+  - Copy rendered HTML to the clipboard.
 
 - Euler Preview (`/euler`)
-  - Preview Project Euler forum posts (BBCode + TeX).
-  - Supported tags include `[b] [i] [s] [sup] [sub] [url] [img] [quote] [collapse] [list] [*] [hide] [r] [g] [h1] [h2] [center] [right]`.
-  - Code blocks: `[code]...[/code]` or `[code=lang]...[/code]` with options `*` to disable highlight and `?` to force auto-detect (e.g. `[code=js]`, `[code=py*]`, `[code=?]`).
-  - MathJax for `$...$` and `$$...$$`.
-  - Tabs with rename/new/delete stored in `localStorage`.
-  - Syntax highlighting via Highlight.js with language alias normalization and dark/light theme swapping.
+  - Preview Project Euler forum posts with BBCode, TeX, and Highlight.js code blocks.
+  - Supports forum-style tags such as headings, quote/list/collapse blocks, alignment, and `[code=lang]`.
+  - Multi-document tabs stored locally or synced to D1 for signed-in users via `/api/pages/*`.
+  - Copy rendered HTML to the clipboard.
 
 - Pastebin (`/pastebin`)
-  - Create and share text snippets.
-  - Visibility options: `public` (listed) or `unlisted` (hidden from lists, accessible by link).
-  - Auth via Google OAuth; stores users, sessions, and pastes in Cloudflare D1.
-  - Not signed in or not allowed: pastes are saved in your browser’s localStorage (local mode). Local pastes are only visible in that browser/device; you can open them via `#local=<id>` in the URL.
-  - Public listing at `/pastebin` shows recent public pastes; your pastes appear after sign-in.
-  - Direct links like `/pastebin/p/abcd1234` open a read-only view.
+  - Create snippets with `public`, `unlisted`, or `private` visibility.
+  - Public feed plus a signed-in per-user list; direct links open at `/pastebin/p/:id`.
+  - Guest mode stores drafts in `localStorage` when you are not signed in.
 
-- Data Format Converter (`/format-tools`)
-  - Parse, format, and convert JSON, YAML, TOML, and CSV.
-  - Validate parsed data against JSON Schema (Ajv) with path-level error output.
-  - Compare source/converted content using text and semantic diff modes.
+- Text Diff (`/diff`)
+  - Compare original and changed text line by line with git-style output.
+  - Shows added, removed, changed, and unchanged counts.
+  - Includes swap, clear, large-input warnings, and `localStorage` persistence.
 
 - Base64 Encoder/Decoder (`/base64`)
-  - Drag and drop files (or choose files) to encode into raw Base64 and data URL forms.
-  - Decode raw Base64 or data URL input into binary and download with configurable filename and MIME type.
-  - Includes UTF-8 text to Base64 encode/decode helpers.
+  - Encode files to raw Base64 and data URLs via drag and drop or a file picker.
+  - Decode raw Base64 or data URLs back into downloadable files with configurable filename and MIME type.
+  - Includes UTF-8 text encode/decode helpers and clipboard copy actions.
+
+- Image Editor (`/image-editor`)
+  - Load images from file picker, drag and drop, or clipboard paste.
+  - Zoom, pan, rotate in 90 degree steps, crop interactively, and reset edits.
+  - Export PNG, JPG, or WEBP with quality controls where applicable.
 
 - URL Encode/Decode (`/url-encode-decode`)
-  - Encode and decode URL components in the browser with `encodeURIComponent` / `decodeURIComponent`.
-  - Move output back into input for multi-level transforms without manual copy/paste.
-  - Includes swap, clear, and clipboard copy helpers for iterative workflows.
+  - Encode and decode URL components in the browser.
+  - Move output back into input for multi-level transforms.
+  - Includes swap, clear, and clipboard copy helpers.
+
+- Data Format Converter (`/format-tools`)
+  - Convert between JSON, YAML, TOML, and CSV.
+  - Validate parsed output against JSON Schema with Ajv 2020.
+  - Compare source and converted content with text or semantic diff views.
+  - Persists the last inputs and settings in `localStorage`.
 
 - CSV Viewer & Editor (`/csv-editor`)
-  - Paste CSV with or without headers and edit in an Excel-like grid.
-  - Supports row/column add/delete, selection copy, column sorting, and filters.
-  - Export with comma/semicolon/tab delimiters and copy TSV for Excel/Google Sheets.
+  - Import CSV with or without header rows into an Excel-like grid.
+  - Add/delete rows and columns, sort/filter columns, and copy selected cells.
+  - Export CSV with comma, semicolon, or tab delimiters, or copy TSV for Sheets/Excel.
+  - Persists the grid in `localStorage` and warns on large datasets.
+
+- To-Do List (`/todo`)
+  - Signed-in, D1-backed task manager with priorities, categories, due dates, and descriptions.
+  - Stats cards plus filters for status, priority, and category.
+  - Supports create, edit, toggle, delete, and cross-device sync.
+
+- Daily Goal Tracker (`/goals`)
+  - Signed-in, D1-backed goal tracker with one card per goal and a current-month calendar.
+  - Each day cycles through `complete`, `partial`, `missed`, or empty state.
+  - Designed for quick daily habit tracking with immediate sync.
+
+- Date Calculator (`/date`)
+  - Compute date differences in days, weeks, and calendar year/month/day terms.
+  - Add or subtract days, weeks, months, or years from a base date.
+  - Includes a custom date picker plus "Set to Today" shortcuts.
 
 - LLM Cost Calculator (`/llm-cost`)
-  - Paste token usage dumps (supports cached and reasoning tokens) and see per-run totals.
-  - Enter pricing per token, per 1K, or per 1M for input, cached input, output, and reasoning tokens.
-  - Save multiple model pricing profiles locally (seeded with popular models; update the placeholders to match current rates).
+  - Parse token usage dumps, including cached and reasoning tokens.
+  - Price input, cached input, output, and reasoning tokens per token, per 1K, or per 1M.
+  - Save model pricing profiles locally and copy a cost summary.
 
 - Actuary Calculator (`/actuary`)
-  - Enter ages with gender suffixes (e.g. `63m 75f`) and an optional horizon in years or an absolute year.
-  - Uses the XKCD `actuary.py` Social Security actuarial tables to compute the years until 5/50/95% odds that someone (or everyone) dies.
-  - Shows probability of a death within the requested window plus per-person probabilities for the horizon.
-- TIFF Viewer (`/tiff-viewer`)
-  - Load TIFFs from file or base64 (data URL or raw) and decode locally using bundled `UTIF.js` (no external CDN dependency).
-  - Toggle channels on/off and assign per-channel colors; supports planar and interleaved layouts with automatic channel count detection.
-  - Zoom controls (in/out buttons, slider, Fit width) with default fit-to-width scaling; viewer scrolls when the image exceeds the viewport.
+  - XKCD-style group mortality odds using Social Security actuarial tables.
+  - Accepts multiple ages with optional gender suffixes and an optional horizon.
+  - Reports 5/50/95% timing plus horizon probabilities.
 
 - YouTube Transcript (`/yt-transcript`)
-  - Fetch transcripts for public videos with optional translation by language code when available.
-  - View normalized segments alongside the full transcript text, toggle timestamps, and copy the result.
-  - Persist last-used URL/language and theme preference locally.
+  - Fetch transcripts for public YouTube videos, with optional translation when available.
+  - Accepts full URLs, short URLs, or bare video IDs.
+  - Shows normalized segments plus full transcript text with copy support.
 
-All tools include a Home button in the header to return to `/`.
+- TIFF Viewer (`/tiff-viewer`)
+  - Decode TIFF images locally from file input or pasted Base64/data URLs using bundled `UTIF.js`.
+  - Toggle, solo, and recolor channels for multi-channel images.
+  - Zoom in/out, fit to width, and inspect large images without server-side processing.
+
+All tools use the shared header/theme assets in `public/shared`, and the home page at `/` provides searchable tiles for the full suite.
 
 ## Routes
-- `/` — Tools index page with tiles.
-- `/markdown` — Markdown Preview.
-- `/euler` — Euler Preview (Project Euler forum flavor).
-- `/pastebin` — Pastebin UI (create, list, login).
-- `/pastebin/p/:id` — View a specific paste (public or unlisted).
-- `/format-tools` — Data Format Converter + JSON Schema validator + diff view.
-- `/base64` — Base64 Encoder/Decoder for files and text.
-- `/url-encode-decode` — URL component encoder/decoder with iterative output-to-input flow.
-- `/csv-editor` — CSV Viewer & Editor with spreadsheet grid and Excel/Sheets copy support.
-- `/llm-cost` — LLM Cost Calculator.
-- `/actuary` — Actuary Calculator.
-- `/tiff-viewer` — Multi-channel TIFF viewer (local UTIF decode, channel mixing, zoom).
-- `/yt-transcript` — YouTube Transcript fetcher.
-- API routes: `/api/pastebin/*`, `/api/auth/*`, OAuth `/auth/google/*`, `/api/yt-transcript`.
+
+### Tool pages
+
+- `/` - searchable tools index.
+- `/markdown` - Markdown Viewer.
+- `/euler` - Euler Preview.
+- `/pastebin` - Pastebin UI.
+- `/diff` - Text Diff.
+- `/base64` - Base64 Encoder/Decoder.
+- `/image-editor` - Image Editor.
+- `/url-encode-decode` - URL Encode/Decode.
+- `/format-tools` - Data Format Converter.
+- `/csv-editor` - CSV Viewer & Editor.
+- `/todo` - To-Do List.
+- `/goals` - Daily Goal Tracker.
+- `/date` - Date Calculator.
+- `/llm-cost` - LLM Cost Calculator.
+- `/actuary` - Actuary Calculator.
+- `/yt-transcript` - YouTube Transcript.
+- `/tiff-viewer` - TIFF Viewer.
+
+### Data and auth routes
+
+- `/pastebin/p/:id` - view a specific paste.
+- `/api/auth/me` - current session status.
+- `/api/auth/logout` - log out the current session.
+- `/auth/google/login` - start Google OAuth.
+- `/auth/google/callback` - Google OAuth callback.
+- `/api/pastebin/create`, `/api/pastebin/mine`, `/api/pastebin/public`, `/api/pastebin/get`, `/api/pastebin/delete`
+- `/api/pages/create`, `/api/pages/list`, `/api/pages/get`, `/api/pages/update`, `/api/pages/delete`
+- `/api/todo/create`, `/api/todo/list`, `/api/todo/get`, `/api/todo/update`, `/api/todo/toggle`, `/api/todo/delete`
+- `/api/goals/create`, `/api/goals/list`, `/api/goals/delete`, `/api/goals/entry`
+- `/api/yt-transcript`
+- `/api/_internal/seed` - internal test helper.
 
 ## Project Structure
-- `src/index.ts` — Worker entry; routes and serves static assets from `public` via the `ASSETS` binding. Falls back to bundled reads in tests/dev.
-- `public/index.html` — Index page.
-- `public/markdown.html` — Markdown Preview page (Marked + DOMPurify + MathJax, tabs, Highlight.js with theme swap, copy button).
-- `public/euler.html` — Euler Preview page (BBCode → HTML, MathJax, tabs, Highlight.js with theme swap).
-- `public/pastebin.html` — Pastebin UI.
-- `public/format-tools.html` — Data format converter UI (JSON/YAML/TOML/CSV conversion, JSON Schema validation, text/semantic diff).
-- `public/base64.html` — Base64 tool UI (file drag/drop encoding, base64-to-file download decoding, text helpers).
-- `public/url-encode-decode.html` — URL encode/decode UI with iterative output-to-input actions.
-- `public/csv-editor.html` — CSV viewer/editor UI (spreadsheet grid, header toggle, CSV export, TSV clipboard copy).
-- `public/llm-cost.html` — LLM Cost Calculator UI (usage parsing, pricing library in localStorage).
-- `public/actuary.html` — Actuary Calculator UI (Social Security actuarial tables ported from `actuary.py`).
-- `public/tiff-viewer.html` — TIFF viewer UI with channel toggles/colors, fit-to-width zoom, and local `UTIF.js` loader.
-- `public/vendor/utif.js` — Bundled TIFF decoder used by the viewer; served locally for offline/CSP-friendly usage.
-- `public/yt-transcript.html` — YouTube transcript viewer UI with segment list and API integration.
-- `wrangler.jsonc` — Wrangler config with assets binding enabled.
-- `migrations/0001_pastebin.sql` — D1 tables for users, sessions, pastes.
-- `test/index.spec.ts` — Basic unit/integration tests.
+
+- `src/index.ts` - Worker entry; dispatches auth, API, dynamic paste, and static tool routes.
+- `src/static.ts` - pretty-route mapping for all HTML tool pages in `public/`.
+- `src/auth.ts` - Google OAuth, session lookup, and logout handling.
+- `src/pastebin.ts` - Pastebin API and `/pastebin/p/:id` page handling.
+- `src/pages.ts` - D1-backed saved pages for Markdown Viewer and Euler Preview.
+- `src/todo.ts` - To-Do List API.
+- `src/goals.ts` - Daily Goal Tracker API.
+- `src/routes/transcript.ts` and `src/yt-transcript.ts` - YouTube transcript endpoint and fetch logic.
+- `public/` - one HTML page per tool, plus `public/shared/` for shared UI assets.
+- `public/vendor/utif.js` - bundled TIFF decoder used by the viewer.
+- `migrations/0001_pastebin.sql` through `migrations/0006_tool_pages.sql` - D1 schema for users/sessions, pastebin, todos, goals, and synced editor pages.
+- `test/index.spec.ts` - worker tests with Vitest and the Cloudflare Workers pool.
+- `wrangler.jsonc` - Wrangler config and bindings.
 
 ## Development
-- Dev server: `npm run dev` then open `http://localhost:8787/`.
-- Tests: `npm test`
+
+- Install dependencies: `npm install`
+- Start local dev server: `npm run dev` or `npm start`
+- Run tests: `npm test`
 - Deploy: `npm run deploy`
+- Refresh generated Cloudflare types after binding changes: `npm run cf-typegen`
 
-If you change static HTML in `public/`, no Worker code changes are required.
+If you change only static HTML in `public/`, you usually do not need Worker code changes unless the route surface or backing APIs change.
 
-## Pastebin Setup
-1. Create a D1 database and bind it:
-   - In `wrangler.jsonc`, set `d1_databases[0].database_id` to your D1 id (or use an env binding).
-   - Run migrations: `wrangler d1 migrations apply web_tools_db` (or your database name).
-2. Configure Google OAuth:
-   - Create OAuth 2.0 Client (Web) in Google Cloud Console.
-   - Authorized redirect URI: `https://YOUR_DOMAIN/auth/google/callback`
-   - Set vars/secrets:
-     - `wrangler secret put GOOGLE_CLIENT_SECRET`
-     - `wrangler kv:namespace` not required.
-     - In `wrangler.jsonc` `vars`, set `GOOGLE_CLIENT_ID` and `OAUTH_REDIRECT_URL`.
-     - Optional: `SESSION_COOKIE_NAME` (defaults to `wt_session`).
-3. Dev: ensure your dev URL’s redirect matches (use `--local-protocol=https` or a tunnel if needed).
+## Account-Backed Features Setup
+
+The following features require D1 and Google OAuth:
+
+- Pastebin account storage and private/unlisted sharing
+- Markdown Viewer and Euler Preview synced pages
+- To-Do List
+- Daily Goal Tracker
+
+Everything else works without D1 or OAuth.
+
+1. Create a D1 database and bind it in `wrangler.jsonc`.
+2. Apply the migrations:
+   - `wrangler d1 migrations apply web_tools_db`
+   - Replace `web_tools_db` with your actual database binding name if needed.
+3. Configure Google OAuth:
+   - Create an OAuth 2.0 Web application in Google Cloud Console.
+   - Add an authorized redirect URI: `https://YOUR_DOMAIN/auth/google/callback`
+   - Set `GOOGLE_CLIENT_ID` and `OAUTH_REDIRECT_URL` in `wrangler.jsonc` `vars`.
+   - Set the client secret with `wrangler secret put GOOGLE_CLIENT_SECRET`.
+   - Optionally set `SESSION_COOKIE_NAME` (defaults to `wt_session`).
+4. For local development, make sure the dev callback URL matches your configured redirect URI. Using HTTPS locally or a tunnel is usually easiest for OAuth testing.
 
 Security notes:
-- Sessions use random tokens stored in D1 and set as HttpOnly, Secure, SameSite=Lax cookies.
-- Only `public` pastes appear in listings; `unlisted` require the direct link.
-- When not signed in or not allowed, pastes are saved to `localStorage` only and cannot be shared across devices. View a local paste by opening `/pastebin#local=<id>` on the same browser.
+
+- Sessions use random tokens stored in D1 and are set as `HttpOnly`, `Secure`, `SameSite=Lax` cookies.
+- Only `public` pastes appear in the public listing.
+- `unlisted` and `private` pastes do not appear in public listings; `private` pastes are owner-only.
+- Guest paste mode uses `localStorage`, so those drafts stay on the same browser/device.
 
 ## Notes
-- MathJax inline delimiters are restricted to `$...$` to avoid conflicts with literal parentheses in text and links; display math supports `$$...$$` and `\[...\]`.
-- Output HTML is sanitized before insertion. Be cautious if you change the sanitization step.
+
+- MathJax inline delimiters are restricted to `$...$` to avoid conflicts with ordinary text. Display math supports `$$...$$` and `\[...\]`.
+- Rendered HTML is sanitized before insertion. Be careful if you change the sanitization path.
+
 ## License
-MIT — see [LICENSE.md](LICENSE.md).
+
+MIT - see [LICENSE.md](LICENSE.md).
