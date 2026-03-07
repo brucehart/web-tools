@@ -7,6 +7,7 @@
     { id: 'pastebin', title: 'Pastebin', href: '/pastebin' },
     { id: 'diff', title: 'Text Diff', href: '/diff' },
     { id: 'base64', title: 'Base64 Encoder/Decoder', href: '/base64' },
+    { id: 'image-editor', title: 'Image Editor', href: '/image-editor' },
     { id: 'url-encode-decode', title: 'URL Encode/Decode', href: '/url-encode-decode' },
     { id: 'format-tools', title: 'Data Format Converter', href: '/format-tools' },
     { id: 'csv-editor', title: 'CSV Viewer & Editor', href: '/csv-editor' },

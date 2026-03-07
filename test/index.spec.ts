@@ -19,6 +19,7 @@ describe('Tools index and Markdown viewer', () => {
     expect(body).toContain('href="/markdown"');
     expect(body).toContain('href="/diff"');
     expect(body).toContain('href="/base64"');
+    expect(body).toContain('href="/image-editor"');
     expect(body).toContain('href="/url-encode-decode"');
     expect(body).toContain('href="/format-tools"');
     expect(body).toContain('href="/csv-editor"');
@@ -73,6 +74,19 @@ describe('Tools index and Markdown viewer', () => {
     expect(body).toContain('<title>Base64 Encoder/Decoder</title>');
     expect(body).toContain('id="dropZone"');
     expect(body).toContain('id="decodeInput"');
+  });
+
+  it('serves image editor at /image-editor (unit)', async () => {
+    const request = new IncomingRequest('http://example.com/image-editor');
+    const ctx = createExecutionContext();
+    const response = await worker.fetch(request, env, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    const body = await response.text();
+    expect(body).toContain('<title>Image Editor</title>');
+    expect(body).toContain('id="dropZone"');
+    expect(body).toContain('id="exportButton"');
   });
 
   it('serves url encode/decode tool at /url-encode-decode (unit)', async () => {
@@ -140,6 +154,14 @@ describe('Tools index and Markdown viewer', () => {
     expect(response.headers.get('content-type')).toContain('text/html');
     const body = await response.text();
     expect(body).toContain('<title>Base64 Encoder/Decoder</title>');
+  });
+
+  it('serves image editor (integration)', async () => {
+    const response = await SELF.fetch('https://example.com/image-editor');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    const body = await response.text();
+    expect(body).toContain('<title>Image Editor</title>');
   });
 
   it('serves url encode/decode tool (integration)', async () => {
