@@ -671,8 +671,14 @@
               </div>
 
               <div class="field">
-                <div class="field-header">Download</div>
-                <button id="exportButton" class="wt-btn wt-btn-primary" type="button">Download Edited Image</button>
+                <div class="field-header">Export Actions</div>
+                <div class="toolbar-row">
+                  <button id="exportButton" class="wt-btn wt-btn-primary" type="button">Download Edited Image</button>
+                  <button id="copyImageButton" class="wt-btn" type="button">Copy Edited Image</button>
+                </div>
+                <p id="clipboardSupportHint" class="meta-note" hidden>
+                  Image clipboard copy requires ClipboardItem support in a secure browser context.
+                </p>
               </div>
             </div>
           </section>
@@ -697,7 +703,7 @@
                 <h3>Ready for clipboard or drag-and-drop</h3>
                 <p>
                   Load one image, inspect it with zoom, rotate in 90 degree steps, crop a rectangle,
-                  and export the result as PNG or JPG.
+                  and export the result as PNG, JPG, or WEBP.
                 </p>
               </div>
 
@@ -764,6 +770,8 @@
         const qualityNote = document.getElementById('qualityNote');
         const qualityValue = document.getElementById('qualityValue');
         const exportButton = document.getElementById('exportButton');
+        const copyImageButton = document.getElementById('copyImageButton');
+        const clipboardSupportHint = document.getElementById('clipboardSupportHint');
         const status = document.getElementById('status');
 
         const metaName = document.getElementById('metaName');
@@ -876,6 +884,9 @@
         exportButton.addEventListener('click', async () => {
           await exportImage();
         });
+        copyImageButton.addEventListener('click', async () => {
+          await copyImageToClipboard();
+        });
 
         cropLayer.addEventListener('pointerdown', onCropPointerDown);
         cropLayer.addEventListener('pointermove', onCropPointerMove);
@@ -982,6 +993,7 @@
         function updateControls() {
           const imageLoaded = hasImage();
           const cropActive = state.cropMode;
+          const clipboardSupported = supportsImageClipboardWrite();
 
           clearImageButton.disabled = !imageLoaded;
           zoomOutButton.disabled = !imageLoaded;
@@ -995,6 +1007,8 @@
           exportFormat.disabled = !imageLoaded;
           exportQuality.disabled = !imageLoaded || exportFormat.value === 'png';
           exportButton.disabled = !imageLoaded;
+          copyImageButton.disabled = !imageLoaded || !clipboardSupported;
+          clipboardSupportHint.hidden = clipboardSupported;
 
           cropToggleButton.textContent = state.cropMode
             ? 'Done Cropping'
@@ -1504,59 +1518,99 @@
 
         async function exportImage() {
           if (!hasImage()) return;
-          const rect = getExportRect();
-          if (!rect || rect.w < 1 || rect.h < 1) {
-            setStatus('Crop area is empty and cannot be exported.', 'error');
-            return;
-          }
-
           try {
-            const canvas = document.createElement('canvas');
-            canvas.width = Math.max(1, Math.round(rect.w));
-            canvas.height = Math.max(1, Math.round(rect.h));
-            const context = canvas.getContext('2d');
-            if (!context) throw new Error('Canvas export is not available in this browser.');
-
-            if (exportFormat.value === 'jpg') {
-              context.fillStyle = '#ffffff';
-              context.fillRect(0, 0, canvas.width, canvas.height);
-            } else {
-              context.clearRect(0, 0, canvas.width, canvas.height);
-            }
-
-            context.imageSmoothingEnabled = true;
-            context.imageSmoothingQuality = 'high';
-            context.drawImage(
-              state.rotatedCanvas,
-              rect.x,
-              rect.y,
-              rect.w,
-              rect.h,
-              0,
-              0,
-              canvas.width,
-              canvas.height,
-            );
-
-            const mimeType = exportFormat.value === 'jpg'
-              ? 'image/jpeg'
-              : exportFormat.value === 'webp'
-                ? 'image/webp'
-                : 'image/png';
-            const quality = exportFormat.value === 'png' ? undefined : Number(exportQuality.value);
-            const blob = await canvasToBlob(canvas, mimeType, quality);
-            const url = URL.createObjectURL(blob);
+            const exportAsset = await buildExportAsset();
+            const url = URL.createObjectURL(exportAsset.blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = buildDownloadName(exportFormat.value);
+            link.download = buildDownloadName(exportAsset.format);
             document.body.appendChild(link);
             link.click();
             link.remove();
             setTimeout(() => URL.revokeObjectURL(url), 1500);
-            setStatus(`Exported ${canvas.width} x ${canvas.height} ${exportFormat.value.toUpperCase()}.`, 'success');
+            setStatus(
+              `Exported ${exportAsset.width} x ${exportAsset.height} ${exportAsset.format.toUpperCase()}.`,
+              'success',
+            );
           } catch (error) {
             setStatus(error instanceof Error ? error.message : 'Failed to export image.', 'error');
           }
+        }
+
+        async function copyImageToClipboard() {
+          if (!hasImage()) return;
+          if (!supportsImageClipboardWrite()) {
+            setStatus('Image clipboard copy is not available in this browser.', 'error');
+            return;
+          }
+
+          try {
+            const exportAsset = await buildExportAsset();
+            await navigator.clipboard.write([
+              new ClipboardItem({
+                [exportAsset.mimeType]: exportAsset.blob,
+              }),
+            ]);
+            setStatus(
+              `Copied ${exportAsset.width} x ${exportAsset.height} ${exportAsset.format.toUpperCase()} to the clipboard.`,
+              'success',
+            );
+          } catch (error) {
+            setStatus(
+              error instanceof Error ? error.message : 'Failed to copy image to clipboard.',
+              'error',
+            );
+          }
+        }
+
+        async function buildExportAsset() {
+          const rect = getExportRect();
+          if (!rect || rect.w < 1 || rect.h < 1) {
+            throw new Error('Crop area is empty and cannot be exported.');
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(rect.w));
+          canvas.height = Math.max(1, Math.round(rect.h));
+          const context = canvas.getContext('2d');
+          if (!context) throw new Error('Canvas export is not available in this browser.');
+
+          const format = exportFormat.value;
+          if (format === 'jpg') {
+            context.fillStyle = '#ffffff';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+          } else {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+          }
+
+          context.imageSmoothingEnabled = true;
+          context.imageSmoothingQuality = 'high';
+          context.drawImage(
+            state.rotatedCanvas,
+            rect.x,
+            rect.y,
+            rect.w,
+            rect.h,
+            0,
+            0,
+            canvas.width,
+            canvas.height,
+          );
+
+          const mimeType = format === 'jpg'
+            ? 'image/jpeg'
+            : format === 'webp'
+              ? 'image/webp'
+              : 'image/png';
+          const quality = format === 'png' ? undefined : Number(exportQuality.value);
+          const blob = await canvasToBlob(canvas, mimeType, quality);
+          return {
+            blob,
+            format,
+            height: canvas.height,
+            mimeType,
+            width: canvas.width,
+          };
         }
 
         function buildDownloadName(format) {
@@ -1581,6 +1635,14 @@
               quality,
             );
           });
+        }
+
+        function supportsImageClipboardWrite() {
+          return !!(
+            window.ClipboardItem &&
+            navigator.clipboard &&
+            typeof navigator.clipboard.write === 'function'
+          );
         }
 
         function cloneRect(rect) {

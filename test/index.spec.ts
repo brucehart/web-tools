@@ -87,6 +87,7 @@ describe('Tools index and Markdown viewer', () => {
     expect(body).toContain('<title>Image Editor</title>');
     expect(body).toContain('id="dropZone"');
     expect(body).toContain('id="exportButton"');
+    expect(body).toContain('id="copyImageButton"');
   });
 
   it('serves url encode/decode tool at /url-encode-decode (unit)', async () => {
@@ -162,6 +163,7 @@ describe('Tools index and Markdown viewer', () => {
     expect(response.headers.get('content-type')).toContain('text/html');
     const body = await response.text();
     expect(body).toContain('<title>Image Editor</title>');
+    expect(body).toContain('id="copyImageButton"');
   });
 
   it('serves url encode/decode tool (integration)', async () => {

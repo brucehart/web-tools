@@ -34,7 +34,7 @@ A Cloudflare Worker that serves a suite of browser-based developer and utility t
 - Image Editor (`/image-editor`)
   - Load images from file picker, drag and drop, or clipboard paste.
   - Zoom, pan, rotate in 90 degree steps, crop interactively, and reset edits.
-  - Export PNG, JPG, or WEBP with quality controls where applicable.
+  - Export PNG, JPG, or WEBP with quality controls where applicable, then download or copy the edited image.
 
 - URL Encode/Decode (`/url-encode-decode`)
   - Encode and decode URL components in the browser.
