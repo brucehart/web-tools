@@ -30,45 +30,12 @@
         gap: 18px;
       }
 
-      .hero,
       .panel,
       .stage-panel {
         background: var(--panel);
         border: 1px solid var(--border);
         border-radius: 18px;
         box-shadow: var(--wt-shadow-sm);
-      }
-
-      .hero {
-        padding: 20px;
-        display: grid;
-        gap: 10px;
-      }
-
-      .hero h1 {
-        margin: 0;
-        font-size: 1.7rem;
-      }
-
-      .hero p {
-        margin: 0;
-        color: var(--muted);
-        max-width: 72ch;
-      }
-
-      .hero-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
-      .hero-list span {
-        padding: 7px 10px;
-        border-radius: 999px;
-        border: 1px solid var(--border);
-        background: rgba(127, 127, 127, 0.08);
-        font-size: 0.88rem;
-        color: var(--muted);
       }
 
       .workspace {
@@ -314,6 +281,18 @@
           radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 38%),
           radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.16), transparent 34%),
           var(--stage-bg);
+      }
+
+      .stage-viewport.is-pannable {
+        cursor: grab;
+      }
+
+      .stage-viewport.is-panning {
+        cursor: grabbing;
+      }
+
+      .stage-viewport.is-panning .preview-canvas {
+        cursor: grabbing;
       }
 
       .stage-surface {
@@ -586,21 +565,6 @@
     <div class="wt-header" role="banner"></div>
 
     <main class="wt-page page">
-      <section class="hero">
-        <h1>Image Editor</h1>
-        <p>
-          Paste an image from your clipboard or drag a file into the browser, then zoom in,
-          rotate it, crop it, and export the edited result as PNG or JPG.
-        </p>
-        <div class="hero-list" aria-hidden="true">
-          <span>Clipboard paste</span>
-          <span>Drag and drop</span>
-          <span>Zoom and rotate</span>
-          <span>Freeform crop</span>
-          <span>PNG and JPG export</span>
-        </div>
-      </section>
-
       <section class="workspace">
         <aside class="controls">
           <section class="panel">
@@ -839,6 +803,7 @@
 
         let dragDepth = 0;
         let cropInteraction = null;
+        let panInteraction = null;
 
         dropZone.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', async () => {
@@ -913,6 +878,11 @@
         cropLayer.addEventListener('pointermove', onCropPointerMove);
         cropLayer.addEventListener('pointerup', onCropPointerUp);
         cropLayer.addEventListener('pointercancel', onCropPointerUp);
+
+        stageViewport.addEventListener('pointerdown', onPanPointerDown);
+        stageViewport.addEventListener('pointermove', onPanPointerMove);
+        stageViewport.addEventListener('pointerup', onPanPointerUp);
+        stageViewport.addEventListener('pointercancel', onPanPointerUp);
 
         stageViewport.addEventListener(
           'wheel',
@@ -1032,6 +1002,7 @@
           cropLayer.classList.toggle('active', state.cropMode);
           cropLayer.classList.toggle('has-crop', !!state.crop);
           cropBox.classList.toggle('passive', !state.cropMode);
+          syncViewportInteractionState();
         }
 
         function updateExportUi() {
@@ -1063,6 +1034,7 @@
           revokeObjectUrl();
           dropZone.classList.remove('drag-over');
           document.body.classList.remove('dragging');
+          endPanInteraction();
           state.image = null;
           state.fileName = '';
           state.fileType = '';
@@ -1235,6 +1207,22 @@
           updateControls();
         }
 
+        function syncViewportInteractionState() {
+          const pannable = canPanPreview();
+          stageViewport.classList.toggle('is-pannable', pannable);
+          if (!pannable) {
+            stageViewport.classList.remove('is-panning');
+          }
+        }
+
+        function canPanPreview() {
+          if (!hasImage() || state.cropMode) return false;
+          return (
+            stageViewport.scrollWidth > stageViewport.clientWidth + 1 ||
+            stageViewport.scrollHeight > stageViewport.clientHeight + 1
+          );
+        }
+
         function changeZoom(multiplier) {
           if (!hasImage()) return;
           state.zoom = clamp(state.zoom * multiplier, ZOOM_MIN, ZOOM_MAX);
@@ -1390,6 +1378,50 @@
           updateCropBox();
           updateMeta();
           updateControls();
+        }
+
+        function onPanPointerDown(event) {
+          if (!canPanPreview()) return;
+          if (event.button !== 0) return;
+          if (event.target !== previewCanvas) return;
+
+          panInteraction = {
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            scrollLeft: stageViewport.scrollLeft,
+            scrollTop: stageViewport.scrollTop,
+          };
+
+          stageViewport.classList.add('is-panning');
+          stageViewport.setPointerCapture(event.pointerId);
+          event.preventDefault();
+        }
+
+        function onPanPointerMove(event) {
+          if (!panInteraction) return;
+          if (event.pointerId !== panInteraction.pointerId) return;
+
+          const deltaX = event.clientX - panInteraction.startX;
+          const deltaY = event.clientY - panInteraction.startY;
+          stageViewport.scrollLeft = panInteraction.scrollLeft - deltaX;
+          stageViewport.scrollTop = panInteraction.scrollTop - deltaY;
+          event.preventDefault();
+        }
+
+        function onPanPointerUp(event) {
+          if (!panInteraction) return;
+          if (event.pointerId !== panInteraction.pointerId) return;
+          endPanInteraction(event.pointerId);
+        }
+
+        function endPanInteraction(pointerId) {
+          if (pointerId !== undefined && stageViewport.hasPointerCapture(pointerId)) {
+            stageViewport.releasePointerCapture(pointerId);
+          }
+          panInteraction = null;
+          stageViewport.classList.remove('is-panning');
+          syncViewportInteractionState();
         }
 
         function resizeCropRect(startCrop, handle, point) {
