@@ -750,12 +750,30 @@
           }
         }
 
+        function readPathLookup(url) {
+          const trimmedPath = url.pathname.replace(/\/+$/, '');
+          const match = trimmedPath.match(/^\/area-code\/([^/]+)$/);
+          if (!match) return '';
+          try {
+            return decodeURIComponent(match[1]);
+          } catch {
+            return match[1];
+          }
+        }
+
         function syncQuery(raw) {
           try {
             const url = new URL(window.location.href);
             const value = String(raw || '').trim();
-            if (value) url.searchParams.set('q', value);
-            else url.searchParams.delete('q');
+            url.pathname = '/area-code';
+            url.searchParams.delete('q');
+
+            if (/^\d{3}$/.test(value)) {
+              url.pathname = `/area-code/${encodeURIComponent(value)}`;
+            } else if (value) {
+              url.searchParams.set('q', value);
+            }
+
             window.history.replaceState(null, '', url.toString());
           } catch {}
         }
@@ -851,7 +869,8 @@
         renderRecent();
 
         try {
-          const initialQuery = new URL(window.location.href).searchParams.get('q');
+          const initialUrl = new URL(window.location.href);
+          const initialQuery = initialUrl.searchParams.get('q') || readPathLookup(initialUrl);
           if (initialQuery && lookupInput) {
             lookupInput.value = initialQuery;
             runLookup();

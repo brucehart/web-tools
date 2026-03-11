@@ -119,6 +119,19 @@ describe('Tools index and Markdown viewer', () => {
     expect(body).toContain("window.addEventListener('DOMContentLoaded'");
   });
 
+  it('serves area code lookup at /area-code/:code (unit)', async () => {
+    const request = new IncomingRequest('http://example.com/area-code/937');
+    const ctx = createExecutionContext();
+    const response = await worker.fetch(request, env, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    const body = await response.text();
+    expect(body).toContain('<title>Area Code Lookup</title>');
+    expect(body).toContain('id="lookupInput"');
+    expect(body).toContain('readPathLookup');
+  });
+
   it('serves csv viewer and editor at /csv-editor (unit)', async () => {
     const request = new IncomingRequest('http://example.com/csv-editor');
     const ctx = createExecutionContext();
@@ -191,6 +204,14 @@ describe('Tools index and Markdown viewer', () => {
 
   it('serves area code lookup (integration)', async () => {
     const response = await SELF.fetch('https://example.com/area-code');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    const body = await response.text();
+    expect(body).toContain('<title>Area Code Lookup</title>');
+  });
+
+  it('serves area code lookup at /area-code/:code (integration)', async () => {
+    const response = await SELF.fetch('https://example.com/area-code/937');
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('text/html');
     const body = await response.text();
