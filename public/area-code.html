@@ -1,0 +1,868 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Area Code Lookup</title>
+    <link rel="stylesheet" href="/shared/toolkit.css" />
+    <script defer src="/shared/toolkit.js"></script>
+    <script defer src="/area-code-data.js"></script>
+    <style>
+      :root {
+        --panel: var(--wt-panel-solid);
+        --border: var(--wt-border);
+        --muted: var(--wt-muted);
+        --accent: #0f766e;
+        --accent-strong: #115e59;
+        --accent-soft: rgba(15, 118, 110, 0.14);
+        --warm-soft: rgba(245, 158, 11, 0.14);
+        --danger: var(--wt-danger);
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--wt-fg);
+      }
+
+      .layout {
+        display: grid;
+        gap: 14px;
+      }
+
+      .hero {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 20px;
+        background:
+          radial-gradient(circle at top right, rgba(255, 255, 255, 0.12), transparent 28%),
+          linear-gradient(135deg, var(--accent-soft), var(--warm-soft)),
+          var(--panel);
+        box-shadow: var(--wt-shadow-sm);
+      }
+
+      .hero::after {
+        content: '';
+        position: absolute;
+        inset: auto -40px -70px auto;
+        width: 220px;
+        height: 220px;
+        border-radius: 50%;
+        background: rgba(15, 118, 110, 0.08);
+        filter: blur(8px);
+      }
+
+      .hero h1 {
+        margin: 0 0 8px;
+        font-size: clamp(1.8rem, 4vw, 2.5rem);
+        letter-spacing: -0.03em;
+      }
+
+      .hero p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 760px;
+        line-height: 1.55;
+      }
+
+      .eyebrow {
+        margin: 0 0 6px;
+        color: var(--accent-strong);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: var(--wt-shadow-sm);
+      }
+
+      .panel-body {
+        padding: 16px;
+        display: grid;
+        gap: 14px;
+      }
+
+      .panel h2 {
+        margin: 0;
+        font-size: 1.05rem;
+      }
+
+      .panel p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .field {
+        display: grid;
+        gap: 8px;
+      }
+
+      .field label {
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+
+      .search-row {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+      }
+
+      input[type='text'] {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        color: inherit;
+        font: inherit;
+        padding: 12px 14px;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      }
+
+      input[type='text']:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      button {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        color: inherit;
+        font: inherit;
+        padding: 12px 14px;
+        cursor: pointer;
+        transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+      }
+
+      button:hover {
+        border-color: var(--accent);
+        transform: translateY(-1px);
+      }
+
+      .primary {
+        background: linear-gradient(135deg, rgba(15, 118, 110, 0.2), rgba(17, 94, 89, 0.3));
+        border-color: rgba(15, 118, 110, 0.42);
+      }
+
+      .ghost {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .hint {
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chip {
+        padding: 7px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.04);
+        color: inherit;
+        font-size: 0.88rem;
+      }
+
+      .chip strong {
+        font-size: 0.9rem;
+      }
+
+      .stats {
+        display: grid;
+        gap: 10px;
+      }
+
+      .stat {
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .stat strong {
+        display: block;
+        font-size: 1.25rem;
+      }
+
+      .stat span {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .status {
+        min-height: 1.3rem;
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      .result {
+        display: grid;
+        gap: 12px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 16px;
+        background:
+          linear-gradient(180deg, rgba(15, 118, 110, 0.06), transparent 48%),
+          rgba(255, 255, 255, 0.02);
+      }
+
+      .result.empty {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .result-head {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .code-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 82px;
+        padding: 10px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(15, 118, 110, 0.35);
+        background: rgba(15, 118, 110, 0.14);
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+      }
+
+      .result h3 {
+        margin: 0;
+        font-size: 1.35rem;
+      }
+
+      .subhead {
+        margin: 4px 0 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .badge-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.04);
+        font-size: 0.86rem;
+      }
+
+      .badge.status-active {
+        border-color: rgba(15, 118, 110, 0.34);
+        background: rgba(15, 118, 110, 0.12);
+      }
+
+      .badge.status-not-in-use,
+      .badge.status-not-assignable {
+        border-color: rgba(245, 158, 11, 0.34);
+        background: rgba(245, 158, 11, 0.12);
+      }
+
+      .match-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .match-item {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: auto minmax(0, 1fr);
+        text-align: left;
+        align-items: start;
+      }
+
+      .match-item .code-pill {
+        min-width: 70px;
+        font-size: 1rem;
+        padding: 8px 10px;
+      }
+
+      .match-item strong {
+        display: block;
+        margin-bottom: 3px;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .source {
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      .source a {
+        color: inherit;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      @media (max-width: 920px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .search-row {
+          grid-template-columns: 1fr;
+        }
+
+        .result-head {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body class="wt" data-wt-tool="area-code" data-wt-title="Area Code Lookup">
+    <div class="wt-header" role="banner"></div>
+
+    <main class="wt-page layout">
+      <section class="hero">
+        <p class="eyebrow">Phone Utility</p>
+        <h1>Area Code Lookup</h1>
+        <p>
+          Paste a full North American phone number or type a 3-digit area code to see the city,
+          region, or service assignment behind the call.
+        </p>
+      </section>
+
+      <section class="grid">
+        <div class="panel">
+          <div class="panel-body">
+            <div class="field">
+              <label for="lookupInput">Area code or phone number</label>
+              <form id="lookupForm" class="search-row">
+                <input
+                  id="lookupInput"
+                  type="text"
+                  placeholder="212, Dallas, or +1 (415) 555-0123"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+                <button id="lookupBtn" class="primary" type="submit">Look up</button>
+                <button id="clearBtn" class="ghost" type="button">Clear</button>
+              </form>
+            </div>
+
+            <p class="hint">
+              If you paste a full NANP number, the tool uses the first 3 digits after an optional
+              leading <code>1</code>.
+            </p>
+
+            <div class="chip-row" id="exampleChips">
+              <button class="chip" type="button" data-example="212"><strong>212</strong> Manhattan</button>
+              <button class="chip" type="button" data-example="305"><strong>305</strong> Miami</button>
+              <button class="chip" type="button" data-example="808"><strong>808</strong> Hawaii</button>
+              <button class="chip" type="button" data-example="833"><strong>833</strong> Toll-free</button>
+              <button class="chip" type="button" data-example="Dallas">Dallas</button>
+            </div>
+
+            <p id="lookupStatus" class="status" aria-live="polite">
+              Type an area code, city, or state to start.
+            </p>
+          </div>
+        </div>
+
+        <aside class="panel">
+          <div class="panel-body">
+            <h2>How it works</h2>
+            <p>
+              Exact 3-digit lookups return one area code. Text searches like
+              <code>Texas</code> or <code>Toronto</code> show every matching code in the dataset.
+            </p>
+
+            <div class="stats">
+              <div class="stat">
+                <strong id="loadedCount">800</strong>
+                <span>NANP codes indexed</span>
+              </div>
+              <div class="stat">
+                <strong>March 11, 2026</strong>
+                <span>Reference snapshot date</span>
+              </div>
+            </div>
+
+            <p class="source">
+              Source:
+              <a
+                href="https://en.wikipedia.org/wiki/List_of_North_American_Numbering_Plan_area_codes"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Wikipedia area code reference
+              </a>
+            </p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="panel">
+        <div class="panel-body">
+          <h2>Lookup result</h2>
+          <div id="resultCard" class="result empty">
+            <div class="result-head">
+              <div>
+                <h3 id="resultTitle">No lookup yet</h3>
+                <p id="resultSubtitle" class="subhead">
+                  Enter a 3-digit area code or paste a full phone number.
+                </p>
+              </div>
+              <div id="resultCode" class="code-pill" hidden>000</div>
+            </div>
+            <div id="resultBadges" class="badge-row" hidden></div>
+            <p id="resultDetail" class="subhead" hidden></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <section class="panel">
+          <div class="panel-body">
+            <h2 id="matchesHeading">Matches</h2>
+            <div id="matchList" class="match-list">
+              <p class="muted">City and state searches show matching area codes here.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-body">
+            <h2>Recent lookups</h2>
+            <div id="recentList" class="chip-row">
+              <p class="muted">Recent area codes are saved in this browser.</p>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+        const rawRows = Array.isArray(globalThis.WT_AREA_CODE_DATA) ? globalThis.WT_AREA_CODE_DATA : [];
+        const $ = (id) => document.getElementById(id);
+        const lookupForm = $('lookupForm');
+        const lookupInput = $('lookupInput');
+        const clearBtn = $('clearBtn');
+        const lookupStatus = $('lookupStatus');
+        const resultCard = $('resultCard');
+        const resultTitle = $('resultTitle');
+        const resultSubtitle = $('resultSubtitle');
+        const resultCode = $('resultCode');
+        const resultBadges = $('resultBadges');
+        const resultDetail = $('resultDetail');
+        const matchList = $('matchList');
+        const matchesHeading = $('matchesHeading');
+        const recentList = $('recentList');
+        const loadedCount = $('loadedCount');
+        const RECENT_KEY = 'area_code_recent';
+
+        function expandCodeSpec(spec) {
+          if (typeof spec !== 'string') return [];
+          if (spec.includes('-')) {
+            const parts = spec.split('-').map((value) => Number(value));
+            if (parts.length === 2 && Number.isInteger(parts[0]) && Number.isInteger(parts[1])) {
+              const codes = [];
+              for (let code = parts[0]; code <= parts[1]; code += 1) codes.push(String(code));
+              return codes;
+            }
+          }
+          return spec
+            .split(',')
+            .map((value) => value.trim())
+            .filter(Boolean);
+        }
+
+        function splitLocation(location) {
+          const semicolonIndex = location.indexOf(';');
+          if (semicolonIndex !== -1) {
+            return {
+              headline: location.slice(0, semicolonIndex).trim(),
+              detail: location.slice(semicolonIndex + 1).trim(),
+            };
+          }
+
+          const parenIndex = location.indexOf(' (');
+          if (parenIndex !== -1 && location.endsWith(')')) {
+            return {
+              headline: location.slice(0, parenIndex).trim(),
+              detail: location.slice(parenIndex + 2, -1).trim(),
+            };
+          }
+
+          return { headline: location, detail: '' };
+        }
+
+        function classifyStatus(location) {
+          const lower = location.toLowerCase();
+          if (lower.includes('not assignable')) return 'not-assignable';
+          if (lower.includes('not in use')) return 'not-in-use';
+          if (lower.includes('reserved')) return 'reserved';
+          return 'active';
+        }
+
+        function classifyKind(location, status) {
+          const lower = location.toLowerCase();
+          if (status !== 'active') return 'special';
+          if (
+            lower.includes('toll-free') ||
+            lower.includes('premium-rate') ||
+            lower.includes('premium rate') ||
+            lower.includes('non-geographic') ||
+            lower.includes('personal communications') ||
+            lower.includes('carrier internal use') ||
+            lower.includes('special services') ||
+            lower.includes('n11 code') ||
+            lower.includes('n11 short code') ||
+            lower.includes('telecommunications device') ||
+            lower.includes('suicide & crisis lifeline') ||
+            lower.includes('operator assistance') ||
+            lower.includes('repair service') ||
+            lower.includes('directory assistance') ||
+            lower.includes('emergency services')
+          ) {
+            return 'special';
+          }
+          return 'geographic';
+        }
+
+        function statusLabel(status) {
+          if (status === 'not-in-use') return 'Not in use';
+          if (status === 'not-assignable') return 'Not assignable';
+          if (status === 'reserved') return 'Reserved';
+          return 'Active';
+        }
+
+        function kindLabel(kind) {
+          return kind === 'special' ? 'Service or special use' : 'Geographic';
+        }
+
+        function normalizeDigits(value) {
+          return String(value || '').replace(/\D/g, '');
+        }
+
+        function extractAreaCode(value) {
+          const digits = normalizeDigits(value);
+          if (digits.length === 7) return null;
+          if (digits.length >= 11 && digits.startsWith('1')) return digits.slice(1, 4);
+          if (digits.length >= 4 && digits.length <= 6 && digits.startsWith('1')) return digits.slice(1, 4);
+          if (digits.length >= 10) return digits.slice(0, 3);
+          if (digits.length >= 3 && digits.length <= 6) return digits.slice(0, 3);
+          if (digits.length === 3) return digits;
+          return null;
+        }
+
+        const entries = [];
+        for (const row of rawRows) {
+          const spec = Array.isArray(row) ? row[0] : '';
+          const location = Array.isArray(row) ? String(row[1] || '').trim() : '';
+          if (!spec || !location) continue;
+          const status = classifyStatus(location);
+          const kind = classifyKind(location, status);
+          const parts = splitLocation(location);
+          for (const code of expandCodeSpec(spec)) {
+            entries.push({
+              code,
+              location,
+              status,
+              kind,
+              headline: parts.headline,
+              detail: parts.detail,
+              searchText: `${code} ${location}`.toLowerCase(),
+            });
+          }
+        }
+
+        entries.sort((a, b) => Number(a.code) - Number(b.code));
+        if (loadedCount) loadedCount.textContent = String(entries.length);
+
+        const codeMap = new Map(entries.map((entry) => [entry.code, entry]));
+
+        function setStatus(text, mode) {
+          if (!lookupStatus) return;
+          lookupStatus.textContent = text;
+          lookupStatus.className = 'status' + (mode ? ` ${mode}` : '');
+        }
+
+        function clearBadges() {
+          if (!resultBadges) return;
+          resultBadges.replaceChildren();
+          resultBadges.hidden = true;
+        }
+
+        function setResultEmpty(title, subtitle) {
+          if (!resultCard || !resultTitle || !resultSubtitle || !resultCode || !resultDetail) return;
+          resultCard.classList.add('empty');
+          resultTitle.textContent = title;
+          resultSubtitle.textContent = subtitle;
+          resultCode.hidden = true;
+          resultDetail.hidden = true;
+          resultDetail.textContent = '';
+          clearBadges();
+        }
+
+        function appendBadge(text, className) {
+          if (!resultBadges) return;
+          const badge = document.createElement('span');
+          badge.className = `badge ${className}`;
+          badge.textContent = text;
+          resultBadges.appendChild(badge);
+        }
+
+        function renderEntry(entry, note) {
+          if (!resultCard || !resultTitle || !resultSubtitle || !resultCode || !resultDetail || !resultBadges) return;
+          resultCard.classList.remove('empty');
+          resultTitle.textContent = entry.headline;
+          resultSubtitle.textContent = note || entry.location;
+          resultCode.hidden = false;
+          resultCode.textContent = entry.code;
+          resultDetail.hidden = !entry.detail;
+          resultDetail.textContent = entry.detail;
+          resultBadges.replaceChildren();
+          appendBadge(statusLabel(entry.status), `status-${entry.status}`);
+          appendBadge(kindLabel(entry.kind), 'kind');
+          resultBadges.hidden = false;
+        }
+
+        function readRecent() {
+          try {
+            const recent = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+            return Array.isArray(recent) ? recent.filter((value) => typeof value === 'string') : [];
+          } catch {
+            return [];
+          }
+        }
+
+        function saveRecent(code) {
+          const next = [code, ...readRecent().filter((value) => value !== code)].slice(0, 8);
+          try {
+            localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+          } catch {}
+          renderRecent();
+        }
+
+        function renderRecent() {
+          if (!recentList) return;
+          const recent = readRecent();
+          recentList.replaceChildren();
+          if (!recent.length) {
+            const empty = document.createElement('p');
+            empty.className = 'muted';
+            empty.textContent = 'Recent area codes are saved in this browser.';
+            recentList.appendChild(empty);
+            return;
+          }
+
+          for (const code of recent) {
+            const entry = codeMap.get(code);
+            if (!entry) continue;
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'chip';
+            button.textContent = `${entry.code} ${entry.headline}`;
+            button.addEventListener('click', () => {
+              lookupInput.value = entry.code;
+              runLookup();
+            });
+            recentList.appendChild(button);
+          }
+        }
+
+        function renderMatches(items, heading, emptyText) {
+          if (!matchList || !matchesHeading) return;
+          matchesHeading.textContent = heading;
+          matchList.replaceChildren();
+
+          if (!items.length) {
+            const empty = document.createElement('p');
+            empty.className = 'muted';
+            empty.textContent = emptyText || 'No matching area codes found.';
+            matchList.appendChild(empty);
+            return;
+          }
+
+          for (const entry of items) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'match-item ghost';
+            button.addEventListener('click', () => {
+              lookupInput.value = entry.code;
+              runLookup();
+            });
+
+            const code = document.createElement('span');
+            code.className = 'code-pill';
+            code.textContent = entry.code;
+
+            const content = document.createElement('span');
+
+            const title = document.createElement('strong');
+            title.textContent = entry.headline;
+
+            const detail = document.createElement('span');
+            detail.className = 'muted';
+            detail.textContent = entry.detail || entry.location;
+
+            content.appendChild(title);
+            content.appendChild(detail);
+            button.appendChild(code);
+            button.appendChild(content);
+            matchList.appendChild(button);
+          }
+        }
+
+        function syncQuery(raw) {
+          try {
+            const url = new URL(window.location.href);
+            const value = String(raw || '').trim();
+            if (value) url.searchParams.set('q', value);
+            else url.searchParams.delete('q');
+            window.history.replaceState(null, '', url.toString());
+          } catch {}
+        }
+
+        function runLookup() {
+          if (!lookupInput) return;
+          const raw = lookupInput.value.trim();
+          syncQuery(raw);
+
+          if (!raw) {
+            setResultEmpty('No lookup yet', 'Enter a 3-digit area code or paste a full phone number.');
+            renderMatches([], 'Matches', 'City and state searches show matching area codes here.');
+            setStatus('Type an area code, city, or state to start.', '');
+            return;
+          }
+
+          const digits = normalizeDigits(raw);
+          const hasLetters = /[a-z]/i.test(raw);
+          const areaCode = hasLetters ? null : extractAreaCode(raw);
+
+          if (!hasLetters && digits.length === 7) {
+            setResultEmpty('Need more digits', 'A 7-digit local number is not enough to identify an area code.');
+            renderMatches([], 'Matches', 'City and state searches show matching area codes here.');
+            setStatus('Enter the 3-digit area code or the full 10-digit phone number.', 'error');
+            return;
+          }
+
+          if (areaCode) {
+            const entry = codeMap.get(areaCode);
+            if (!entry) {
+              setResultEmpty(`No result for ${areaCode}`, 'That code is not in the current dataset.');
+              renderMatches([], 'Matches', 'City and state searches show matching area codes here.');
+              setStatus(`Area code ${areaCode} was not found.`, 'error');
+              return;
+            }
+
+            const note =
+              digits.length >= 10
+                ? `Using area code ${areaCode} from ${raw}.`
+                : `Area code ${areaCode}.`;
+            renderEntry(entry, note);
+            renderMatches([], 'Matches', 'Try a city or state search to browse multiple codes.');
+            setStatus(`Found ${areaCode}: ${entry.headline}.`, '');
+            saveRecent(areaCode);
+            return;
+          }
+
+          const query = raw.toLowerCase();
+          const matches = entries.filter((entry) => query.split(/\s+/).every((part) => entry.searchText.includes(part))).slice(0, 30);
+
+          if (!matches.length) {
+            setResultEmpty('No matching locations', `Nothing matched "${raw}".`);
+            renderMatches([], `Matches for "${raw}"`);
+            setStatus(`No area codes matched "${raw}".`, 'error');
+            return;
+          }
+
+          renderEntry(matches[0], `Showing matches for "${raw}".`);
+          renderMatches(matches, `Matches for "${raw}"`);
+          setStatus(`Found ${matches.length} matching area code${matches.length === 1 ? '' : 's'}.`, '');
+        }
+
+        lookupForm?.addEventListener('submit', (event) => {
+          event.preventDefault();
+          runLookup();
+        });
+
+        lookupInput?.addEventListener('input', () => {
+          const value = lookupInput.value.trim();
+          if (!value) {
+            runLookup();
+            return;
+          }
+          const digits = normalizeDigits(value);
+          if (/[a-z]/i.test(value) || digits.length >= 3) runLookup();
+        });
+
+        clearBtn?.addEventListener('click', () => {
+          if (!lookupInput) return;
+          lookupInput.value = '';
+          runLookup();
+          lookupInput.focus();
+        });
+
+        document.querySelectorAll('[data-example]').forEach((button) => {
+          button.addEventListener('click', () => {
+            if (!lookupInput) return;
+            lookupInput.value = button.getAttribute('data-example') || '';
+            runLookup();
+          });
+        });
+
+        renderRecent();
+
+        try {
+          const initialQuery = new URL(window.location.href).searchParams.get('q');
+          if (initialQuery && lookupInput) {
+            lookupInput.value = initialQuery;
+            runLookup();
+          }
+        } catch {}
+
+        if (!entries.length) {
+          setResultEmpty('Dataset unavailable', 'The area code data script did not load correctly.');
+          setStatus('Area code data failed to load.', 'error');
+        }
+      });
+    </script>
+  </body>
+</html>

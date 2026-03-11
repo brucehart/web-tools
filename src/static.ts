@@ -33,6 +33,8 @@ const PRETTY_ROUTES: Record<string, string> = {
   '/image-editor/': '/image-editor.html',
   '/url-encode-decode': '/url-encode-decode.html',
   '/url-encode-decode/': '/url-encode-decode.html',
+  '/area-code': '/area-code.html',
+  '/area-code/': '/area-code.html',
   '/actuary': '/actuary.html',
   '/actuary/': '/actuary.html',
 };

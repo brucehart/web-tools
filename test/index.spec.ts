@@ -21,6 +21,7 @@ describe('Tools index and Markdown viewer', () => {
     expect(body).toContain('href="/base64"');
     expect(body).toContain('href="/image-editor"');
     expect(body).toContain('href="/url-encode-decode"');
+    expect(body).toContain('href="/area-code"');
     expect(body).toContain('href="/format-tools"');
     expect(body).toContain('href="/csv-editor"');
   });
@@ -104,6 +105,20 @@ describe('Tools index and Markdown viewer', () => {
     expect(body).toContain('id="moveBtn"');
   });
 
+  it('serves area code lookup at /area-code (unit)', async () => {
+    const request = new IncomingRequest('http://example.com/area-code');
+    const ctx = createExecutionContext();
+    const response = await worker.fetch(request, env, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    const body = await response.text();
+    expect(body).toContain('<title>Area Code Lookup</title>');
+    expect(body).toContain('id="lookupInput"');
+    expect(body).toContain('id="resultCard"');
+    expect(body).toContain("window.addEventListener('DOMContentLoaded'");
+  });
+
   it('serves csv viewer and editor at /csv-editor (unit)', async () => {
     const request = new IncomingRequest('http://example.com/csv-editor');
     const ctx = createExecutionContext();
@@ -172,6 +187,14 @@ describe('Tools index and Markdown viewer', () => {
     expect(response.headers.get('content-type')).toContain('text/html');
     const body = await response.text();
     expect(body).toContain('<title>URL Encode/Decode</title>');
+  });
+
+  it('serves area code lookup (integration)', async () => {
+    const response = await SELF.fetch('https://example.com/area-code');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    const body = await response.text();
+    expect(body).toContain('<title>Area Code Lookup</title>');
   });
 
   it('serves csv viewer and editor (integration)', async () => {
