@@ -87,6 +87,9 @@ describe('Tools index and Markdown viewer', () => {
     const body = await response.text();
     expect(body).toContain('<title>Image Editor</title>');
     expect(body).toContain('id="dropZone"');
+    expect(body).toContain('id="resizeMode"');
+    expect(body).toContain('id="scalePercent"');
+    expect(body).toContain('id="scaleWidth"');
     expect(body).toContain('id="exportButton"');
     expect(body).toContain('id="copyImageButton"');
   });
@@ -191,6 +194,7 @@ describe('Tools index and Markdown viewer', () => {
     expect(response.headers.get('content-type')).toContain('text/html');
     const body = await response.text();
     expect(body).toContain('<title>Image Editor</title>');
+    expect(body).toContain('id="resizeMode"');
     expect(body).toContain('id="copyImageButton"');
   });
 

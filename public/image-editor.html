@@ -226,6 +226,27 @@
         padding: 8px 10px;
       }
 
+      .input-with-suffix {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+      }
+
+      .input-suffix {
+        min-width: 36px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .pixel-grid {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
       .stage-panel {
         min-height: 720px;
         display: grid;
@@ -554,8 +575,13 @@
           grid-template-columns: 1fr;
         }
 
+        .pixel-grid {
+          grid-template-columns: 1fr;
+        }
+
         .scale-label,
-        .value-label {
+        .value-label,
+        .input-suffix {
           text-align: left;
         }
       }
@@ -659,6 +685,66 @@
                 </select>
               </div>
 
+              <div class="field">
+                <label for="resizeMode">Scale</label>
+                <select id="resizeMode" class="wt-select">
+                  <option value="percent">By percentage</option>
+                  <option value="pixels">By pixels</option>
+                </select>
+              </div>
+
+              <div id="scalePercentField" class="field">
+                <label for="scalePercent">Scale Percentage</label>
+                <div class="input-with-suffix">
+                  <input
+                    id="scalePercent"
+                    class="text-input"
+                    type="number"
+                    min="1"
+                    step="0.1"
+                    value="100"
+                    inputmode="decimal"
+                  />
+                  <span class="input-suffix">%</span>
+                </div>
+                <p class="meta-note">Resize after crop and rotation using a percentage of the current output area.</p>
+              </div>
+
+              <div id="scalePixelsField" class="field" hidden>
+                <div class="field-header">Target Size</div>
+                <div class="pixel-grid">
+                  <div class="field">
+                    <label for="scaleWidth">Width</label>
+                    <div class="input-with-suffix">
+                      <input
+                        id="scaleWidth"
+                        class="text-input"
+                        type="number"
+                        min="1"
+                        step="1"
+                        inputmode="numeric"
+                      />
+                      <span class="input-suffix">px</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="scaleHeight">Height</label>
+                    <div class="input-with-suffix">
+                      <input
+                        id="scaleHeight"
+                        class="text-input"
+                        type="number"
+                        min="1"
+                        step="1"
+                        inputmode="numeric"
+                      />
+                      <span class="input-suffix">px</span>
+                    </div>
+                  </div>
+                </div>
+                <p class="meta-note">Edit either dimension in pixels and the other one updates to preserve aspect ratio.</p>
+              </div>
+
               <div id="qualityField" class="field" hidden>
                 <div class="scale-row">
                   <div class="range-wrap">
@@ -703,7 +789,7 @@
                 <h3>Ready for clipboard or drag-and-drop</h3>
                 <p>
                   Load one image, inspect it with zoom, rotate in 90 degree steps, crop a rectangle,
-                  and export the result as PNG, JPG, or WEBP.
+                  scale it by percentage or pixels, and export the result as PNG, JPG, or WEBP.
                 </p>
               </div>
 
@@ -764,6 +850,12 @@
         const clearCropButton = document.getElementById('clearCropButton');
         const resetEditsButton = document.getElementById('resetEditsButton');
         const exportFormat = document.getElementById('exportFormat');
+        const resizeMode = document.getElementById('resizeMode');
+        const scalePercentField = document.getElementById('scalePercentField');
+        const scalePercent = document.getElementById('scalePercent');
+        const scalePixelsField = document.getElementById('scalePixelsField');
+        const scaleWidth = document.getElementById('scaleWidth');
+        const scaleHeight = document.getElementById('scaleHeight');
         const exportQuality = document.getElementById('exportQuality');
         const exportQualityLabel = document.getElementById('exportQualityLabel');
         const qualityField = document.getElementById('qualityField');
@@ -804,6 +896,8 @@
           sourceHeight: 0,
           rotation: 0,
           zoom: 1,
+          scaleMode: 'percent',
+          scalePixelAnchor: 'width',
           crop: null,
           cropMode: false,
           cropSnapshot: null,
@@ -854,6 +948,9 @@
           if (!state.crop) return;
           state.crop = null;
           if (state.cropMode) state.cropSnapshot = null;
+          if (getScaleMode() === 'pixels') {
+            syncPixelInputsToBase({ preserveAnchor: true });
+          }
           renderPreview();
           setStatus('Crop selection cleared.', 'info');
         });
@@ -862,17 +959,71 @@
           if (!hasImage()) return;
           state.rotation = 0;
           state.zoom = 1;
+          state.scaleMode = 'percent';
+          state.scalePixelAnchor = 'width';
           state.crop = null;
           state.cropMode = false;
           state.cropSnapshot = null;
           cropInteraction = null;
           rebuildRotatedCanvas();
+          resetScaleControls();
           renderPreview();
           setStatus('All edits reset.', 'info');
         });
 
         exportFormat.addEventListener('change', () => {
           updateExportUi();
+          updateMeta();
+          updateControls();
+        });
+
+        resizeMode.addEventListener('change', () => {
+          const nextMode = getScaleMode();
+          if (nextMode !== state.scaleMode) {
+            if (nextMode === 'pixels') {
+              syncPixelInputsFromCurrentScale();
+            } else {
+              syncPercentFromPixelInputs();
+            }
+            state.scaleMode = nextMode;
+          }
+          updateExportUi();
+          updateMeta();
+          updateControls();
+        });
+
+        scalePercent.addEventListener('input', () => {
+          updateMeta();
+          updateControls();
+        });
+        scalePercent.addEventListener('change', () => {
+          setScalePercentValue(getScalePercentValue());
+          updateMeta();
+          updateControls();
+        });
+
+        scaleWidth.addEventListener('input', () => {
+          state.scalePixelAnchor = 'width';
+          syncPixelInputsToBase({ preserveAnchor: true });
+          updateMeta();
+          updateControls();
+        });
+        scaleWidth.addEventListener('change', () => {
+          state.scalePixelAnchor = 'width';
+          syncPixelInputsToBase({ preserveAnchor: true });
+          updateMeta();
+          updateControls();
+        });
+
+        scaleHeight.addEventListener('input', () => {
+          state.scalePixelAnchor = 'height';
+          syncPixelInputsToBase({ preserveAnchor: true });
+          updateMeta();
+          updateControls();
+        });
+        scaleHeight.addEventListener('change', () => {
+          state.scalePixelAnchor = 'height';
+          syncPixelInputsToBase({ preserveAnchor: true });
           updateMeta();
           updateControls();
         });
@@ -967,6 +1118,9 @@
           state.cropMode = false;
           state.cropSnapshot = null;
           cropInteraction = null;
+          if (getScaleMode() === 'pixels') {
+            syncPixelInputsToBase({ preserveAnchor: true });
+          }
           renderPreview();
           setStatus('Crop changes canceled.', 'info');
         });
@@ -994,6 +1148,8 @@
           const imageLoaded = hasImage();
           const cropActive = state.cropMode;
           const clipboardSupported = supportsImageClipboardWrite();
+          const outputSize = getScaledOutputSize();
+          const exportReady = imageLoaded && !!outputSize && isAllowedExportSize(outputSize.width, outputSize.height);
 
           clearImageButton.disabled = !imageLoaded;
           zoomOutButton.disabled = !imageLoaded;
@@ -1005,9 +1161,13 @@
           clearCropButton.disabled = !imageLoaded || !state.crop;
           resetEditsButton.disabled = !imageLoaded;
           exportFormat.disabled = !imageLoaded;
+          resizeMode.disabled = !imageLoaded;
+          scalePercent.disabled = !imageLoaded || getScaleMode() !== 'percent';
+          scaleWidth.disabled = !imageLoaded || getScaleMode() !== 'pixels';
+          scaleHeight.disabled = !imageLoaded || getScaleMode() !== 'pixels';
           exportQuality.disabled = !imageLoaded || exportFormat.value === 'png';
-          exportButton.disabled = !imageLoaded;
-          copyImageButton.disabled = !imageLoaded || !clipboardSupported;
+          exportButton.disabled = !exportReady;
+          copyImageButton.disabled = !exportReady || !clipboardSupported;
           clipboardSupportHint.hidden = clipboardSupported;
 
           cropToggleButton.textContent = state.cropMode
@@ -1025,6 +1185,10 @@
         function updateExportUi() {
           const format = exportFormat.value;
           const usesQuality = format === 'jpg' || format === 'webp';
+          const mode = getScaleMode();
+
+          scalePercentField.hidden = mode !== 'percent';
+          scalePixelsField.hidden = mode !== 'pixels';
           qualityField.hidden = !usesQuality;
 
           if (format === 'jpg') {
@@ -1047,8 +1211,11 @@
             : '-';
 
           const outputRect = getExportRect();
-          metaOutputSize.textContent = outputRect
-            ? `${Math.max(1, Math.round(outputRect.w))} x ${Math.max(1, Math.round(outputRect.h))}`
+          const outputSize = getScaledOutputSize(outputRect);
+          metaOutputSize.textContent = outputSize
+            ? isAllowedExportSize(outputSize.width, outputSize.height)
+              ? `${outputSize.width} x ${outputSize.height}`
+              : `${outputSize.width} x ${outputSize.height} (too large)`
             : '-';
 
           const scale = getDisplayScale();
@@ -1071,6 +1238,8 @@
           state.sourceHeight = 0;
           state.rotation = 0;
           state.zoom = 1;
+          state.scaleMode = 'percent';
+          state.scalePixelAnchor = 'width';
           state.crop = null;
           state.cropMode = false;
           state.cropSnapshot = null;
@@ -1080,6 +1249,7 @@
           cropInteraction = null;
           previewCanvas.width = 0;
           previewCanvas.height = 0;
+          resetScaleControls();
           renderPreview();
         }
 
@@ -1114,11 +1284,14 @@
             state.sourceHeight = image.naturalHeight;
             state.rotation = 0;
             state.zoom = 1;
+            state.scaleMode = 'percent';
+            state.scalePixelAnchor = 'width';
             state.crop = null;
             state.cropMode = false;
             state.cropSnapshot = null;
             cropInteraction = null;
             rebuildRotatedCanvas();
+            resetScaleControls();
             renderPreview();
             setStatus(
               source === 'clipboard'
@@ -1267,6 +1440,9 @@
             state.crop = rotateCropRect(state.crop, oldWidth, oldHeight, delta);
           }
           rebuildRotatedCanvas();
+          if (getScaleMode() === 'pixels') {
+            syncPixelInputsToBase({ preserveAnchor: true });
+          }
           renderPreview();
           setStatus(delta > 0 ? 'Rotated clockwise.' : 'Rotated counterclockwise.', 'success');
         }
@@ -1388,6 +1564,9 @@
             state.crop = next;
           }
 
+          if (getScaleMode() === 'pixels') {
+            syncPixelInputsToBase({ preserveAnchor: true });
+          }
           updateCropBox();
           updateMeta();
         }
@@ -1403,6 +1582,9 @@
           cropInteraction = null;
           if (cropLayer.hasPointerCapture(event.pointerId)) {
             cropLayer.releasePointerCapture(event.pointerId);
+          }
+          if (getScaleMode() === 'pixels') {
+            syncPixelInputsToBase({ preserveAnchor: true });
           }
           updateCropBox();
           updateMeta();
@@ -1516,6 +1698,129 @@
           return cloneRect(state.crop);
         }
 
+        function getScaleMode() {
+          return resizeMode.value === 'pixels' ? 'pixels' : 'percent';
+        }
+
+        function parsePositiveNumber(value) {
+          const next = Number(value);
+          if (!Number.isFinite(next) || next <= 0) return null;
+          return next;
+        }
+
+        function parsePositiveInteger(value) {
+          const next = parsePositiveNumber(value);
+          return next ? Math.max(1, Math.round(next)) : null;
+        }
+
+        function formatNumber(value) {
+          if (!Number.isFinite(value)) return '';
+          return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d*[1-9])0$/, '$1');
+        }
+
+        function getScalePercentValue() {
+          return Math.max(1, parsePositiveNumber(scalePercent.value) || 100);
+        }
+
+        function setScalePercentValue(value) {
+          scalePercent.value = formatNumber(Math.max(1, value));
+        }
+
+        function setPixelDimensions(width, height) {
+          scaleWidth.value = String(Math.max(1, Math.round(width)));
+          scaleHeight.value = String(Math.max(1, Math.round(height)));
+        }
+
+        function getScaledOutputSize(rect = getExportRect(), mode = getScaleMode()) {
+          if (!rect) return null;
+
+          if (mode === 'pixels') {
+            return getPixelDimensions(rect);
+          }
+
+          const percent = getScalePercentValue() / 100;
+          return {
+            width: Math.max(1, Math.round(rect.w * percent)),
+            height: Math.max(1, Math.round(rect.h * percent)),
+          };
+        }
+
+        function getPixelDimensions(rect = getExportRect()) {
+          if (!rect) return null;
+
+          const baseWidth = Math.max(1, Math.round(rect.w));
+          const baseHeight = Math.max(1, Math.round(rect.h));
+
+          if (state.scalePixelAnchor === 'height') {
+            const height = parsePositiveInteger(scaleHeight.value) || baseHeight;
+            return {
+              width: Math.max(1, Math.round((height * baseWidth) / baseHeight)),
+              height,
+            };
+          }
+
+          const width = parsePositiveInteger(scaleWidth.value) || baseWidth;
+          return {
+            width,
+            height: Math.max(1, Math.round((width * baseHeight) / baseWidth)),
+          };
+        }
+
+        function syncPixelInputsToBase(options = {}) {
+          const { preserveAnchor = true } = options;
+          const rect = getExportRect();
+          if (!rect) {
+            scaleWidth.value = '';
+            scaleHeight.value = '';
+            return;
+          }
+
+          if (!preserveAnchor) {
+            setPixelDimensions(Math.max(1, Math.round(rect.w)), Math.max(1, Math.round(rect.h)));
+            return;
+          }
+
+          const size = getPixelDimensions(rect);
+          if (!size) return;
+          setPixelDimensions(size.width, size.height);
+        }
+
+        function syncPixelInputsFromCurrentScale() {
+          const size = getScaledOutputSize(getExportRect(), state.scaleMode);
+          if (!size) {
+            scaleWidth.value = '';
+            scaleHeight.value = '';
+            return;
+          }
+
+          state.scalePixelAnchor = 'width';
+          setPixelDimensions(size.width, size.height);
+        }
+
+        function syncPercentFromPixelInputs() {
+          const rect = getExportRect();
+          const size = getPixelDimensions(rect);
+          if (!rect || !size) {
+            setScalePercentValue(100);
+            return;
+          }
+
+          setScalePercentValue((size.width / rect.w) * 100);
+        }
+
+        function resetScaleControls() {
+          resizeMode.value = 'percent';
+          state.scaleMode = 'percent';
+          state.scalePixelAnchor = 'width';
+          setScalePercentValue(100);
+          syncPixelInputsToBase({ preserveAnchor: false });
+          updateExportUi();
+        }
+
+        function isAllowedExportSize(width, height) {
+          return width <= MAX_IMAGE_EDGE && height <= MAX_IMAGE_EDGE && width * height <= MAX_IMAGE_PIXELS;
+        }
+
         async function exportImage() {
           if (!hasImage()) return;
           try {
@@ -1569,9 +1874,17 @@
             throw new Error('Crop area is empty and cannot be exported.');
           }
 
+          const outputSize = getScaledOutputSize(rect);
+          if (!outputSize) {
+            throw new Error('Scaled output size is invalid.');
+          }
+          if (!isAllowedExportSize(outputSize.width, outputSize.height)) {
+            throw new Error(`Scaled image exceeds the ${MAX_IMAGE_EDGE}px / ${MAX_IMAGE_PIXELS.toLocaleString()} pixel export limit.`);
+          }
+
           const canvas = document.createElement('canvas');
-          canvas.width = Math.max(1, Math.round(rect.w));
-          canvas.height = Math.max(1, Math.round(rect.h));
+          canvas.width = outputSize.width;
+          canvas.height = outputSize.height;
           const context = canvas.getContext('2d');
           if (!context) throw new Error('Canvas export is not available in this browser.');
 
