@@ -254,6 +254,28 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
+      .radio-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .radio-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.04);
+        cursor: pointer;
+        font-size: 0.92rem;
+      }
+
+      .radio-chip input {
+        accent-color: var(--accent);
+      }
+
       .stage-panel {
         min-height: 720px;
         display: grid;
@@ -693,26 +715,38 @@
               </div>
 
               <div class="field">
-                <label for="resizeMode">Scale</label>
-                <select id="resizeMode" class="wt-select">
-                  <option value="percent">By percentage</option>
-                  <option value="pixels">By pixels</option>
-                </select>
+                <div class="field-header">Scale</div>
+                <div class="radio-group" role="radiogroup" aria-label="Scale unit">
+                  <label class="radio-chip" for="scaleModePixels">
+                    <input id="scaleModePixels" type="radio" name="scaleMode" value="pixels" />
+                    <span>Px</span>
+                  </label>
+                  <label class="radio-chip" for="scaleModePercent">
+                    <input id="scaleModePercent" type="radio" name="scaleMode" value="percent" checked />
+                    <span>%</span>
+                  </label>
+                </div>
               </div>
 
               <div class="field">
-                <div class="field-header-row">
-                  <div class="field-header">Aspect Ratio</div>
-                  <button
-                    id="scaleLinkButton"
-                    class="wt-btn wt-btn-ghost"
-                    type="button"
-                    aria-pressed="true"
-                  >
-                    Linked
-                  </button>
+                <div class="select-row">
+                  <div class="field">
+                    <label for="aspectRatioSelect">Aspect Ratio</label>
+                    <select id="aspectRatioSelect" class="wt-select">
+                      <option value="proportional">Proportional</option>
+                      <option value="custom">Custom</option>
+                      <option value="1:1">1:1</option>
+                      <option value="4:3">4:3</option>
+                      <option value="3:2">3:2</option>
+                      <option value="16:9">16:9</option>
+                      <option value="21:9">21:9</option>
+                      <option value="2:3">2:3</option>
+                      <option value="9:16">9:16</option>
+                    </select>
+                  </div>
+                  <button id="resetScaleButton" class="wt-btn wt-btn-ghost" type="button">Reset Size</button>
                 </div>
-                <p class="meta-note">Linked keeps scaling proportional. Broken Link lets width and height change independently.</p>
+                <p class="meta-note">Proportional keeps the current image ratio, Custom removes restrictions, and presets snap output to common aspect ratios.</p>
               </div>
 
               <div id="scalePercentField" class="field">
@@ -892,8 +926,10 @@
         const clearCropButton = document.getElementById('clearCropButton');
         const resetEditsButton = document.getElementById('resetEditsButton');
         const exportFormat = document.getElementById('exportFormat');
-        const resizeMode = document.getElementById('resizeMode');
-        const scaleLinkButton = document.getElementById('scaleLinkButton');
+        const scaleModePixels = document.getElementById('scaleModePixels');
+        const scaleModePercent = document.getElementById('scaleModePercent');
+        const aspectRatioSelect = document.getElementById('aspectRatioSelect');
+        const resetScaleButton = document.getElementById('resetScaleButton');
         const scalePercentField = document.getElementById('scalePercentField');
         const scalePercentWidth = document.getElementById('scalePercentWidth');
         const scalePercentHeight = document.getElementById('scalePercentHeight');
@@ -941,7 +977,7 @@
           rotation: 0,
           zoom: 1,
           scaleMode: 'percent',
-          scaleLinked: true,
+          aspectMode: 'proportional',
           scaleAnchor: 'width',
           crop: null,
           cropMode: false,
@@ -993,9 +1029,7 @@
           if (!state.crop) return;
           state.crop = null;
           if (state.cropMode) state.cropSnapshot = null;
-          if (getScaleMode() === 'pixels') {
-            syncPixelInputsToBase({ preserveAnchor: true });
-          }
+          syncScaleInputsToCurrentBase({ preserveAnchor: true });
           renderPreview();
           setStatus('Crop selection cleared.', 'info');
         });
@@ -1005,7 +1039,7 @@
           state.rotation = 0;
           state.zoom = 1;
           state.scaleMode = 'percent';
-          state.scaleLinked = true;
+          state.aspectMode = 'proportional';
           state.scaleAnchor = 'width';
           state.crop = null;
           state.cropMode = false;
@@ -1023,33 +1057,22 @@
           updateControls();
         });
 
-        resizeMode.addEventListener('change', () => {
-          const nextMode = getScaleMode();
-          if (nextMode !== state.scaleMode) {
-            if (nextMode === 'pixels') {
-              syncPixelInputsFromCurrentScale();
-            } else {
-              syncPercentFromPixelInputs();
-            }
-            state.scaleMode = nextMode;
-          }
+        scaleModePixels.addEventListener('change', onScaleModeChange);
+        scaleModePercent.addEventListener('change', onScaleModeChange);
+
+        aspectRatioSelect.addEventListener('change', () => {
+          const currentOutputSize = getScaledOutputSize();
+          state.aspectMode = aspectRatioSelect.value;
+          applyAspectModeToCurrentSize(currentOutputSize);
           updateExportUi();
-          updateMeta();
-          updateControls();
+          renderPreview();
         });
 
-        scaleLinkButton.addEventListener('click', () => {
-          state.scaleLinked = !state.scaleLinked;
-          if (state.scaleLinked) {
-            if (getScaleMode() === 'percent') {
-              syncPercentInputs({ normalize: true });
-            } else {
-              syncPixelInputsToBase({ preserveAnchor: true });
-            }
-          }
-          updateExportUi();
-          updateMeta();
-          updateControls();
+        resetScaleButton.addEventListener('click', () => {
+          if (!hasImage()) return;
+          resetScaleControls({ preserveMode: true });
+          renderPreview();
+          setStatus('Scale reset to the original image size.', 'info');
         });
 
         scalePercentWidth.addEventListener('input', () => handlePercentInput('width'));
@@ -1152,9 +1175,7 @@
           state.cropMode = false;
           state.cropSnapshot = null;
           cropInteraction = null;
-          if (getScaleMode() === 'pixels') {
-            syncPixelInputsToBase({ preserveAnchor: true });
-          }
+          syncScaleInputsToCurrentBase({ preserveAnchor: true });
           renderPreview();
           setStatus('Crop changes canceled.', 'info');
         });
@@ -1195,8 +1216,10 @@
           clearCropButton.disabled = !imageLoaded || !state.crop;
           resetEditsButton.disabled = !imageLoaded;
           exportFormat.disabled = !imageLoaded;
-          resizeMode.disabled = !imageLoaded;
-          scaleLinkButton.disabled = !imageLoaded;
+          scaleModePixels.disabled = !imageLoaded;
+          scaleModePercent.disabled = !imageLoaded;
+          aspectRatioSelect.disabled = !imageLoaded;
+          resetScaleButton.disabled = !imageLoaded;
           scalePercentWidth.disabled = !imageLoaded || getScaleMode() !== 'percent';
           scalePercentHeight.disabled = !imageLoaded || getScaleMode() !== 'percent';
           scaleWidth.disabled = !imageLoaded || getScaleMode() !== 'pixels';
@@ -1225,8 +1248,9 @@
 
           scalePercentField.hidden = mode !== 'percent';
           scalePixelsField.hidden = mode !== 'pixels';
-          scaleLinkButton.textContent = state.scaleLinked ? 'Linked' : 'Broken Link';
-          scaleLinkButton.setAttribute('aria-pressed', state.scaleLinked ? 'true' : 'false');
+          scaleModePixels.checked = mode === 'pixels';
+          scaleModePercent.checked = mode === 'percent';
+          aspectRatioSelect.value = state.aspectMode;
           qualityField.hidden = !usesQuality;
 
           if (format === 'jpg') {
@@ -1277,7 +1301,7 @@
           state.rotation = 0;
           state.zoom = 1;
           state.scaleMode = 'percent';
-          state.scaleLinked = true;
+          state.aspectMode = 'proportional';
           state.scaleAnchor = 'width';
           state.crop = null;
           state.cropMode = false;
@@ -1324,7 +1348,7 @@
             state.rotation = 0;
             state.zoom = 1;
             state.scaleMode = 'percent';
-            state.scaleLinked = true;
+            state.aspectMode = 'proportional';
             state.scaleAnchor = 'width';
             state.crop = null;
             state.cropMode = false;
@@ -1404,21 +1428,65 @@
           state.rotatedCanvas = canvas;
           state.rotatedWidth = canvas.width;
           state.rotatedHeight = canvas.height;
+        }
 
-          previewCanvas.width = canvas.width;
-          previewCanvas.height = canvas.height;
-          previewContext.clearRect(0, 0, canvas.width, canvas.height);
-          previewContext.drawImage(canvas, 0, 0);
+        function getPreviewSourceRect() {
+          if (!hasImage()) return null;
+          if (state.cropMode) {
+            return {
+              x: 0,
+              y: 0,
+              w: state.rotatedWidth,
+              h: state.rotatedHeight,
+            };
+          }
+          return getExportRect();
+        }
+
+        function getPreviewCanvasSize(rect = getPreviewSourceRect()) {
+          if (!rect) return null;
+          if (state.cropMode) {
+            return {
+              width: Math.max(1, Math.round(rect.w)),
+              height: Math.max(1, Math.round(rect.h)),
+            };
+          }
+          return getScaledOutputSize(rect);
+        }
+
+        function drawPreviewCanvas() {
+          const rect = getPreviewSourceRect();
+          const size = getPreviewCanvasSize(rect);
+          if (!rect || !size) return;
+
+          previewCanvas.width = size.width;
+          previewCanvas.height = size.height;
+          previewContext.clearRect(0, 0, size.width, size.height);
+          previewContext.imageSmoothingEnabled = true;
+          previewContext.imageSmoothingQuality = 'high';
+          previewContext.drawImage(
+            state.rotatedCanvas,
+            rect.x,
+            rect.y,
+            rect.w,
+            rect.h,
+            0,
+            0,
+            size.width,
+            size.height,
+          );
         }
 
         function getDisplayScale() {
           if (!hasImage()) return 1;
+          const previewSize = getPreviewCanvasSize();
+          if (!previewSize) return 1;
           const availableWidth = Math.max(120, stageViewport.clientWidth - VIEWPORT_PADDING);
           const availableHeight = Math.max(120, stageViewport.clientHeight - VIEWPORT_PADDING);
           const fitScale = Math.min(
             1,
-            availableWidth / state.rotatedWidth,
-            availableHeight / state.rotatedHeight,
+            availableWidth / previewSize.width,
+            availableHeight / previewSize.height,
           );
           return fitScale * state.zoom;
         }
@@ -1435,9 +1503,17 @@
             return;
           }
 
+          drawPreviewCanvas();
+          const previewSize = getPreviewCanvasSize();
+          if (!previewSize) {
+            updateMeta();
+            updateControls();
+            return;
+          }
+
           const scale = getDisplayScale();
-          const displayWidth = Math.max(1, Math.round(state.rotatedWidth * scale));
-          const displayHeight = Math.max(1, Math.round(state.rotatedHeight * scale));
+          const displayWidth = Math.max(1, Math.round(previewSize.width * scale));
+          const displayHeight = Math.max(1, Math.round(previewSize.height * scale));
 
           stageInner.style.width = `${displayWidth}px`;
           stageInner.style.height = `${displayHeight}px`;
@@ -1480,9 +1556,7 @@
             state.crop = rotateCropRect(state.crop, oldWidth, oldHeight, delta);
           }
           rebuildRotatedCanvas();
-          if (getScaleMode() === 'pixels') {
-            syncPixelInputsToBase({ preserveAnchor: true });
-          }
+          syncScaleInputsToCurrentBase({ preserveAnchor: true });
           renderPreview();
           setStatus(delta > 0 ? 'Rotated clockwise.' : 'Rotated counterclockwise.', 'success');
         }
@@ -1604,9 +1678,7 @@
             state.crop = next;
           }
 
-          if (getScaleMode() === 'pixels') {
-            syncPixelInputsToBase({ preserveAnchor: true });
-          }
+          syncScaleInputsToCurrentBase({ preserveAnchor: true });
           updateCropBox();
           updateMeta();
         }
@@ -1623,9 +1695,7 @@
           if (cropLayer.hasPointerCapture(event.pointerId)) {
             cropLayer.releasePointerCapture(event.pointerId);
           }
-          if (getScaleMode() === 'pixels') {
-            syncPixelInputsToBase({ preserveAnchor: true });
-          }
+          syncScaleInputsToCurrentBase({ preserveAnchor: true });
           updateCropBox();
           updateMeta();
           updateControls();
@@ -1712,7 +1782,7 @@
         }
 
         function updateCropBox() {
-          if (!hasImage() || !state.crop) {
+          if (!hasImage() || !state.crop || !state.cropMode) {
             cropBox.hidden = true;
             return;
           }
@@ -1739,7 +1809,7 @@
         }
 
         function getScaleMode() {
-          return resizeMode.value === 'pixels' ? 'pixels' : 'percent';
+          return scaleModePixels.checked ? 'pixels' : 'percent';
         }
 
         function parsePositiveNumber(value) {
@@ -1758,6 +1828,24 @@
           return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d*[1-9])0$/, '$1');
         }
 
+        function parseAspectRatio(value) {
+          const match = String(value || '').match(/^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/);
+          if (!match) return null;
+          const width = Number(match[1]);
+          const height = Number(match[2]);
+          if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+            return null;
+          }
+          return width / height;
+        }
+
+        function getTargetAspectRatio(rect = getExportRect()) {
+          if (!rect) return null;
+          if (state.aspectMode === 'custom') return null;
+          if (state.aspectMode === 'proportional') return rect.w / rect.h;
+          return parseAspectRatio(state.aspectMode);
+        }
+
         function getLinkedAxisValue(widthValue, heightValue, fallback) {
           const primary = state.scaleAnchor === 'height' ? heightValue : widthValue;
           const secondary = state.scaleAnchor === 'height' ? widthValue : heightValue;
@@ -1774,49 +1862,80 @@
           scaleHeight.value = String(Math.max(1, Math.round(height)));
         }
 
-        function getScalePercentValues() {
+        function fitSizeToRatio(width, height, ratio) {
+          const area = Math.max(1, width * height);
+          const fittedWidth = Math.max(1, Math.round(Math.sqrt(area * ratio)));
+          const fittedHeight = Math.max(1, Math.round(fittedWidth / ratio));
+          return {
+            width: fittedWidth,
+            height: fittedHeight,
+          };
+        }
+
+        function getPercentPairForRatio(rect, ratio, widthPercent, heightPercent) {
+          const baseWidth = Math.max(1, rect.w);
+          const baseHeight = Math.max(1, rect.h);
+
+          if (state.scaleAnchor === 'height') {
+            let nextHeight = heightPercent;
+            if (!nextHeight && widthPercent) {
+              nextHeight = (baseWidth * widthPercent) / (baseHeight * ratio);
+            }
+            nextHeight = Math.max(1, nextHeight || 100);
+            return {
+              width: Math.max(1, (ratio * baseHeight * nextHeight) / baseWidth),
+              height: nextHeight,
+            };
+          }
+
+          let nextWidth = widthPercent;
+          if (!nextWidth && heightPercent) {
+            nextWidth = (ratio * baseHeight * heightPercent) / baseWidth;
+          }
+          nextWidth = Math.max(1, nextWidth || 100);
+          return {
+            width: nextWidth,
+            height: Math.max(1, (baseWidth * nextWidth) / (baseHeight * ratio)),
+          };
+        }
+
+        function getScalePercentValues(rect = getExportRect()) {
           const width = parsePositiveNumber(scalePercentWidth.value);
           const height = parsePositiveNumber(scalePercentHeight.value);
-          if (state.scaleLinked) {
+          const ratio = getTargetAspectRatio(rect);
+          if (!ratio || !rect) {
+            return {
+              width: Math.max(1, width || 100),
+              height: Math.max(1, height || 100),
+            };
+          }
+
+          if (state.aspectMode === 'proportional') {
             const linked = getLinkedAxisValue(width, height, 100);
             return { width: linked, height: linked };
           }
-          return {
-            width: Math.max(1, width || 100),
-            height: Math.max(1, height || 100),
-          };
+
+          return getPercentPairForRatio(rect, ratio, width, height);
         }
 
         function handlePercentInput(axis, options = {}) {
           const { normalize = false } = options;
           state.scaleAnchor = axis;
 
-          const axisInput = axis === 'width' ? scalePercentWidth : scalePercentHeight;
-          const otherInput = axis === 'width' ? scalePercentHeight : scalePercentWidth;
-          const parsed = parsePositiveNumber(axisInput.value);
-
-          if (state.scaleLinked) {
-            if (parsed) {
-              const next = normalize ? formatNumber(parsed) : axisInput.value;
-              scalePercentWidth.value = next;
-              scalePercentHeight.value = next;
-            } else if (normalize) {
-              const fallback = parsePositiveNumber(otherInput.value) || 100;
-              setScalePercentValues(fallback, fallback);
-            }
+          const values = getScalePercentValues();
+          if (getTargetAspectRatio()) {
+            setScalePercentValues(values.width, values.height);
           } else if (normalize) {
-            const values = getScalePercentValues();
             setScalePercentValues(values.width, values.height);
           }
 
-          updateMeta();
-          updateControls();
+          renderPreview();
         }
 
-        function syncPercentInputs(options = {}) {
+        function syncPercentInputsToAspect(options = {}) {
           const { normalize = false } = options;
           const values = getScalePercentValues();
-          if (state.scaleLinked || normalize) {
+          if (getTargetAspectRatio() || normalize) {
             setScalePercentValues(values.width, values.height);
           }
         }
@@ -1842,8 +1961,9 @@
           const baseHeight = Math.max(1, Math.round(rect.h));
           const width = parsePositiveInteger(scaleWidth.value);
           const height = parsePositiveInteger(scaleHeight.value);
+          const ratio = getTargetAspectRatio(rect);
 
-          if (!state.scaleLinked) {
+          if (!ratio) {
             return {
               width: width || baseWidth,
               height: height || baseHeight,
@@ -1851,17 +1971,17 @@
           }
 
           if (state.scaleAnchor === 'height') {
-            const linkedHeight = height || (width ? Math.max(1, Math.round((width * baseHeight) / baseWidth)) : baseHeight);
+            const linkedHeight = height || (width ? Math.max(1, Math.round(width / ratio)) : baseHeight);
             return {
-              width: Math.max(1, Math.round((linkedHeight * baseWidth) / baseHeight)),
+              width: Math.max(1, Math.round(linkedHeight * ratio)),
               height: linkedHeight,
             };
           }
 
-          const linkedWidth = width || (height ? Math.max(1, Math.round((height * baseWidth) / baseHeight)) : baseWidth);
+          const linkedWidth = width || (height ? Math.max(1, Math.round(height * ratio)) : baseWidth);
           return {
             width: linkedWidth,
-            height: Math.max(1, Math.round((linkedWidth * baseHeight) / baseWidth)),
+            height: Math.max(1, Math.round(linkedWidth / ratio)),
           };
         }
 
@@ -1878,34 +1998,17 @@
 
           const baseWidth = Math.max(1, Math.round(rect.w));
           const baseHeight = Math.max(1, Math.round(rect.h));
-          const axisInput = axis === 'width' ? scaleWidth : scaleHeight;
-          const otherInput = axis === 'width' ? scaleHeight : scaleWidth;
-          const parsed = parsePositiveInteger(axisInput.value);
-
-          if (state.scaleLinked) {
-            if (parsed) {
-              if (axis === 'width') {
-                setPixelDimensions(parsed, Math.max(1, Math.round((parsed * baseHeight) / baseWidth)));
-              } else {
-                setPixelDimensions(Math.max(1, Math.round((parsed * baseWidth) / baseHeight)), parsed);
-              }
-            } else if (normalize) {
-              const fallback = parsePositiveInteger(otherInput.value) || (axis === 'width' ? baseHeight : baseWidth);
-              if (axis === 'width') {
-                setPixelDimensions(Math.max(1, Math.round((fallback * baseWidth) / baseHeight)), fallback);
-              } else {
-                setPixelDimensions(fallback, Math.max(1, Math.round((fallback * baseHeight) / baseWidth)));
-              }
-            }
+          const size = getPixelDimensions(rect);
+          if (getTargetAspectRatio(rect)) {
+            setPixelDimensions(size.width, size.height);
           } else if (normalize) {
             setPixelDimensions(
-              parsePositiveInteger(scaleWidth.value) || baseWidth,
-              parsePositiveInteger(scaleHeight.value) || baseHeight,
+              size.width || baseWidth,
+              size.height || baseHeight,
             );
           }
 
-          updateMeta();
-          updateControls();
+          renderPreview();
         }
 
         function syncPixelInputsToBase(options = {}) {
@@ -1922,7 +2025,7 @@
             return;
           }
 
-          if (!state.scaleLinked) {
+          if (!getTargetAspectRatio(rect)) {
             setPixelDimensions(
               parsePositiveInteger(scaleWidth.value) || Math.max(1, Math.round(rect.w)),
               parsePositiveInteger(scaleHeight.value) || Math.max(1, Math.round(rect.h)),
@@ -1956,7 +2059,7 @@
 
           const widthPercent = (size.width / rect.w) * 100;
           const heightPercent = (size.height / rect.h) * 100;
-          if (state.scaleLinked) {
+          if (state.aspectMode === 'proportional') {
             const linked = getLinkedAxisValue(widthPercent, heightPercent, 100);
             setScalePercentValues(linked, linked);
             return;
@@ -1964,10 +2067,74 @@
           setScalePercentValues(widthPercent, heightPercent);
         }
 
-        function resetScaleControls() {
-          resizeMode.value = 'percent';
-          state.scaleMode = 'percent';
-          state.scaleLinked = true;
+        function onScaleModeChange() {
+          const nextMode = getScaleMode();
+          if (nextMode !== state.scaleMode) {
+            if (nextMode === 'pixels') {
+              syncPixelInputsFromCurrentScale();
+            } else {
+              syncPercentFromPixelInputs();
+            }
+            state.scaleMode = nextMode;
+          }
+          updateExportUi();
+          renderPreview();
+        }
+
+        function applyAspectModeToCurrentSize(currentOutputSize) {
+          const rect = getExportRect();
+          if (!rect) return;
+
+          if (state.aspectMode === 'custom') {
+            if (getScaleMode() === 'pixels') {
+              const next = currentOutputSize || getPixelDimensions(rect);
+              setPixelDimensions(next.width, next.height);
+            } else {
+              const next = currentOutputSize || getScaledOutputSize(rect, 'percent');
+              setScalePercentValues((next.width / rect.w) * 100, (next.height / rect.h) * 100);
+            }
+            return;
+          }
+
+          const ratio = getTargetAspectRatio(rect);
+          if (!ratio) return;
+          const next = fitSizeToRatio(
+            (currentOutputSize && currentOutputSize.width) || Math.max(1, Math.round(rect.w)),
+            (currentOutputSize && currentOutputSize.height) || Math.max(1, Math.round(rect.h)),
+            ratio,
+          );
+
+          if (getScaleMode() === 'pixels') {
+            setPixelDimensions(next.width, next.height);
+            return;
+          }
+
+          const widthPercent = (next.width / rect.w) * 100;
+          const heightPercent = (next.height / rect.h) * 100;
+          if (state.aspectMode === 'proportional') {
+            const linked = getLinkedAxisValue(widthPercent, heightPercent, 100);
+            setScalePercentValues(linked, linked);
+            return;
+          }
+          setScalePercentValues(widthPercent, heightPercent);
+        }
+
+        function syncScaleInputsToCurrentBase(options = {}) {
+          if (getScaleMode() === 'pixels') {
+            syncPixelInputsToBase(options);
+          } else {
+            syncPercentInputsToAspect(options);
+          }
+        }
+
+        function resetScaleControls(options = {}) {
+          const { preserveMode = false } = options;
+          const nextMode = preserveMode ? state.scaleMode : 'percent';
+
+          scaleModePercent.checked = nextMode === 'percent';
+          scaleModePixels.checked = nextMode === 'pixels';
+          state.scaleMode = nextMode;
+          state.aspectMode = 'proportional';
           state.scaleAnchor = 'width';
           setScalePercentValues(100, 100);
           syncPixelInputsToBase({ preserveAnchor: false });

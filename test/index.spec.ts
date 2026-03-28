@@ -87,8 +87,10 @@ describe('Tools index and Markdown viewer', () => {
     const body = await response.text();
     expect(body).toContain('<title>Image Editor</title>');
     expect(body).toContain('id="dropZone"');
-    expect(body).toContain('id="resizeMode"');
-    expect(body).toContain('id="scaleLinkButton"');
+    expect(body).toContain('id="scaleModePixels"');
+    expect(body).toContain('id="scaleModePercent"');
+    expect(body).toContain('id="aspectRatioSelect"');
+    expect(body).toContain('id="resetScaleButton"');
     expect(body).toContain('id="scalePercentWidth"');
     expect(body).toContain('id="scalePercentHeight"');
     expect(body).toContain('id="scaleWidth"');
@@ -196,8 +198,8 @@ describe('Tools index and Markdown viewer', () => {
     expect(response.headers.get('content-type')).toContain('text/html');
     const body = await response.text();
     expect(body).toContain('<title>Image Editor</title>');
-    expect(body).toContain('id="resizeMode"');
-    expect(body).toContain('id="scaleLinkButton"');
+    expect(body).toContain('id="scaleModePixels"');
+    expect(body).toContain('id="aspectRatioSelect"');
     expect(body).toContain('id="copyImageButton"');
   });
 
