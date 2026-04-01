@@ -53,6 +53,43 @@ function resolveStaticPath(pathname: string): string {
   return PRETTY_ROUTES[pathname] || pathname;
 }
 
+function isImageEditorDocument(pathname: string, mappedPath: string): boolean {
+  return pathname === '/image-editor'
+    || pathname === '/image-editor/'
+    || pathname === '/image-editor.html'
+    || mappedPath === '/image-editor.html';
+}
+
+function isImageEditorAvifAsset(pathname: string): boolean {
+  return pathname === '/workers/image-editor-avif-worker.mjs'
+    || pathname.startsWith('/vendor/jsquash-avif/')
+    || pathname.startsWith('/vendor/wasm-feature-detect/');
+}
+
+function withStaticHeaders(response: Response, pathname: string, mappedPath: string): Response {
+  if (!isImageEditorDocument(pathname, mappedPath) && !isImageEditorAvifAsset(pathname)) {
+    return response;
+  }
+
+  const headers = new Headers(response.headers);
+
+  if (isImageEditorDocument(pathname, mappedPath)) {
+    headers.set('cross-origin-opener-policy', 'same-origin');
+    headers.set('cross-origin-embedder-policy', 'require-corp');
+  }
+
+  if (isImageEditorAvifAsset(pathname)) {
+    headers.set('cross-origin-embedder-policy', 'require-corp');
+    headers.set('cross-origin-resource-policy', 'same-origin');
+  }
+
+  return new Response(response.body, {
+    headers,
+    status: response.status,
+    statusText: response.statusText,
+  });
+}
+
 export async function serveStatic(request: Request, env: Bindings, url: URL): Promise<Response> {
   const mappedPath = resolveStaticPath(url.pathname);
   const assets = (env as any)?.ASSETS;
@@ -64,9 +101,9 @@ export async function serveStatic(request: Request, env: Bindings, url: URL): Pr
       assetUrl.pathname = canonicalRoute;
       const assetRequest = new Request(assetUrl.toString(), request);
       const res = await assets.fetch(assetRequest);
-      if (res && res.status !== 404) return res;
+      if (res && res.status !== 404) return withStaticHeaders(res, url.pathname, mappedPath);
     }
-    return loadHtml(mappedPath.replace(/^\//, ''));
+    return withStaticHeaders(await loadHtml(mappedPath.replace(/^\//, '')), url.pathname, mappedPath);
   }
 
   if (assets && typeof assets.fetch === 'function') {
@@ -74,7 +111,7 @@ export async function serveStatic(request: Request, env: Bindings, url: URL): Pr
     assetUrl.pathname = mappedPath;
     const assetRequest = new Request(assetUrl.toString(), request);
     const res = await assets.fetch(assetRequest);
-    if (res && res.status !== 404) return res;
+    if (res && res.status !== 404) return withStaticHeaders(res, url.pathname, mappedPath);
   }
 
   return new Response('Not found', { status: 404 });

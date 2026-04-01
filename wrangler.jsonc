@@ -38,7 +38,15 @@
 	"assets": {
 		"directory": "./public/",
 		"binding": "ASSETS",
-		"run_worker_first": ["/area-code/*"]
+		"run_worker_first": [
+			"/area-code/*",
+			"/image-editor",
+			"/image-editor/",
+			"/image-editor.html",
+			"/workers/image-editor-avif-worker.mjs",
+			"/vendor/jsquash-avif/*",
+			"/vendor/wasm-feature-detect/*"
+		]
 	},
 	"d1_databases": [
 		{
