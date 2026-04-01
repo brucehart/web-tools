@@ -711,6 +711,7 @@
                   <option value="png">PNG</option>
                   <option value="jpg">JPG</option>
                   <option value="webp">WEBP</option>
+                  <option value="avif">AVIF</option>
                 </select>
               </div>
 
@@ -865,7 +866,7 @@
                 <h3>Ready for clipboard or drag-and-drop</h3>
                 <p>
                   Load one image, inspect it with zoom, rotate in 90 degree steps, crop a rectangle,
-                  scale it by percentage or pixels, and export the result as PNG, JPG, or WEBP.
+                  scale it by percentage or pixels, and export the result as PNG, JPG, WEBP, or AVIF.
                 </p>
               </div>
 
@@ -1224,7 +1225,7 @@
           scalePercentHeight.disabled = !imageLoaded || getScaleMode() !== 'percent';
           scaleWidth.disabled = !imageLoaded || getScaleMode() !== 'pixels';
           scaleHeight.disabled = !imageLoaded || getScaleMode() !== 'pixels';
-          exportQuality.disabled = !imageLoaded || exportFormat.value === 'png';
+          exportQuality.disabled = !imageLoaded || !formatUsesQuality(exportFormat.value);
           exportButton.disabled = !exportReady;
           copyImageButton.disabled = !exportReady || !clipboardSupported;
           clipboardSupportHint.hidden = clipboardSupported;
@@ -1243,7 +1244,7 @@
 
         function updateExportUi() {
           const format = exportFormat.value;
-          const usesQuality = format === 'jpg' || format === 'webp';
+          const usesQuality = formatUsesQuality(format);
           const mode = getScaleMode();
 
           scalePercentField.hidden = mode !== 'percent';
@@ -1259,6 +1260,9 @@
           } else if (format === 'webp') {
             exportQualityLabel.textContent = 'WEBP Quality';
             qualityNote.textContent = 'WEBP export keeps transparency when the browser supports it.';
+          } else if (format === 'avif') {
+            exportQualityLabel.textContent = 'AVIF Quality';
+            qualityNote.textContent = 'AVIF export keeps transparency when the browser supports it.';
           } else {
             exportQualityLabel.textContent = 'Export Quality';
             qualityNote.textContent = '';
@@ -2234,13 +2238,15 @@
             canvas.height,
           );
 
-          const mimeType = format === 'jpg'
-            ? 'image/jpeg'
-            : format === 'webp'
-              ? 'image/webp'
-              : 'image/png';
-          const quality = format === 'png' ? undefined : Number(exportQuality.value);
+          const mimeType = getExportMimeType(format);
+          const quality = formatUsesQuality(format) ? Number(exportQuality.value) : undefined;
           const blob = await canvasToBlob(canvas, mimeType, quality);
+          if (blob.type !== mimeType) {
+            if (format === 'avif') {
+              throw new Error('AVIF export is not supported in this browser.');
+            }
+            throw new Error(`Browser could not encode ${format.toUpperCase()} output.`);
+          }
           return {
             blob,
             format,
@@ -2272,6 +2278,20 @@
               quality,
             );
           });
+        }
+
+        function formatUsesQuality(format) {
+          return format === 'jpg' || format === 'webp' || format === 'avif';
+        }
+
+        function getExportMimeType(format) {
+          return format === 'jpg'
+            ? 'image/jpeg'
+            : format === 'webp'
+              ? 'image/webp'
+              : format === 'avif'
+                ? 'image/avif'
+                : 'image/png';
         }
 
         function supportsImageClipboardWrite() {

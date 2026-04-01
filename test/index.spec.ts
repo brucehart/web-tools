@@ -96,6 +96,7 @@ describe('Tools index and Markdown viewer', () => {
     expect(body).toContain('id="scaleWidth"');
     expect(body).toContain('id="exportButton"');
     expect(body).toContain('id="copyImageButton"');
+    expect(body).toContain('<option value="avif">AVIF</option>');
   });
 
   it('serves url encode/decode tool at /url-encode-decode (unit)', async () => {
@@ -201,6 +202,7 @@ describe('Tools index and Markdown viewer', () => {
     expect(body).toContain('id="scaleModePixels"');
     expect(body).toContain('id="aspectRatioSelect"');
     expect(body).toContain('id="copyImageButton"');
+    expect(body).toContain('<option value="avif">AVIF</option>');
   });
 
   it('serves url encode/decode tool (integration)', async () => {
