@@ -5,11 +5,16 @@
 	"license": "MIT",
 	"author": "Bruce J. Hart",
 	"scripts": {
+		"sync:jsquash-avif": "node scripts/sync-jsquash-avif.mjs",
+		"postinstall": "npm run sync:jsquash-avif",
 		"deploy": "wrangler deploy",
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
 		"test": "vitest",
 		"cf-typegen": "wrangler types"
+	},
+	"dependencies": {
+		"@jsquash/avif": "^2.1.1"
 	},
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "^0.12.10",
