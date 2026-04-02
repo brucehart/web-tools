@@ -135,6 +135,20 @@
         transition: border-color 0.2s, box-shadow 0.2s;
       }
 
+      select {
+        color-scheme: light;
+      }
+
+      [data-theme='dark'] select {
+        color-scheme: dark;
+      }
+
+      select option,
+      select optgroup {
+        background-color: var(--card-bg);
+        color: var(--text-primary);
+      }
+
       input:focus, select:focus, textarea:focus {
         outline: none;
         border-color: var(--accent-color);
