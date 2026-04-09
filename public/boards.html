@@ -1,0 +1,1671 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Boards</title>
+    <link rel="stylesheet" href="/shared/toolkit.css" />
+    <script defer src="/shared/toolkit.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
+    <style>
+      :root {
+        --boards-accent: #d97706;
+        --boards-accent-soft: rgba(217, 119, 6, 0.14);
+        --boards-accent-2: #0f766e;
+        --boards-ink-soft: rgba(15, 23, 42, 0.68);
+        --boards-card-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+      }
+
+      [data-theme='dark'] {
+        --boards-accent: #fb923c;
+        --boards-accent-soft: rgba(251, 146, 60, 0.18);
+        --boards-accent-2: #2dd4bf;
+        --boards-ink-soft: rgba(226, 232, 240, 0.72);
+        --boards-card-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background: transparent;
+      }
+
+      .boards-page {
+        display: grid;
+        grid-template-columns: 300px minmax(0, 1fr);
+        gap: 18px;
+        min-height: calc(100vh - 110px);
+      }
+
+      .panel {
+        border: 1px solid var(--wt-border);
+        border-radius: 24px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 38%),
+          var(--wt-panel-solid);
+        box-shadow: var(--boards-card-shadow);
+      }
+
+      .sidebar {
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-height: 720px;
+      }
+
+      .sidebar-head {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        font-size: 0.72rem;
+        color: var(--boards-accent);
+        font-weight: 800;
+      }
+
+      .sidebar h1 {
+        margin: 0;
+        font-size: 2rem;
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+
+      .sidebar-copy {
+        margin: 0;
+        color: var(--boards-ink-soft);
+      }
+
+      .sidebar-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .sidebar-actions .wt-btn-primary {
+        background: linear-gradient(135deg, var(--boards-accent), var(--boards-accent-2));
+        border-color: rgba(217, 119, 6, 0.4);
+      }
+
+      .board-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow: auto;
+        padding-right: 4px;
+      }
+
+      .board-item {
+        appearance: none;
+        display: block;
+        width: 100%;
+        text-align: left;
+        font: inherit;
+        color: inherit;
+        border: 1px solid var(--wt-border);
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 18px;
+        padding: 14px 15px;
+        cursor: pointer;
+        transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+      }
+
+      .board-item:hover {
+        transform: translateY(-1px);
+        border-color: rgba(217, 119, 6, 0.35);
+      }
+
+      .board-item.active {
+        border-color: rgba(217, 119, 6, 0.46);
+        background: linear-gradient(135deg, var(--boards-accent-soft), rgba(15, 118, 110, 0.08));
+      }
+
+      .board-item h3 {
+        margin: 0 0 6px;
+        font-size: 1rem;
+      }
+
+      .board-item p {
+        margin: 0;
+        color: var(--boards-ink-soft);
+        font-size: 0.92rem;
+      }
+
+      .board-meta {
+        margin-top: 10px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .meta-pill {
+        border-radius: 999px;
+        background: rgba(127, 127, 127, 0.12);
+        padding: 5px 9px;
+        font-size: 0.78rem;
+        color: var(--boards-ink-soft);
+      }
+
+      .workspace {
+        min-width: 0;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .workspace-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .workspace-title h2 {
+        margin: 0;
+        font-size: 2rem;
+        letter-spacing: -0.04em;
+      }
+
+      .workspace-title p {
+        margin: 8px 0 0;
+        color: var(--boards-ink-soft);
+      }
+
+      .workspace-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .workspace-actions .wt-btn-primary {
+        background: linear-gradient(135deg, var(--boards-accent), var(--boards-accent-2));
+        border-color: rgba(217, 119, 6, 0.4);
+      }
+
+      .auth-panel,
+      .empty-panel {
+        padding: 32px;
+        border-radius: 26px;
+        border: 1px dashed rgba(217, 119, 6, 0.28);
+        background:
+          radial-gradient(circle at top right, rgba(217, 119, 6, 0.12), transparent 30%),
+          radial-gradient(circle at bottom left, rgba(15, 118, 110, 0.1), transparent 34%),
+          rgba(255, 255, 255, 0.05);
+      }
+
+      .auth-panel h3,
+      .empty-panel h3 {
+        margin: 0 0 8px;
+        font-size: 1.5rem;
+      }
+
+      .auth-panel p,
+      .empty-panel p {
+        margin: 0 0 18px;
+        color: var(--boards-ink-soft);
+        max-width: 48rem;
+      }
+
+      .board-canvas {
+        display: flex;
+        gap: 16px;
+        overflow-x: auto;
+        align-items: flex-start;
+        padding: 6px 2px 12px;
+        min-height: 440px;
+      }
+
+      .list-column {
+        width: 320px;
+        min-width: 320px;
+        padding: 14px;
+        border-radius: 22px;
+        border: 1px solid var(--wt-border);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 34%),
+          rgba(255, 255, 255, 0.04);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      }
+
+      .list-column.drag-target-before {
+        box-shadow: inset 4px 0 0 var(--boards-accent), var(--boards-card-shadow);
+      }
+
+      .list-column.drag-target-after {
+        box-shadow: inset -4px 0 0 var(--boards-accent), var(--boards-card-shadow);
+      }
+
+      .list-head {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
+
+      .drag-handle {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        border: 1px dashed var(--wt-border);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--boards-ink-soft);
+        cursor: grab;
+        flex: 0 0 auto;
+      }
+
+      .list-body {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .list-title-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .list-title-row h3 {
+        margin: 0;
+        font-size: 1.05rem;
+      }
+
+      .list-actions {
+        display: flex;
+        gap: 6px;
+        margin-top: 10px;
+      }
+
+      .list-actions .wt-btn {
+        padding: 7px 9px;
+      }
+
+      .card-stack {
+        margin-top: 16px;
+        min-height: 60px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .card-stack.drag-target {
+        outline: 2px dashed rgba(217, 119, 6, 0.42);
+        outline-offset: 6px;
+        border-radius: 20px;
+      }
+
+      .card-empty {
+        border: 1px dashed var(--wt-border);
+        border-radius: 16px;
+        padding: 15px;
+        text-align: center;
+        color: var(--boards-ink-soft);
+        font-size: 0.92rem;
+      }
+
+      .card-item {
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 18px;
+        padding: 14px 14px 12px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 38%),
+          var(--wt-panel-solid);
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      }
+
+      .card-item:hover {
+        transform: translateY(-1px);
+        border-color: rgba(217, 119, 6, 0.26);
+        box-shadow: var(--boards-card-shadow);
+      }
+
+      .card-item.drag-target-before {
+        box-shadow: inset 0 4px 0 var(--boards-accent), var(--boards-card-shadow);
+      }
+
+      .card-item.drag-target-after {
+        box-shadow: inset 0 -4px 0 var(--boards-accent), var(--boards-card-shadow);
+      }
+
+      .card-item.file-target {
+        outline: 2px dashed rgba(15, 118, 110, 0.52);
+        outline-offset: 4px;
+      }
+
+      .card-top {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+      }
+
+      .card-grip {
+        width: 30px;
+        height: 30px;
+        border-radius: 10px;
+        border: 1px dashed var(--wt-border);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--boards-ink-soft);
+        cursor: grab;
+        flex: 0 0 auto;
+      }
+
+      .card-copy {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .card-copy h4 {
+        margin: 0 0 8px;
+        font-size: 1rem;
+      }
+
+      .card-markdown {
+        color: var(--boards-ink-soft);
+        font-size: 0.92rem;
+        overflow: hidden;
+      }
+
+      .card-markdown > :first-child {
+        margin-top: 0;
+      }
+
+      .card-markdown > :last-child {
+        margin-bottom: 0;
+      }
+
+      .card-markdown pre {
+        overflow: auto;
+        background: rgba(127, 127, 127, 0.1);
+        border-radius: 12px;
+        padding: 10px;
+      }
+
+      .card-markdown code {
+        font-family: var(--wt-font-mono);
+      }
+
+      .card-images {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .card-images img {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+        border-radius: 12px;
+        border: 1px solid var(--wt-border);
+        display: block;
+      }
+
+      .card-hint {
+        margin-top: 12px;
+        font-size: 0.78rem;
+        color: var(--boards-ink-soft);
+      }
+
+      .status-bar {
+        min-height: 24px;
+        font-size: 0.92rem;
+        color: var(--boards-ink-soft);
+      }
+
+      .status-bar.success {
+        color: var(--wt-success);
+      }
+
+      .status-bar.error {
+        color: var(--wt-danger);
+      }
+
+      .status-bar.warning {
+        color: var(--wt-warning);
+      }
+
+      .modal[hidden] {
+        display: none;
+      }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        background: rgba(2, 6, 23, 0.6);
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .modal-panel {
+        width: min(1080px, 100%);
+        max-height: calc(100vh - 40px);
+        overflow: auto;
+        border-radius: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background:
+          radial-gradient(circle at top right, rgba(217, 119, 6, 0.16), transparent 24%),
+          radial-gradient(circle at bottom left, rgba(15, 118, 110, 0.14), transparent 28%),
+          var(--wt-panel-solid);
+        box-shadow: 0 30px 80px rgba(2, 6, 23, 0.38);
+        padding: 24px;
+      }
+
+      .modal-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .modal-head h3 {
+        margin: 0;
+        font-size: 1.6rem;
+      }
+
+      .modal-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 18px;
+        margin-top: 18px;
+      }
+
+      .modal-section {
+        border: 1px solid var(--wt-border);
+        border-radius: 22px;
+        padding: 18px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .modal-section h4 {
+        margin: 0 0 12px;
+        font-size: 1rem;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+
+      .field label {
+        font-size: 0.86rem;
+        color: var(--boards-ink-soft);
+      }
+
+      .field input,
+      .field textarea {
+        width: 100%;
+        border: 1px solid var(--wt-border);
+        background: rgba(255, 255, 255, 0.06);
+        color: inherit;
+        border-radius: 14px;
+        padding: 12px 13px;
+      }
+
+      .field textarea {
+        min-height: 330px;
+        resize: vertical;
+        font-family: var(--wt-font-mono);
+      }
+
+      .modal-preview {
+        min-height: 330px;
+        max-height: 520px;
+        overflow: auto;
+        border: 1px solid var(--wt-border);
+        border-radius: 18px;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .modal-preview > :first-child {
+        margin-top: 0;
+      }
+
+      .modal-preview pre {
+        overflow: auto;
+        background: rgba(127, 127, 127, 0.1);
+        border-radius: 12px;
+        padding: 10px;
+      }
+
+      .upload-zone {
+        margin-top: 14px;
+        border: 1px dashed rgba(15, 118, 110, 0.4);
+        border-radius: 18px;
+        padding: 18px;
+        text-align: center;
+        color: var(--boards-ink-soft);
+        background: rgba(15, 118, 110, 0.05);
+      }
+
+      .upload-zone.active {
+        border-color: rgba(15, 118, 110, 0.8);
+        background: rgba(15, 118, 110, 0.12);
+      }
+
+      .image-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .image-card {
+        border: 1px solid var(--wt-border);
+        border-radius: 18px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .image-card img {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        display: block;
+        object-fit: cover;
+      }
+
+      .image-meta {
+        padding: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .muted {
+        color: var(--boards-ink-soft);
+      }
+
+      @media (max-width: 1100px) {
+        .boards-page {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          min-height: 0;
+        }
+      }
+
+      @media (max-width: 860px) {
+        .modal-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .board-canvas {
+          padding-bottom: 24px;
+        }
+
+        .list-column {
+          width: min(88vw, 320px);
+          min-width: min(88vw, 320px);
+        }
+
+        .image-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 560px) {
+        .workspace,
+        .sidebar {
+          padding: 16px;
+        }
+
+        .workspace-head {
+          flex-direction: column;
+        }
+
+        .sidebar-actions,
+        .workspace-actions {
+          width: 100%;
+        }
+
+        .sidebar-actions .wt-btn,
+        .workspace-actions .wt-btn {
+          flex: 1;
+          justify-content: center;
+        }
+      }
+    </style>
+  </head>
+  <body class="wt" data-wt-tool="boards" data-wt-title="Boards">
+    <div class="wt-header" role="banner"></div>
+    <template id="wtHeaderExtra">
+      <span id="modePill" class="pill">Checking…</span>
+      <div id="authArea"></div>
+    </template>
+
+    <main class="wt-page boards-page">
+      <aside class="panel sidebar">
+        <div class="sidebar-head">
+          <div class="eyebrow">List Manager</div>
+          <h1>Boards</h1>
+          <p class="sidebar-copy">Private Trello-style boards with Markdown cards and image drops saved to D1.</p>
+          <div class="sidebar-actions">
+            <button id="createBoardBtn" class="wt-btn wt-btn-primary" type="button">New board</button>
+            <button id="refreshBoardsBtn" class="wt-btn wt-btn-ghost" type="button">Refresh</button>
+          </div>
+        </div>
+        <div id="boardList" class="board-list"></div>
+      </aside>
+
+      <section class="panel workspace">
+        <div id="authPanel" class="auth-panel" hidden>
+          <h3>Sign in to manage boards</h3>
+          <p>Your boards, lists, cards, Markdown, and dropped images are stored in your account and synced through D1.</p>
+          <a id="loginButton" class="wt-btn wt-btn-primary" href="/auth/google/login?returnTo=/boards">Sign in with Google</a>
+        </div>
+
+        <div id="emptyPanel" class="empty-panel" hidden>
+          <h3>No boards yet</h3>
+          <p>Create a board, add lists, then drag cards between columns. Drop an image on any card to attach it instantly.</p>
+          <button id="emptyCreateBoardBtn" class="wt-btn wt-btn-primary" type="button">Create your first board</button>
+        </div>
+
+        <div id="boardPane" hidden>
+          <div class="workspace-head">
+            <div class="workspace-title">
+              <div class="eyebrow">Workspace</div>
+              <h2 id="boardTitle">Boards</h2>
+              <p id="boardDescription" class="muted"></p>
+            </div>
+            <div class="workspace-actions">
+              <button id="renameBoardBtn" class="wt-btn wt-btn-ghost" type="button">Edit board</button>
+              <button id="deleteBoardBtn" class="wt-btn wt-btn-danger" type="button">Delete board</button>
+              <button id="addListBtn" class="wt-btn wt-btn-primary" type="button">Add list</button>
+            </div>
+          </div>
+          <div id="boardCanvas" class="board-canvas"></div>
+        </div>
+
+        <div id="statusBar" class="status-bar" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <div id="cardModal" class="modal" hidden>
+      <div class="modal-panel">
+        <div class="modal-head">
+          <div>
+            <div class="eyebrow">Card editor</div>
+            <h3 id="cardModalTitle">Edit card</h3>
+          </div>
+          <div class="workspace-actions">
+            <button id="closeCardModalBtn" class="wt-btn wt-btn-ghost" type="button">Close</button>
+            <button id="deleteCardBtn" class="wt-btn wt-btn-danger" type="button">Delete card</button>
+            <button id="saveCardBtn" class="wt-btn wt-btn-primary" type="button">Save</button>
+          </div>
+        </div>
+
+        <div class="modal-grid">
+          <section class="modal-section">
+            <div class="field">
+              <label for="cardTitleInput">Title</label>
+              <input id="cardTitleInput" type="text" maxlength="160" />
+            </div>
+            <div class="field">
+              <label for="cardMarkdownInput">Markdown</label>
+              <textarea id="cardMarkdownInput" spellcheck="false"></textarea>
+            </div>
+          </section>
+
+          <section class="modal-section">
+            <h4>Preview</h4>
+            <div id="cardPreview" class="modal-preview"></div>
+          </section>
+        </div>
+
+        <section class="modal-section" style="margin-top: 18px;">
+          <h4>Images</h4>
+          <p class="muted" style="margin-top: 0;">Drop PNG, JPEG, WEBP, GIF, or AVIF files here or directly onto a card. Maximum 3 images per card, 1 MB each.</p>
+          <div id="modalUploadZone" class="upload-zone">Drop an image here to attach it to this card.</div>
+          <div id="modalImageGrid" class="image-grid" style="margin-top: 14px;"></div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      (function() {
+        const ACTIVE_BOARD_KEY = 'wt_boards_active_v1';
+        const MAX_IMAGE_BYTES = 1024 * 1024;
+        const ALLOWED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif']);
+
+        const state = {
+          auth: { loggedIn: false, user: null },
+          boards: [],
+          board: null,
+          activeBoardId: '',
+          editingCardId: '',
+          drag: null,
+        };
+
+        const boardListEl = document.getElementById('boardList');
+        const authPanelEl = document.getElementById('authPanel');
+        const emptyPanelEl = document.getElementById('emptyPanel');
+        const boardPaneEl = document.getElementById('boardPane');
+        const boardCanvasEl = document.getElementById('boardCanvas');
+        const boardTitleEl = document.getElementById('boardTitle');
+        const boardDescriptionEl = document.getElementById('boardDescription');
+        const statusBarEl = document.getElementById('statusBar');
+        const cardModalEl = document.getElementById('cardModal');
+        const cardModalTitleEl = document.getElementById('cardModalTitle');
+        const cardTitleInputEl = document.getElementById('cardTitleInput');
+        const cardMarkdownInputEl = document.getElementById('cardMarkdownInput');
+        const cardPreviewEl = document.getElementById('cardPreview');
+        const modalUploadZoneEl = document.getElementById('modalUploadZone');
+        const modalImageGridEl = document.getElementById('modalImageGrid');
+
+        if (window.marked && typeof window.marked.setOptions === 'function') {
+          window.marked.setOptions({ gfm: true, breaks: true });
+        }
+
+        function el(tag, props = {}, children = []) {
+          const node = document.createElement(tag);
+          Object.entries(props).forEach(([key, value]) => {
+            if (value === undefined || value === null) return;
+            if (key === 'class') node.className = value;
+            else if (key === 'text') node.textContent = value;
+            else if (key === 'html') node.innerHTML = value;
+            else if (key.startsWith('on') && typeof value === 'function') node[key.toLowerCase()] = value;
+            else node.setAttribute(key, value);
+          });
+          for (const child of children) {
+            if (child === null || child === undefined) continue;
+            if (typeof child === 'string') node.appendChild(document.createTextNode(child));
+            else node.appendChild(child);
+          }
+          return node;
+        }
+
+        function setStatus(message, kind = 'info') {
+          statusBarEl.textContent = message || '';
+          statusBarEl.className = 'status-bar' + (kind && kind !== 'info' ? ' ' + kind : '');
+        }
+
+        async function api(path, options = {}) {
+          const res = await fetch(path, Object.assign({ credentials: 'include' }, options));
+          if (!res.ok) {
+            throw new Error((await res.text()) || 'Request failed');
+          }
+          return res.json();
+        }
+
+        function sanitizeMarkdown(markdown) {
+          const raw = window.marked ? window.marked.parse(markdown || '') : '';
+          return window.DOMPurify ? window.DOMPurify.sanitize(raw) : raw;
+        }
+
+        function renderMarkdown(markdown) {
+          return sanitizeMarkdown(markdown || '');
+        }
+
+        function getAuthAreaEl() {
+          return document.getElementById('authArea');
+        }
+
+        function getModePillEl() {
+          return document.getElementById('modePill');
+        }
+
+        function formatBoardMeta(board) {
+          const pieces = [];
+          pieces.push(`${board.list_count || 0} list${board.list_count === 1 ? '' : 's'}`);
+          pieces.push(`${board.card_count || 0} card${board.card_count === 1 ? '' : 's'}`);
+          return pieces.join(' • ');
+        }
+
+        function persistActiveBoard(id) {
+          state.activeBoardId = id || '';
+          if (id) localStorage.setItem(ACTIVE_BOARD_KEY, id);
+          else localStorage.removeItem(ACTIVE_BOARD_KEY);
+          const next = new URL(location.href);
+          if (id) next.searchParams.set('board', id);
+          else next.searchParams.delete('board');
+          history.replaceState({}, '', next.pathname + next.search + next.hash);
+        }
+
+        function preferredBoardId() {
+          const fromUrl = new URL(location.href).searchParams.get('board');
+          if (fromUrl && state.boards.some((board) => board.id === fromUrl)) return fromUrl;
+          const fromStorage = localStorage.getItem(ACTIVE_BOARD_KEY);
+          if (fromStorage && state.boards.some((board) => board.id === fromStorage)) return fromStorage;
+          return state.boards[0]?.id || '';
+        }
+
+        function renderAuthArea() {
+          const authAreaEl = getAuthAreaEl();
+          const modePillEl = getModePillEl();
+          if (!authAreaEl || !modePillEl) return;
+
+          authAreaEl.innerHTML = '';
+          if (!state.auth.loggedIn) {
+            const next = encodeURIComponent(location.pathname + location.search);
+            authAreaEl.appendChild(el('a', {
+              class: 'wt-btn wt-btn-primary',
+              href: '/auth/google/login?returnTo=' + next,
+              text: 'Sign in',
+            }));
+            modePillEl.textContent = 'Guest mode';
+            modePillEl.classList.remove('accent');
+            return;
+          }
+
+          modePillEl.textContent = 'Account storage';
+          modePillEl.classList.add('accent');
+          authAreaEl.appendChild(el('span', { text: state.auth.user?.email || 'Signed in' }));
+          authAreaEl.appendChild(el('button', {
+            class: 'wt-btn wt-btn-ghost',
+            type: 'button',
+            text: 'Logout',
+            onclick: async () => {
+              try {
+                await api('/api/auth/logout', { method: 'POST' });
+              } catch {}
+              state.auth = { loggedIn: false, user: null };
+              state.boards = [];
+              state.board = null;
+              persistActiveBoard('');
+              closeCardModal();
+              renderAll();
+              setStatus('Signed out.', 'success');
+            },
+          }));
+        }
+
+        function renderSidebar() {
+          boardListEl.innerHTML = '';
+
+          if (!state.auth.loggedIn) {
+            boardListEl.appendChild(el('div', { class: 'card-empty', text: 'Sign in to load your boards.' }));
+            return;
+          }
+
+          if (!state.boards.length) {
+            boardListEl.appendChild(el('div', { class: 'card-empty', text: 'No boards yet. Create one to begin.' }));
+            return;
+          }
+
+          state.boards.forEach((board) => {
+            boardListEl.appendChild(el('button', {
+              class: 'board-item' + (board.id === state.activeBoardId ? ' active' : ''),
+              type: 'button',
+              onclick: () => setActiveBoard(board.id),
+            }, [
+              el('h3', { text: board.title }),
+              el('p', { text: board.description || 'Markdown cards, drag-and-drop lanes, and private sync.' }),
+              el('div', { class: 'board-meta' }, [
+                el('span', { class: 'meta-pill', text: formatBoardMeta(board) }),
+              ]),
+            ]));
+          });
+        }
+
+        function renderWorkspace() {
+          authPanelEl.hidden = state.auth.loggedIn;
+          emptyPanelEl.hidden = !state.auth.loggedIn || !!state.boards.length;
+          boardPaneEl.hidden = !state.auth.loggedIn || !state.board;
+
+          if (!state.auth.loggedIn) return;
+          if (!state.board) return;
+
+          boardTitleEl.textContent = state.board.board.title;
+          boardDescriptionEl.textContent = state.board.board.description || 'Organize work in draggable lists and cards.';
+          boardCanvasEl.innerHTML = '';
+
+          state.board.lists.forEach((list) => {
+            const listEl = el('section', {
+              class: 'list-column',
+              draggable: 'true',
+              'data-list-id': list.id,
+              ondragstart: (event) => {
+                state.drag = { type: 'list', id: list.id };
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', list.id);
+              },
+              ondragend: () => { state.drag = null; clearDragClasses(); },
+              ondragover: (event) => handleListDragOver(event, list.id),
+              ondragleave: () => clearListDragClass(listEl),
+              ondrop: (event) => handleListDrop(event, list.id),
+            });
+
+            listEl.appendChild(el('div', { class: 'list-head' }, [
+              el('button', { class: 'drag-handle', type: 'button', text: '⋮⋮', title: 'Drag list' }),
+              el('div', { class: 'list-body' }, [
+                el('div', { class: 'list-title-row' }, [
+                  el('h3', { text: list.title }),
+                  el('span', { class: 'meta-pill', text: `${list.cards.length}` }),
+                ]),
+                el('div', { class: 'list-actions' }, [
+                  el('button', {
+                    class: 'wt-btn wt-btn-ghost',
+                    type: 'button',
+                    text: 'Rename',
+                    onclick: (event) => {
+                      event.stopPropagation();
+                      renameList(list);
+                    },
+                  }),
+                  el('button', {
+                    class: 'wt-btn wt-btn-danger',
+                    type: 'button',
+                    text: 'Delete',
+                    onclick: (event) => {
+                      event.stopPropagation();
+                      deleteList(list);
+                    },
+                  }),
+                ]),
+              ]),
+            ]));
+
+            const stackEl = el('div', {
+              class: 'card-stack',
+              'data-list-id': list.id,
+              ondragover: (event) => handleCardStackDragOver(event, list.id),
+              ondragleave: () => clearStackDragClass(stackEl),
+              ondrop: (event) => handleCardStackDrop(event, list.id),
+            });
+
+            if (!list.cards.length) {
+              stackEl.appendChild(el('div', {
+                class: 'card-empty',
+                text: 'Drop a card here or add one below.',
+              }));
+            }
+
+            list.cards.forEach((card) => {
+              const cardEl = el('article', {
+                class: 'card-item',
+                draggable: 'true',
+                'data-card-id': card.id,
+                onclick: () => openCard(card.id),
+                ondragstart: (event) => {
+                  state.drag = { type: 'card', id: card.id, fromListId: list.id };
+                  event.dataTransfer.effectAllowed = 'move';
+                  event.dataTransfer.setData('text/plain', card.id);
+                },
+                ondragend: () => { state.drag = null; clearDragClasses(); },
+                ondragover: (event) => handleCardDragOver(event, list.id, card.id, cardEl),
+                ondragleave: () => clearCardDragClass(cardEl),
+                ondrop: (event) => handleCardDrop(event, list.id, card.id, cardEl),
+              });
+
+              cardEl.appendChild(el('div', { class: 'card-top' }, [
+                el('div', { class: 'card-grip', text: '⋮', title: 'Drag card' }),
+                el('div', { class: 'card-copy' }, [
+                  el('h4', { text: card.title }),
+                  el('div', { class: 'card-markdown', html: renderMarkdown(card.markdown || '') }),
+                ]),
+              ]));
+
+              if (card.images && card.images.length) {
+                const imagesEl = el('div', { class: 'card-images' });
+                card.images.slice(0, 4).forEach((image) => {
+                  imagesEl.appendChild(el('img', {
+                    src: image.data_url,
+                    alt: image.alt_text || card.title,
+                    loading: 'lazy',
+                  }));
+                });
+                cardEl.appendChild(imagesEl);
+              }
+
+              cardEl.appendChild(el('div', {
+                class: 'card-hint',
+                text: 'Click to edit. Drop an image onto this card to attach it.',
+              }));
+
+              stackEl.appendChild(cardEl);
+            });
+
+            listEl.appendChild(stackEl);
+            listEl.appendChild(el('button', {
+              class: 'wt-btn wt-btn-primary',
+              type: 'button',
+              text: '+ Add card',
+              onclick: () => createCard(list.id),
+              style: 'margin-top: 14px;',
+            }));
+
+            boardCanvasEl.appendChild(listEl);
+          });
+        }
+
+        function renderAll() {
+          document.getElementById('createBoardBtn').disabled = !state.auth.loggedIn;
+          document.getElementById('refreshBoardsBtn').disabled = !state.auth.loggedIn;
+          renderAuthArea();
+          renderSidebar();
+          renderWorkspace();
+        }
+
+        function clearDragClasses() {
+          document.querySelectorAll('.drag-target-before').forEach((node) => node.classList.remove('drag-target-before'));
+          document.querySelectorAll('.drag-target-after').forEach((node) => node.classList.remove('drag-target-after'));
+          document.querySelectorAll('.drag-target').forEach((node) => node.classList.remove('drag-target'));
+          document.querySelectorAll('.file-target').forEach((node) => node.classList.remove('file-target'));
+          document.querySelectorAll('.upload-zone.active').forEach((node) => node.classList.remove('active'));
+        }
+
+        function clearListDragClass(listEl) {
+          listEl.classList.remove('drag-target-before', 'drag-target-after');
+        }
+
+        function clearCardDragClass(cardEl) {
+          cardEl.classList.remove('drag-target-before', 'drag-target-after', 'file-target');
+        }
+
+        function clearStackDragClass(stackEl) {
+          stackEl.classList.remove('drag-target');
+        }
+
+        function hasFileDrop(event) {
+          return !!(event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length);
+        }
+
+        function moveIdRelative(ids, movedId, targetId, placeAfter) {
+          const next = ids.filter((id) => id !== movedId);
+          if (!targetId) {
+            next.push(movedId);
+            return next;
+          }
+          const targetIndex = next.indexOf(targetId);
+          if (targetIndex === -1) {
+            next.push(movedId);
+            return next;
+          }
+          next.splice(targetIndex + (placeAfter ? 1 : 0), 0, movedId);
+          return next;
+        }
+
+        function listById(listId) {
+          return state.board?.lists.find((list) => list.id === listId) || null;
+        }
+
+        function cardById(cardId) {
+          for (const list of state.board?.lists || []) {
+            const card = list.cards.find((entry) => entry.id === cardId);
+            if (card) return { list, card };
+          }
+          return null;
+        }
+
+        function isSameOrder(left, right) {
+          if (left.length !== right.length) return false;
+          return left.every((value, index) => value === right[index]);
+        }
+
+        async function refreshAuth() {
+          try {
+            const me = await api('/api/auth/me');
+            state.auth = { loggedIn: !!me.loggedIn, user: me.user || null };
+          } catch {
+            state.auth = { loggedIn: false, user: null };
+          }
+
+          if (!state.auth.loggedIn) {
+            state.boards = [];
+            state.board = null;
+            persistActiveBoard('');
+            closeCardModal();
+            renderAll();
+            return;
+          }
+
+          await loadBoards();
+        }
+
+        async function loadBoards() {
+          if (!state.auth.loggedIn) return;
+          state.boards = await api('/api/boards/list');
+          const nextActiveId = state.boards.some((board) => board.id === state.activeBoardId)
+            ? state.activeBoardId
+            : preferredBoardId();
+          persistActiveBoard(nextActiveId);
+          renderSidebar();
+          if (state.activeBoardId) await loadBoard(state.activeBoardId);
+          else {
+            state.board = null;
+            closeCardModal();
+            renderWorkspace();
+          }
+        }
+
+        async function loadBoard(boardId, options = {}) {
+          if (!boardId) {
+            state.board = null;
+            renderWorkspace();
+            return;
+          }
+          state.board = await api('/api/boards/get?id=' + encodeURIComponent(boardId));
+          persistActiveBoard(boardId);
+          renderWorkspace();
+          if (options.reopenCardId) openCard(options.reopenCardId);
+        }
+
+        async function setActiveBoard(boardId) {
+          if (!boardId) return;
+          try {
+            await loadBoard(boardId);
+            setStatus('Board loaded.', 'success');
+          } catch (error) {
+            setStatus(error.message, 'error');
+          }
+        }
+
+        async function createBoard() {
+          const title = window.prompt('Board title', 'New board');
+          if (title === null) return;
+          const description = window.prompt('Board description (optional)', '') ?? '';
+          try {
+            const created = await api('/api/boards/create', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ title, description }),
+            });
+            await loadBoards();
+            if (created.id) await setActiveBoard(created.id);
+            setStatus('Board created.', 'success');
+          } catch (error) {
+            setStatus(error.message, 'error');
+          }
+        }
+
+        async function renameBoard() {
+          if (!state.board) return;
+          const current = state.board.board;
+          const title = window.prompt('Board title', current.title);
+          if (title === null) return;
+          const description = window.prompt('Board description (optional)', current.description || '');
+          if (description === null) return;
+          try {
+            await api('/api/boards/update', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ id: current.id, title, description }),
+            });
+            await loadBoards();
+            await loadBoard(current.id);
+            setStatus('Board updated.', 'success');
+          } catch (error) {
+            setStatus(error.message, 'error');
+          }
+        }
+
+        async function deleteBoard() {
+          if (!state.board) return;
+          const current = state.board.board;
+          if (!window.confirm(`Delete "${current.title}" and all of its lists, cards, and images?`)) return;
+          try {
+            await api('/api/boards/delete', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ id: current.id }),
+            });
+            closeCardModal();
+            await loadBoards();
+            setStatus('Board deleted.', 'success');
+          } catch (error) {
+            setStatus(error.message, 'error');
+          }
+        }
+
+        async function createList() {
+          if (!state.board) return;
+          const title = window.prompt('List title', 'New list');
+          if (title === null) return;
+          try {
+            await api('/api/boards/lists/create', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ board_id: state.board.board.id, title }),
+            });
+            await loadBoards();
+            await loadBoard(state.board.board.id);
+            setStatus('List created.', 'success');
+          } catch (error) {
+            setStatus(error.message, 'error');
+          }
+        }
+
+        async function renameList(list) {
+          const title = window.prompt('List title', list.title);
+          if (title === null) return;
+          try {
+            await api('/api/boards/lists/update', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ id: list.id, title }),
+            });
+            await loadBoards();
+            await loadBoard(state.board.board.id);
+            setStatus('List updated.', 'success');
+          } catch (error) {
+            setStatus(error.message, 'error');
+          }
+        }
+
+        async function deleteList(list) {
+          if (!window.confirm(`Delete "${list.title}" and all of its cards?`)) return;
+          try {
+            await api('/api/boards/lists/delete', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ id: list.id }),
+            });
+            closeCardModal();
+            await loadBoards();
+            await loadBoard(state.board.board.id);
+            setStatus('List deleted.', 'success');
+          } catch (error) {
+            setStatus(error.message, 'error');
+          }
+        }
+
+        async function createCard(listId) {
+          const title = window.prompt('Card title', 'Untitled card');
+          if (title === null) return;
+          try {
+            const created = await api('/api/boards/cards/create', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ list_id: listId, title, markdown: '' }),
+            });
+            await loadBoards();
+            await loadBoard(state.board.board.id, { reopenCardId: created.id });
+            setStatus('Card created.', 'success');
+          } catch (error) {
+            setStatus(error.message, 'error');
+          }
+        }
+
+        function openCard(cardId) {
+          const found = cardById(cardId);
+          if (!found) return;
+          state.editingCardId = cardId;
+          cardModalTitleEl.textContent = found.card.title;
+          cardTitleInputEl.value = found.card.title || '';
+          cardMarkdownInputEl.value = found.card.markdown || '';
+          syncCardPreview();
+          renderModalImages(found.card.images || []);
+          cardModalEl.hidden = false;
+        }
+
+        function closeCardModal() {
+          state.editingCardId = '';
+          cardModalEl.hidden = true;
+        }
+
+        function syncCardPreview() {
+          cardPreviewEl.innerHTML = renderMarkdown(cardMarkdownInputEl.value || '');
+        }
+
+        function renderModalImages(images) {
+          modalImageGridEl.innerHTML = '';
+          if (!images.length) {
+            modalImageGridEl.appendChild(el('div', {
+              class: 'card-empty',
+              text: 'No images attached yet.',
+            }));
+            return;
+          }
+
+          images.forEach((image) => {
+            modalImageGridEl.appendChild(el('div', { class: 'image-card' }, [
+              el('img', {
+                src: image.data_url,
+                alt: image.alt_text || 'Card image',
+                loading: 'lazy',
+              }),
+              el('div', { class: 'image-meta' }, [
+                el('span', { class: 'muted', text: image.mime_type.replace('image/', '').toUpperCase() }),
+                el('button', {
+                  class: 'wt-btn wt-btn-danger',
+                  type: 'button',
+                  text: 'Remove',
+                  onclick: async () => {
+                    try {
+                      await api('/api/boards/cards/images/delete', {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify({ id: image.id }),
+                      });
+                      await loadBoards();
+                      await loadBoard(state.board.board.id, { reopenCardId: state.editingCardId });
+                      setStatus('Image removed.', 'success');
+                    } catch (error) {
+                      setStatus(error.message, 'error');
+                    }
+                  },
+                }),
+              ]),
+            ]));
+          });
+        }
+
+        async function saveCard() {
+          if (!state.editingCardId) return;
+          try {
+            await api('/api/boards/cards/update', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({
+                id: state.editingCardId,
+                title: cardTitleInputEl.value,
+                markdown: cardMarkdownInputEl.value,
+              }),
+            });
+            await loadBoards();
+            await loadBoard(state.board.board.id, { reopenCardId: state.editingCardId });
+            setStatus('Card saved.', 'success');
+          } catch (error) {
+            setStatus(error.message, 'error');
+          }
+        }
+
+        async function deleteCard() {
+          if (!state.editingCardId) return;
+          const found = cardById(state.editingCardId);
+          if (!found) return;
+          if (!window.confirm(`Delete "${found.card.title}"?`)) return;
+          try {
+            await api('/api/boards/cards/delete', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ id: state.editingCardId }),
+            });
+            closeCardModal();
+            await loadBoards();
+            await loadBoard(state.board.board.id);
+            setStatus('Card deleted.', 'success');
+          } catch (error) {
+            setStatus(error.message, 'error');
+          }
+        }
+
+        async function uploadImageToCard(cardId, file) {
+          if (!file) return;
+          if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+            throw new Error('Only PNG, JPEG, WEBP, GIF, and AVIF images are supported.');
+          }
+          if (file.size > MAX_IMAGE_BYTES) {
+            throw new Error('Images must be 1 MB or smaller.');
+          }
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('Could not read the dropped image.'));
+            reader.readAsDataURL(file);
+          });
+          await api('/api/boards/cards/images/add', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ card_id: cardId, data_url: dataUrl, alt_text: file.name || '' }),
+          });
+        }
+
+        async function handleDroppedFiles(cardId, files) {
+          if (!files || !files.length) return;
+          try {
+            await uploadImageToCard(cardId, files[0]);
+            await loadBoards();
+            await loadBoard(state.board.board.id, state.editingCardId ? { reopenCardId: state.editingCardId } : {});
+            setStatus('Image attached to card.', 'success');
+          } catch (error) {
+            setStatus(error.message, 'error');
+          }
+        }
+
+        function handleListDragOver(event, targetListId) {
+          if (!state.drag || state.drag.type !== 'list') return;
+          event.preventDefault();
+          const element = event.currentTarget;
+          const rect = element.getBoundingClientRect();
+          const placeAfter = event.clientX > rect.left + rect.width / 2;
+          clearListDragClass(element);
+          element.classList.add(placeAfter ? 'drag-target-after' : 'drag-target-before');
+        }
+
+        async function handleListDrop(event, targetListId) {
+          if (!state.drag || state.drag.type !== 'list') return;
+          event.preventDefault();
+          const element = event.currentTarget;
+          const rect = element.getBoundingClientRect();
+          const placeAfter = event.clientX > rect.left + rect.width / 2;
+          clearDragClasses();
+          const currentIds = state.board.lists.map((list) => list.id);
+          const nextIds = moveIdRelative(currentIds, state.drag.id, targetListId, placeAfter);
+          state.drag = null;
+          if (isSameOrder(currentIds, nextIds)) return;
+          try {
+            await api('/api/boards/lists/reorder', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ board_id: state.board.board.id, list_ids: nextIds }),
+            });
+            await loadBoards();
+            await loadBoard(state.board.board.id);
+            setStatus('Lists reordered.', 'success');
+          } catch (error) {
+            setStatus(error.message, 'error');
+          }
+        }
+
+        function handleCardDragOver(event, listId, cardId, cardEl) {
+          if (hasFileDrop(event)) {
+            event.preventDefault();
+            clearCardDragClass(cardEl);
+            cardEl.classList.add('file-target');
+            return;
+          }
+          if (!state.drag || state.drag.type !== 'card') return;
+          event.preventDefault();
+          const rect = cardEl.getBoundingClientRect();
+          const placeAfter = event.clientY > rect.top + rect.height / 2;
+          clearCardDragClass(cardEl);
+          cardEl.classList.add(placeAfter ? 'drag-target-after' : 'drag-target-before');
+        }
+
+        async function handleCardDrop(event, listId, cardId, cardEl) {
+          event.preventDefault();
+          clearCardDragClass(cardEl);
+          if (hasFileDrop(event)) {
+            await handleDroppedFiles(cardId, event.dataTransfer.files);
+            return;
+          }
+          if (!state.drag || state.drag.type !== 'card') return;
+
+          const rect = cardEl.getBoundingClientRect();
+          const placeAfter = event.clientY > rect.top + rect.height / 2;
+          const { id: draggedId, fromListId } = state.drag;
+          state.drag = null;
+          clearDragClasses();
+
+          const sourceList = listById(fromListId);
+          const destinationList = listById(listId);
+          if (!sourceList || !destinationList) return;
+
+          if (fromListId === listId) {
+            const currentIds = sourceList.cards.map((card) => card.id);
+            const nextIds = moveIdRelative(currentIds, draggedId, cardId, placeAfter);
+            if (isSameOrder(currentIds, nextIds)) return;
+            try {
+              await api('/api/boards/cards/move', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                  card_id: draggedId,
+                  to_list_id: listId,
+                  destination_card_ids: nextIds,
+                }),
+              });
+              await loadBoards();
+              await loadBoard(state.board.board.id);
+              setStatus('Cards reordered.', 'success');
+            } catch (error) {
+              setStatus(error.message, 'error');
+            }
+            return;
+          }
+
+          const sourceIds = sourceList.cards.map((card) => card.id).filter((id) => id !== draggedId);
+          const destinationIds = moveIdRelative(destinationList.cards.map((card) => card.id), draggedId, cardId, placeAfter);
+          try {
+            await api('/api/boards/cards/move', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({
+                card_id: draggedId,
+                to_list_id: listId,
+                source_card_ids: sourceIds,
+                destination_card_ids: destinationIds,
+              }),
+            });
+            await loadBoards();
+            await loadBoard(state.board.board.id);
+            setStatus('Card moved.', 'success');
+          } catch (error) {
+            setStatus(error.message, 'error');
+          }
+        }
+
+        function handleCardStackDragOver(event, listId) {
+          if (!state.drag || state.drag.type !== 'card') return;
+          event.preventDefault();
+          event.currentTarget.classList.add('drag-target');
+        }
+
+        async function handleCardStackDrop(event, listId) {
+          event.preventDefault();
+          clearStackDragClass(event.currentTarget);
+          if (!state.drag || state.drag.type !== 'card') return;
+          const { id: draggedId, fromListId } = state.drag;
+          state.drag = null;
+          clearDragClasses();
+
+          const sourceList = listById(fromListId);
+          const destinationList = listById(listId);
+          if (!sourceList || !destinationList) return;
+
+          const destinationIds = destinationList.cards.map((card) => card.id).filter((id) => id !== draggedId);
+          destinationIds.push(draggedId);
+
+          if (fromListId === listId) {
+            const currentIds = sourceList.cards.map((card) => card.id);
+            if (isSameOrder(currentIds, destinationIds)) return;
+            try {
+              await api('/api/boards/cards/move', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                  card_id: draggedId,
+                  to_list_id: listId,
+                  destination_card_ids: destinationIds,
+                }),
+              });
+              await loadBoards();
+              await loadBoard(state.board.board.id);
+              setStatus('Cards reordered.', 'success');
+            } catch (error) {
+              setStatus(error.message, 'error');
+            }
+            return;
+          }
+
+          const sourceIds = sourceList.cards.map((card) => card.id).filter((id) => id !== draggedId);
+          try {
+            await api('/api/boards/cards/move', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({
+                card_id: draggedId,
+                to_list_id: listId,
+                source_card_ids: sourceIds,
+                destination_card_ids: destinationIds,
+              }),
+            });
+            await loadBoards();
+            await loadBoard(state.board.board.id);
+            setStatus('Card moved.', 'success');
+          } catch (error) {
+            setStatus(error.message, 'error');
+          }
+        }
+
+        function bindStaticEvents() {
+          document.getElementById('createBoardBtn').addEventListener('click', createBoard);
+          document.getElementById('refreshBoardsBtn').addEventListener('click', async () => {
+            try {
+              await loadBoards();
+              setStatus('Boards refreshed.', 'success');
+            } catch (error) {
+              setStatus(error.message, 'error');
+            }
+          });
+          document.getElementById('emptyCreateBoardBtn').addEventListener('click', createBoard);
+          document.getElementById('renameBoardBtn').addEventListener('click', renameBoard);
+          document.getElementById('deleteBoardBtn').addEventListener('click', deleteBoard);
+          document.getElementById('addListBtn').addEventListener('click', createList);
+          document.getElementById('saveCardBtn').addEventListener('click', saveCard);
+          document.getElementById('deleteCardBtn').addEventListener('click', deleteCard);
+          document.getElementById('closeCardModalBtn').addEventListener('click', closeCardModal);
+          cardModalEl.addEventListener('click', (event) => {
+            if (event.target === cardModalEl) closeCardModal();
+          });
+          cardMarkdownInputEl.addEventListener('input', syncCardPreview);
+          cardTitleInputEl.addEventListener('input', () => {
+            cardModalTitleEl.textContent = cardTitleInputEl.value || 'Edit card';
+          });
+          modalUploadZoneEl.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            modalUploadZoneEl.classList.add('active');
+          });
+          modalUploadZoneEl.addEventListener('dragleave', () => {
+            modalUploadZoneEl.classList.remove('active');
+          });
+          modalUploadZoneEl.addEventListener('drop', async (event) => {
+            event.preventDefault();
+            modalUploadZoneEl.classList.remove('active');
+            if (!state.editingCardId) return;
+            await handleDroppedFiles(state.editingCardId, event.dataTransfer.files);
+          });
+        }
+
+        async function boot() {
+          bindStaticEvents();
+          renderAll();
+          await refreshAuth();
+          setStatus('Boards ready.');
+        }
+
+        function startBoot() {
+          requestAnimationFrame(() => {
+            boot().catch((error) => {
+              setStatus(error instanceof Error ? error.message : 'Failed to load boards.', 'error');
+            });
+          });
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', startBoot, { once: true });
+        } else {
+          startBoot();
+        }
+      })();
+    </script>
+  </body>
+</html>

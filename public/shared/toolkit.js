@@ -18,6 +18,7 @@
     { id: 'llm-cost', title: 'LLM Cost', href: '/llm-cost' },
     { id: 'tiff-viewer', title: 'TIFF Viewer', href: '/tiff-viewer' },
     { id: 'todo', title: 'To-Do', href: '/todo' },
+    { id: 'boards', title: 'Boards', href: '/boards' },
     { id: 'goals', title: 'Goals', href: '/goals' },
     { id: 'actuary', title: 'Actuary', href: '/actuary' },
   ];
