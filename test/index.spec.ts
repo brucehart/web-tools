@@ -285,6 +285,18 @@ describe('Tools index and Markdown viewer', () => {
     const json = await response.json();
     expect(json.error).toBe('url required');
   });
+
+  it('uses the request host for Google OAuth callback when needed (unit)', async () => {
+    const request = new IncomingRequest('https://tools.example.com/auth/google/login?returnTo=%2Fboards');
+    const ctx = createExecutionContext();
+    const response = await worker.fetch(request, env, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(response.status).toBe(302);
+    const location = response.headers.get('location') || '';
+    const oauthUrl = new URL(location);
+    expect(oauthUrl.origin).toBe('https://accounts.google.com');
+    expect(oauthUrl.searchParams.get('redirect_uri')).toBe('https://tools.example.com/auth/google/callback');
+  });
 });
 
 describe('Pretty routes and Pages API', () => {

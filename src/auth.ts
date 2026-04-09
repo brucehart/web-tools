@@ -30,6 +30,39 @@ export function isAllowedEmail(email?: string | null): boolean {
   return (email || '').toLowerCase() === 'bruce.hart@gmail.com';
 }
 
+function buildRequestCallbackUrl(url: URL): string {
+  return new URL('/auth/google/callback', url.origin).toString();
+}
+
+function resolveOAuthRedirectUrl(url: URL, env: Bindings): string | null {
+  const requestCallback = buildRequestCallbackUrl(url);
+  const configured = (env.OAUTH_REDIRECT_URL || '').trim();
+  if (!configured) return requestCallback;
+
+  try {
+    const configuredUrl = new URL(configured);
+    if (configuredUrl.origin === url.origin) return configuredUrl.toString();
+    if (configuredUrl.pathname !== '/auth/google/callback') return configuredUrl.toString();
+    return requestCallback;
+  } catch {
+    return requestCallback;
+  }
+}
+
+function normalizeRedirectUri(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    const parsed = new URL(value.trim());
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
+    if (parsed.pathname !== '/auth/google/callback') return null;
+    parsed.search = '';
+    parsed.hash = '';
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
 function normalizeReturnTo(value: string | null): string | null {
   if (!value) return null;
   const trimmed = value.trim();
@@ -73,7 +106,7 @@ export async function handleAuthRoutes(
 
   if (path === '/auth/google/login' && request.method === 'GET') {
     const clientId = env.GOOGLE_CLIENT_ID;
-    const redirect = env.OAUTH_REDIRECT_URL;
+    const redirect = resolveOAuthRedirectUrl(url, env);
     if (!clientId || !redirect) return badRequest('Google OAuth not configured', 500);
     // Support both ?returnTo=... (newer) and ?next=... (older/tools built on the previous convention).
     const returnTo = normalizeReturnTo(url.searchParams.get('returnTo') || url.searchParams.get('next'));
@@ -86,6 +119,13 @@ export async function handleAuthRoutes(
     oauthUrl.searchParams.set('state', state);
     const res = new Response(null, { status: 302, headers: { location: oauthUrl.toString() } });
     setCookie(res, 'oauth_state', state, {
+      path: '/',
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Lax',
+      maxAge: 600,
+    });
+    setCookie(res, 'oauth_redirect_uri', redirect, {
       path: '/',
       httpOnly: true,
       secure: true,
@@ -109,11 +149,12 @@ export async function handleAuthRoutes(
   if (path === '/auth/google/callback' && request.method === 'GET') {
     const state = url.searchParams.get('state') || '';
     const code = url.searchParams.get('code') || '';
-    const cookieState = getCookies(request)['oauth_state'];
+    const cookies = getCookies(request);
+    const cookieState = cookies['oauth_state'];
     if (!code || !state || !cookieState || state !== cookieState) return badRequest('Invalid state');
     const clientId = env.GOOGLE_CLIENT_ID || '';
     const clientSecret = (env as any).GOOGLE_CLIENT_SECRET as string | undefined;
-    const redirect = env.OAUTH_REDIRECT_URL || '';
+    const redirect = normalizeRedirectUri(cookies['oauth_redirect_uri']) || resolveOAuthRedirectUrl(url, env) || '';
     if (!clientId || !clientSecret || !redirect) return badRequest('OAuth not configured', 500);
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -150,6 +191,7 @@ export async function handleAuthRoutes(
     const returnTo = normalizeReturnTo(getCookies(request)['oauth_return_to']);
     const res = new Response(null, { status: 302, headers: { location: returnTo || '/pastebin' } });
     setCookie(res, 'oauth_state', '', { path: '/', maxAge: 0 });
+    setCookie(res, 'oauth_redirect_uri', '', { path: '/', maxAge: 0 });
     setCookie(res, 'oauth_return_to', '', { path: '/', maxAge: 0 });
     setCookie(res, env.SESSION_COOKIE_NAME || 'wt_session', token, {
       path: '/',
