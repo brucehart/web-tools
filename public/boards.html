@@ -754,7 +754,6 @@
         };
 
         const boardListEl = document.getElementById('boardList');
-        const authAreaEl = document.getElementById('authArea');
         const authPanelEl = document.getElementById('authPanel');
         const emptyPanelEl = document.getElementById('emptyPanel');
         const boardPaneEl = document.getElementById('boardPane');
@@ -762,7 +761,6 @@
         const boardTitleEl = document.getElementById('boardTitle');
         const boardDescriptionEl = document.getElementById('boardDescription');
         const statusBarEl = document.getElementById('statusBar');
-        const modePillEl = document.getElementById('modePill');
         const cardModalEl = document.getElementById('cardModal');
         const cardModalTitleEl = document.getElementById('cardModalTitle');
         const cardTitleInputEl = document.getElementById('cardTitleInput');
@@ -815,6 +813,14 @@
           return sanitizeMarkdown(markdown || '');
         }
 
+        function getAuthAreaEl() {
+          return document.getElementById('authArea');
+        }
+
+        function getModePillEl() {
+          return document.getElementById('modePill');
+        }
+
         function formatBoardMeta(board) {
           const pieces = [];
           pieces.push(`${board.list_count || 0} list${board.list_count === 1 ? '' : 's'}`);
@@ -841,6 +847,10 @@
         }
 
         function renderAuthArea() {
+          const authAreaEl = getAuthAreaEl();
+          const modePillEl = getModePillEl();
+          if (!authAreaEl || !modePillEl) return;
+
           authAreaEl.innerHTML = '';
           if (!state.auth.loggedIn) {
             const next = encodeURIComponent(location.pathname + location.search);
@@ -1642,9 +1652,19 @@
           setStatus('Boards ready.');
         }
 
-        boot().catch((error) => {
-          setStatus(error instanceof Error ? error.message : 'Failed to load boards.', 'error');
-        });
+        function startBoot() {
+          requestAnimationFrame(() => {
+            boot().catch((error) => {
+              setStatus(error instanceof Error ? error.message : 'Failed to load boards.', 'error');
+            });
+          });
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', startBoot, { once: true });
+        } else {
+          startBoot();
+        }
       })();
     </script>
   </body>
