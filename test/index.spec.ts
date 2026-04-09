@@ -24,6 +24,7 @@ describe('Tools index and Markdown viewer', () => {
     expect(body).toContain('href="/area-code"');
     expect(body).toContain('href="/format-tools"');
     expect(body).toContain('href="/csv-editor"');
+    expect(body).toContain('href="/boards"');
   });
 
   it('serves markdown viewer at /markdown (unit)', async () => {
@@ -298,8 +299,28 @@ describe('Pretty routes and Pages API', () => {
     expect(body).toContain('<title>To-Do List</title>');
   });
 
+  it('serves boards at /boards (unit)', async () => {
+    const request = new IncomingRequest('http://example.com/boards');
+    const ctx = createExecutionContext();
+    const response = await worker.fetch(request, env, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    const body = await response.text();
+    expect(body).toContain('<title>Boards</title>');
+    expect(body).toContain('id="boardCanvas"');
+  });
+
   it('rejects unauthenticated pages list', async () => {
     const request = new IncomingRequest('http://example.com/api/pages/list?tool=markdown');
+    const ctx = createExecutionContext();
+    const response = await worker.fetch(request, env, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(response.status).toBe(401);
+  });
+
+  it('rejects unauthenticated boards list', async () => {
+    const request = new IncomingRequest('http://example.com/api/boards/list');
     const ctx = createExecutionContext();
     const response = await worker.fetch(request, env, ctx);
     await waitOnExecutionContext(ctx);
@@ -354,5 +375,169 @@ describe('Pretty routes and Pages API', () => {
     expect(page.id).toBe(created.id);
     expect(page.tool).toBe('markdown');
     expect(page.content).toBe('# Hello');
+  });
+
+  it('creates, reorders, and protects boards data (unit)', async () => {
+    (env as any).INTERNAL_TEST_KEY = 'k';
+
+    const seedOneReq = new IncomingRequest('http://example.com/api/_internal/seed', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-internal-key': 'k' },
+      body: JSON.stringify({ email: 'boards-one@example.com', name: 'Boards One' }),
+    });
+    const seedOneCtx = createExecutionContext();
+    const seedOneRes = await worker.fetch(seedOneReq, env, seedOneCtx);
+    await waitOnExecutionContext(seedOneCtx);
+    expect(seedOneRes.status).toBe(200);
+    const userOne = await seedOneRes.json<any>();
+    const tokenOne = String(userOne.token || '');
+
+    const seedTwoReq = new IncomingRequest('http://example.com/api/_internal/seed', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-internal-key': 'k' },
+      body: JSON.stringify({ email: 'boards-two@example.com', name: 'Boards Two' }),
+    });
+    const seedTwoCtx = createExecutionContext();
+    const seedTwoRes = await worker.fetch(seedTwoReq, env, seedTwoCtx);
+    await waitOnExecutionContext(seedTwoCtx);
+    expect(seedTwoRes.status).toBe(200);
+    const userTwo = await seedTwoRes.json<any>();
+    const tokenTwo = String(userTwo.token || '');
+
+    const createBoardReq = new IncomingRequest('http://example.com/api/boards/create', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie: `wt_session=${tokenOne}` },
+      body: JSON.stringify({ title: 'Project Alpha', description: 'Initial board' }),
+    });
+    const createBoardCtx = createExecutionContext();
+    const createBoardRes = await worker.fetch(createBoardReq, env, createBoardCtx);
+    await waitOnExecutionContext(createBoardCtx);
+    expect(createBoardRes.status).toBe(200);
+    const createdBoard = await createBoardRes.json<any>();
+    expect(typeof createdBoard.id).toBe('string');
+
+    const listBoardsReq = new IncomingRequest('http://example.com/api/boards/list', {
+      headers: { cookie: `wt_session=${tokenOne}` },
+    });
+    const listBoardsCtx = createExecutionContext();
+    const listBoardsRes = await worker.fetch(listBoardsReq, env, listBoardsCtx);
+    await waitOnExecutionContext(listBoardsCtx);
+    expect(listBoardsRes.status).toBe(200);
+    const boards = await listBoardsRes.json<any[]>();
+    expect(boards.some((board) => board.id === createdBoard.id)).toBe(true);
+
+    const createTodoListReq = new IncomingRequest('http://example.com/api/boards/lists/create', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie: `wt_session=${tokenOne}` },
+      body: JSON.stringify({ board_id: createdBoard.id, title: 'To do' }),
+    });
+    const createTodoListCtx = createExecutionContext();
+    const createTodoListRes = await worker.fetch(createTodoListReq, env, createTodoListCtx);
+    await waitOnExecutionContext(createTodoListCtx);
+    expect(createTodoListRes.status).toBe(200);
+    const todoList = await createTodoListRes.json<any>();
+
+    const createDoingListReq = new IncomingRequest('http://example.com/api/boards/lists/create', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie: `wt_session=${tokenOne}` },
+      body: JSON.stringify({ board_id: createdBoard.id, title: 'Doing' }),
+    });
+    const createDoingListCtx = createExecutionContext();
+    const createDoingListRes = await worker.fetch(createDoingListReq, env, createDoingListCtx);
+    await waitOnExecutionContext(createDoingListCtx);
+    expect(createDoingListRes.status).toBe(200);
+    const doingList = await createDoingListRes.json<any>();
+
+    const createCardReq = new IncomingRequest('http://example.com/api/boards/cards/create', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie: `wt_session=${tokenOne}` },
+      body: JSON.stringify({ list_id: todoList.id, title: 'Write spec', markdown: '# Ready' }),
+    });
+    const createCardCtx = createExecutionContext();
+    const createCardRes = await worker.fetch(createCardReq, env, createCardCtx);
+    await waitOnExecutionContext(createCardCtx);
+    expect(createCardRes.status).toBe(200);
+    const cardOne = await createCardRes.json<any>();
+
+    const createCardTwoReq = new IncomingRequest('http://example.com/api/boards/cards/create', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie: `wt_session=${tokenOne}` },
+      body: JSON.stringify({ list_id: todoList.id, title: 'Ship feature', markdown: 'Needs polish' }),
+    });
+    const createCardTwoCtx = createExecutionContext();
+    const createCardTwoRes = await worker.fetch(createCardTwoReq, env, createCardTwoCtx);
+    await waitOnExecutionContext(createCardTwoCtx);
+    expect(createCardTwoRes.status).toBe(200);
+    const cardTwo = await createCardTwoRes.json<any>();
+
+    const moveCardReq = new IncomingRequest('http://example.com/api/boards/cards/move', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie: `wt_session=${tokenOne}` },
+      body: JSON.stringify({
+        card_id: cardOne.id,
+        to_list_id: doingList.id,
+        source_card_ids: [cardTwo.id],
+        destination_card_ids: [cardOne.id],
+      }),
+    });
+    const moveCardCtx = createExecutionContext();
+    const moveCardRes = await worker.fetch(moveCardReq, env, moveCardCtx);
+    await waitOnExecutionContext(moveCardCtx);
+    expect(moveCardRes.status).toBe(200);
+
+    const addImageReq = new IncomingRequest('http://example.com/api/boards/cards/images/add', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie: `wt_session=${tokenOne}` },
+      body: JSON.stringify({
+        card_id: cardOne.id,
+        data_url: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9s2m30QAAAAASUVORK5CYII=',
+        alt_text: 'pixel',
+      }),
+    });
+    const addImageCtx = createExecutionContext();
+    const addImageRes = await worker.fetch(addImageReq, env, addImageCtx);
+    await waitOnExecutionContext(addImageCtx);
+    expect(addImageRes.status).toBe(200);
+    const addedImage = await addImageRes.json<any>();
+    expect(typeof addedImage.id).toBe('string');
+
+    const oversizedImageReq = new IncomingRequest('http://example.com/api/boards/cards/images/add', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie: `wt_session=${tokenOne}` },
+      body: JSON.stringify({
+        card_id: cardOne.id,
+        data_url: 'data:image/png;base64,' + 'A'.repeat(1_500_000),
+      }),
+    });
+    const oversizedImageCtx = createExecutionContext();
+    const oversizedImageRes = await worker.fetch(oversizedImageReq, env, oversizedImageCtx);
+    await waitOnExecutionContext(oversizedImageCtx);
+    expect(oversizedImageRes.status).toBe(400);
+
+    const getBoardReq = new IncomingRequest(`http://example.com/api/boards/get?id=${encodeURIComponent(createdBoard.id)}`, {
+      headers: { cookie: `wt_session=${tokenOne}` },
+    });
+    const getBoardCtx = createExecutionContext();
+    const getBoardRes = await worker.fetch(getBoardReq, env, getBoardCtx);
+    await waitOnExecutionContext(getBoardCtx);
+    expect(getBoardRes.status).toBe(200);
+    const hydratedBoard = await getBoardRes.json<any>();
+    expect(hydratedBoard.board.id).toBe(createdBoard.id);
+    expect(hydratedBoard.lists).toHaveLength(2);
+    const hydratedDoing = hydratedBoard.lists.find((list) => list.id === doingList.id);
+    const hydratedTodo = hydratedBoard.lists.find((list) => list.id === todoList.id);
+    expect(hydratedDoing.cards).toHaveLength(1);
+    expect(hydratedDoing.cards[0].id).toBe(cardOne.id);
+    expect(hydratedDoing.cards[0].images).toHaveLength(1);
+    expect(hydratedTodo.cards).toHaveLength(1);
+    expect(hydratedTodo.cards[0].id).toBe(cardTwo.id);
+
+    const forbiddenGetReq = new IncomingRequest(`http://example.com/api/boards/get?id=${encodeURIComponent(createdBoard.id)}`, {
+      headers: { cookie: `wt_session=${tokenTwo}` },
+    });
+    const forbiddenGetCtx = createExecutionContext();
+    const forbiddenGetRes = await worker.fetch(forbiddenGetReq, env, forbiddenGetCtx);
+    await waitOnExecutionContext(forbiddenGetCtx);
+    expect(forbiddenGetRes.status).toBe(404);
   });
 });

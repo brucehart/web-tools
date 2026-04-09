@@ -4,6 +4,7 @@ import { handlePagesApi } from './pages';
 import { handlePastebinApi, handlePastebinPage } from './pastebin';
 import { handleGoalApi } from './goals';
 import { handleTodoApi } from './todo';
+import { handleBoardsApi } from './boards';
 import { handleTranscriptApi } from './routes/transcript';
 import { serveStatic } from './static';
 import type { Bindings, WorkerExport } from './types';
@@ -30,6 +31,9 @@ export default {
 
     const todoApiResponse = await handleTodoApi(request, bindings, url);
     if (todoApiResponse) return todoApiResponse;
+
+    const boardsApiResponse = await handleBoardsApi(request, bindings, url);
+    if (boardsApiResponse) return boardsApiResponse;
 
     const transcriptResponse = await handleTranscriptApi(request, bindings, url);
     if (transcriptResponse) return transcriptResponse;

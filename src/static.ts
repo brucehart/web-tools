@@ -17,6 +17,8 @@ const PRETTY_ROUTES: Record<string, string> = {
   '/csv-editor/': '/csv-editor.html',
   '/todo': '/todo.html',
   '/todo/': '/todo.html',
+  '/boards': '/boards.html',
+  '/boards/': '/boards.html',
   '/date': '/date.html',
   '/date/': '/date.html',
   '/llm-cost': '/llm-cost.html',

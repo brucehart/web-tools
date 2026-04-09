@@ -32,6 +32,50 @@ async function ensureSchema(env: Bindings): Promise<void> {
       updated_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
     )
   `).run();
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS boards (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+      updated_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    )
+  `).run();
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS board_lists (
+      id TEXT PRIMARY KEY,
+      board_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+      updated_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    )
+  `).run();
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS board_cards (
+      id TEXT PRIMARY KEY,
+      board_id TEXT NOT NULL,
+      list_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      markdown TEXT NOT NULL DEFAULT '',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+      updated_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    )
+  `).run();
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS card_images (
+      id TEXT PRIMARY KEY,
+      card_id TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      data_url TEXT NOT NULL,
+      alt_text TEXT,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    )
+  `).run();
 }
 
 export async function handleInternalTestRoutes(request: Request, env: Bindings, url: URL): Promise<HandlerResult> {
@@ -56,4 +100,3 @@ export async function handleInternalTestRoutes(request: Request, env: Bindings, 
 
   return json({ userId, token });
 }
-
