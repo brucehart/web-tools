@@ -53,6 +53,11 @@ A Cloudflare Worker that serves a suite of browser-based developer and utility t
   - Export CSV with comma, semicolon, or tab delimiters, or copy TSV for Sheets/Excel.
   - Persists the grid in `localStorage` and warns on large datasets.
 
+- Boards (`/boards`)
+  - Signed-in, D1-backed Trello-style boards with draggable lists and cards.
+  - Cards support Markdown notes plus up to three attached images.
+  - Includes inline editing for board and list names, card detail modals, and cross-device sync.
+
 - To-Do List (`/todo`)
   - Signed-in, D1-backed task manager with priorities, categories, due dates, and descriptions.
   - Stats cards plus filters for status, priority, and category.
@@ -104,6 +109,7 @@ All tools use the shared header/theme assets in `public/shared`, and the home pa
 - `/url-encode-decode` - URL Encode/Decode.
 - `/format-tools` - Data Format Converter.
 - `/csv-editor` - CSV Viewer & Editor.
+- `/boards` - Boards.
 - `/todo` - To-Do List.
 - `/goals` - Daily Goal Tracker.
 - `/date` - Date Calculator.
@@ -121,6 +127,10 @@ All tools use the shared header/theme assets in `public/shared`, and the home pa
 - `/auth/google/callback` - Google OAuth callback.
 - `/api/pastebin/create`, `/api/pastebin/mine`, `/api/pastebin/public`, `/api/pastebin/get`, `/api/pastebin/delete`
 - `/api/pages/create`, `/api/pages/list`, `/api/pages/get`, `/api/pages/update`, `/api/pages/delete`
+- `/api/boards/list`, `/api/boards/create`, `/api/boards/get`, `/api/boards/update`, `/api/boards/delete`
+- `/api/boards/lists/create`, `/api/boards/lists/update`, `/api/boards/lists/delete`, `/api/boards/lists/reorder`
+- `/api/boards/cards/create`, `/api/boards/cards/update`, `/api/boards/cards/delete`, `/api/boards/cards/reorder`, `/api/boards/cards/move`
+- `/api/boards/cards/images/add`, `/api/boards/cards/images/delete`
 - `/api/todo/create`, `/api/todo/list`, `/api/todo/get`, `/api/todo/update`, `/api/todo/toggle`, `/api/todo/delete`
 - `/api/goals/create`, `/api/goals/list`, `/api/goals/delete`, `/api/goals/entry`
 - `/api/yt-transcript`
@@ -131,14 +141,16 @@ All tools use the shared header/theme assets in `public/shared`, and the home pa
 - `src/index.ts` - Worker entry; dispatches auth, API, dynamic paste, and static tool routes.
 - `src/static.ts` - pretty-route mapping for all HTML tool pages in `public/`.
 - `src/auth.ts` - Google OAuth, session lookup, and logout handling.
+- `src/boards.ts` - Boards API for boards, lists, cards, drag/drop ordering, and image attachments.
 - `src/pastebin.ts` - Pastebin API and `/pastebin/p/:id` page handling.
 - `src/pages.ts` - D1-backed saved pages for Markdown Viewer and Euler Preview.
 - `src/todo.ts` - To-Do List API.
 - `src/goals.ts` - Daily Goal Tracker API.
 - `src/routes/transcript.ts` and `src/yt-transcript.ts` - YouTube transcript endpoint and fetch logic.
 - `public/` - one HTML page per tool, plus `public/shared/` for shared UI assets.
+- `public/vendor/dompurify/purify.min.js` - bundled DOMPurify used by the Boards tool.
 - `public/vendor/utif.js` - bundled TIFF decoder used by the viewer.
-- `migrations/0001_pastebin.sql` through `migrations/0006_tool_pages.sql` - D1 schema for users/sessions, pastebin, todos, goals, and synced editor pages.
+- `migrations/0001_pastebin.sql` through `migrations/0007_boards.sql` - D1 schema for users/sessions, pastebin, todos, goals, synced editor pages, and boards.
 - `test/index.spec.ts` - worker tests with Vitest and the Cloudflare Workers pool.
 - `wrangler.jsonc` - Wrangler config and bindings.
 
@@ -158,6 +170,7 @@ The following features require D1 and Google OAuth:
 
 - Pastebin account storage and private/unlisted sharing
 - Markdown Viewer and Euler Preview synced pages
+- Boards
 - To-Do List
 - Daily Goal Tracker
 
