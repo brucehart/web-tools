@@ -10,93 +10,173 @@
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
     <style>
       :root {
-        --boards-accent: #d97706;
-        --boards-accent-soft: rgba(217, 119, 6, 0.14);
-        --boards-accent-2: #0f766e;
-        --boards-ink-soft: rgba(15, 23, 42, 0.68);
-        --boards-card-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+        --boards-accent: #0f7f99;
+        --boards-accent-soft: rgba(15, 127, 153, 0.14);
+        --boards-bg-top: #0d6d7d;
+        --boards-bg-bottom: #17a7c6;
+        --boards-toolbar-text: #effcff;
+        --boards-toolbar-muted: rgba(239, 252, 255, 0.76);
+        --boards-ink: #163646;
+        --boards-ink-soft: rgba(22, 54, 70, 0.72);
+        --boards-list-bg: rgba(232, 238, 243, 0.98);
+        --boards-list-border: rgba(22, 54, 70, 0.14);
+        --boards-card-shadow: 0 2px 10px rgba(4, 24, 32, 0.14);
       }
 
       [data-theme='dark'] {
-        --boards-accent: #fb923c;
-        --boards-accent-soft: rgba(251, 146, 60, 0.18);
-        --boards-accent-2: #2dd4bf;
-        --boards-ink-soft: rgba(226, 232, 240, 0.72);
-        --boards-card-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        --boards-accent: #56d4eb;
+        --boards-accent-soft: rgba(86, 212, 235, 0.18);
+        --boards-bg-top: #083f50;
+        --boards-bg-bottom: #0f6b85;
+        --boards-toolbar-text: #edfafd;
+        --boards-toolbar-muted: rgba(237, 250, 253, 0.72);
+        --boards-ink: #e6f5fa;
+        --boards-ink-soft: rgba(230, 245, 250, 0.76);
+        --boards-list-bg: rgba(14, 27, 39, 0.9);
+        --boards-list-border: rgba(230, 245, 250, 0.1);
+        --boards-card-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
       }
 
       * {
         box-sizing: border-box;
       }
 
-      body {
-        background: transparent;
+      body.wt[data-wt-tool='boards'] {
+        color: var(--boards-ink);
+        background:
+          linear-gradient(180deg, var(--boards-bg-top) 0 72px, var(--boards-bg-bottom) 72px 100%);
+      }
+
+      body.wt[data-wt-tool='boards'] .wt-header {
+        border-bottom-color: rgba(255, 255, 255, 0.14);
+        background: rgba(6, 84, 97, 0.82);
+        color: var(--boards-toolbar-text);
+      }
+
+      body.wt[data-wt-tool='boards'] .wt-logo-link,
+      body.wt[data-wt-tool='boards'] .wt-header .wt-btn,
+      body.wt[data-wt-tool='boards'] .wt-header .wt-select {
+        border-color: rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--boards-toolbar-text);
+      }
+
+      body.wt[data-wt-tool='boards'] .wt-header .wt-btn:hover,
+      body.wt[data-wt-tool='boards'] .wt-logo-link:hover {
+        border-color: rgba(255, 255, 255, 0.24);
+        background: rgba(255, 255, 255, 0.14);
+      }
+
+      body.wt[data-wt-tool='boards'] .wt-header .wt-btn.wt-btn-primary {
+        background: rgba(255, 255, 255, 0.16);
+        border-color: rgba(255, 255, 255, 0.24);
+        box-shadow: none;
+      }
+
+      body.wt[data-wt-tool='boards'] .wt-toolname,
+      body.wt[data-wt-tool='boards'] .wt-header #authArea span {
+        color: var(--boards-toolbar-muted);
+      }
+
+      body.wt[data-wt-tool='boards'] .wt-toolname {
+        border-left-color: rgba(255, 255, 255, 0.14);
+      }
+
+      body.wt[data-wt-tool='boards'] .wt-header .pill {
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--boards-toolbar-text);
       }
 
       .boards-page {
         display: grid;
-        grid-template-columns: 300px minmax(0, 1fr);
-        gap: 18px;
-        min-height: calc(100vh - 110px);
+        grid-template-columns: 248px minmax(0, 1fr);
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        min-height: calc(100vh - 63px);
       }
 
-      .panel {
-        border: 1px solid var(--wt-border);
-        border-radius: 24px;
-        background:
-          linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 38%),
-          var(--wt-panel-solid);
-        box-shadow: var(--boards-card-shadow);
+      .eyebrow {
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 0.72rem;
+        color: var(--boards-toolbar-muted);
+        font-weight: 700;
       }
 
-      .sidebar {
-        padding: 18px;
+      .boards-rail {
         display: flex;
         flex-direction: column;
-        gap: 16px;
-        min-height: 720px;
+        gap: 14px;
+        padding: 18px 14px 18px 18px;
+        min-width: 0;
+        background: linear-gradient(180deg, rgba(5, 70, 82, 0.42), rgba(5, 70, 82, 0.24));
+        border-right: 1px solid rgba(255, 255, 255, 0.16);
       }
 
-      .sidebar-head {
+      .rail-head {
         display: flex;
         flex-direction: column;
         gap: 12px;
       }
 
-      .eyebrow {
-        text-transform: uppercase;
-        letter-spacing: 0.16em;
-        font-size: 0.72rem;
-        color: var(--boards-accent);
-        font-weight: 800;
-      }
-
-      .sidebar h1 {
+      .rail-head h1 {
         margin: 0;
-        font-size: 2rem;
+        font-size: 1.6rem;
         line-height: 1;
-        letter-spacing: -0.04em;
+        letter-spacing: -0.03em;
+        color: var(--boards-toolbar-text);
       }
 
-      .sidebar-copy {
-        margin: 0;
-        color: var(--boards-ink-soft);
-      }
-
-      .sidebar-actions {
+      .rail-actions {
         display: flex;
-        gap: 10px;
+        gap: 8px;
       }
 
-      .sidebar-actions .wt-btn-primary {
-        background: linear-gradient(135deg, var(--boards-accent), var(--boards-accent-2));
-        border-color: rgba(217, 119, 6, 0.4);
+      .rail-actions .wt-btn,
+      .board-toolbar .wt-btn,
+      .auth-panel .wt-btn,
+      .empty-panel .wt-btn {
+        border-color: rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--boards-toolbar-text);
+      }
+
+      .rail-actions .wt-btn:hover,
+      .board-toolbar .wt-btn:hover,
+      .auth-panel .wt-btn:hover,
+      .empty-panel .wt-btn:hover {
+        border-color: rgba(255, 255, 255, 0.24);
+        background: rgba(255, 255, 255, 0.14);
+      }
+
+      .rail-actions .wt-btn {
+        flex: 1;
+        justify-content: center;
+        padding-inline: 12px;
+      }
+
+      .rail-actions .wt-btn.wt-btn-primary,
+      .board-toolbar .wt-btn.wt-btn-primary,
+      .auth-panel .wt-btn.wt-btn-primary,
+      .empty-panel .wt-btn.wt-btn-primary {
+        background: rgba(255, 255, 255, 0.16);
+        border-color: rgba(255, 255, 255, 0.24);
+        box-shadow: none;
+      }
+
+      .board-toolbar .wt-btn.wt-btn-danger {
+        background: rgba(136, 30, 52, 0.34);
+        border-color: rgba(255, 210, 220, 0.2);
       }
 
       .board-list {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        flex: 1;
+        gap: 8px;
         overflow: auto;
         padding-right: 4px;
       }
@@ -107,154 +187,205 @@
         width: 100%;
         text-align: left;
         font: inherit;
-        color: inherit;
-        border: 1px solid var(--wt-border);
-        background: rgba(255, 255, 255, 0.04);
-        border-radius: 18px;
-        padding: 14px 15px;
+        color: var(--boards-toolbar-text);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 14px;
+        padding: 12px 13px;
         cursor: pointer;
-        transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+        transition: border-color 0.15s ease, background-color 0.15s ease;
       }
 
       .board-item:hover {
-        transform: translateY(-1px);
-        border-color: rgba(217, 119, 6, 0.35);
+        border-color: rgba(255, 255, 255, 0.26);
+        background: rgba(255, 255, 255, 0.12);
       }
 
       .board-item.active {
-        border-color: rgba(217, 119, 6, 0.46);
-        background: linear-gradient(135deg, var(--boards-accent-soft), rgba(15, 118, 110, 0.08));
+        border-color: rgba(255, 255, 255, 0.32);
+        background: rgba(255, 255, 255, 0.18);
+      }
+
+      .board-item-row {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        justify-content: space-between;
       }
 
       .board-item h3 {
-        margin: 0 0 6px;
-        font-size: 1rem;
+        margin: 0;
+        font-size: 0.95rem;
+        line-height: 1.3;
       }
 
       .board-item p {
-        margin: 0;
-        color: var(--boards-ink-soft);
-        font-size: 0.92rem;
+        margin: 6px 0 0;
+        color: var(--boards-toolbar-muted);
+        font-size: 0.82rem;
+        line-height: 1.35;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
       }
 
       .board-meta {
-        margin-top: 10px;
+        margin-top: 8px;
         display: flex;
-        gap: 8px;
+        gap: 6px;
         flex-wrap: wrap;
       }
 
       .meta-pill {
         border-radius: 999px;
-        background: rgba(127, 127, 127, 0.12);
-        padding: 5px 9px;
-        font-size: 0.78rem;
-        color: var(--boards-ink-soft);
+        background: rgba(255, 255, 255, 0.14);
+        padding: 4px 8px;
+        font-size: 0.74rem;
+        color: inherit;
       }
 
-      .workspace {
+      .boards-rail .card-empty {
+        border-color: rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--boards-toolbar-text);
+      }
+
+      .boards-stage {
         min-width: 0;
-        padding: 18px;
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
+        padding: 16px 18px 14px;
       }
 
-      .workspace-head {
+      .board-pane {
         display: flex;
-        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+        min-height: 0;
+      }
+
+      .board-toolbar {
+        display: flex;
+        align-items: center;
         justify-content: space-between;
         gap: 16px;
         flex-wrap: wrap;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(7, 90, 106, 0.34);
+        color: var(--boards-toolbar-text);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
       }
 
-      .workspace-title h2 {
+      .board-toolbar-main {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .board-title-wrap {
+        min-width: 0;
+      }
+
+      .board-title-wrap h2 {
         margin: 0;
-        font-size: 2rem;
+        font-size: 1.7rem;
         letter-spacing: -0.04em;
       }
 
-      .workspace-title p {
-        margin: 8px 0 0;
-        color: var(--boards-ink-soft);
+      .board-description {
+        margin: 4px 0 0;
+        color: var(--boards-toolbar-muted);
+        font-size: 0.92rem;
       }
 
       .workspace-actions {
         display: flex;
-        gap: 10px;
+        gap: 8px;
         flex-wrap: wrap;
       }
 
-      .workspace-actions .wt-btn-primary {
-        background: linear-gradient(135deg, var(--boards-accent), var(--boards-accent-2));
-        border-color: rgba(217, 119, 6, 0.4);
+      .workspace-actions .wt-btn {
+        padding: 8px 10px;
+      }
+
+      .board-badge {
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 0.8rem;
+        line-height: 1;
+        background: rgba(255, 255, 255, 0.14);
+        color: var(--boards-toolbar-text);
       }
 
       .auth-panel,
       .empty-panel {
-        padding: 32px;
-        border-radius: 26px;
-        border: 1px dashed rgba(217, 119, 6, 0.28);
-        background:
-          radial-gradient(circle at top right, rgba(217, 119, 6, 0.12), transparent 30%),
-          radial-gradient(circle at bottom left, rgba(15, 118, 110, 0.1), transparent 34%),
-          rgba(255, 255, 255, 0.05);
+        max-width: 560px;
+        padding: 22px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--boards-toolbar-text);
       }
 
       .auth-panel h3,
       .empty-panel h3 {
-        margin: 0 0 8px;
-        font-size: 1.5rem;
+        margin: 0 0 6px;
+        font-size: 1.35rem;
       }
 
       .auth-panel p,
       .empty-panel p {
-        margin: 0 0 18px;
-        color: var(--boards-ink-soft);
-        max-width: 48rem;
+        margin: 0 0 16px;
+        color: var(--boards-toolbar-muted);
+        max-width: 36rem;
       }
 
       .board-canvas {
         display: flex;
-        gap: 16px;
+        gap: 14px;
         overflow-x: auto;
         align-items: flex-start;
-        padding: 6px 2px 12px;
-        min-height: 440px;
+        padding: 6px 2px 18px;
+        min-height: calc(100vh - 166px);
       }
 
       .list-column {
-        width: 320px;
-        min-width: 320px;
-        padding: 14px;
-        border-radius: 22px;
-        border: 1px solid var(--wt-border);
-        background:
-          linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 34%),
-          rgba(255, 255, 255, 0.04);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        width: 296px;
+        min-width: 296px;
+        padding: 10px;
+        border-radius: 16px;
+        border: 1px solid var(--boards-list-border);
+        background: var(--boards-list-bg);
+        box-shadow: 0 1px 2px rgba(4, 24, 32, 0.08);
       }
 
       .list-column.drag-target-before {
-        box-shadow: inset 4px 0 0 var(--boards-accent), var(--boards-card-shadow);
+        box-shadow: inset 4px 0 0 var(--boards-accent), 0 1px 2px rgba(4, 24, 32, 0.08);
       }
 
       .list-column.drag-target-after {
-        box-shadow: inset -4px 0 0 var(--boards-accent), var(--boards-card-shadow);
+        box-shadow: inset -4px 0 0 var(--boards-accent), 0 1px 2px rgba(4, 24, 32, 0.08);
       }
 
       .list-head {
-        display: flex;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
         gap: 12px;
-        align-items: flex-start;
+        align-items: center;
       }
 
       .drag-handle {
-        width: 34px;
-        height: 34px;
-        border-radius: 12px;
-        border: 1px dashed var(--wt-border);
-        background: rgba(255, 255, 255, 0.04);
+        width: 28px;
+        height: 28px;
+        border-radius: 10px;
+        border: none;
+        background: transparent;
         color: var(--boards-ink-soft);
         cursor: grab;
         flex: 0 0 auto;
@@ -267,64 +398,89 @@
 
       .list-title-row {
         display: flex;
-        gap: 8px;
+        gap: 6px;
         align-items: center;
         justify-content: space-between;
       }
 
       .list-title-row h3 {
         margin: 0;
-        font-size: 1.05rem;
+        min-width: 0;
+        font-size: 0.98rem;
+        line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .list-count {
+        border-radius: 999px;
+        padding: 4px 8px;
+        min-width: 28px;
+        text-align: center;
+        font-size: 0.76rem;
+        background: rgba(22, 54, 70, 0.08);
+        color: var(--boards-ink-soft);
       }
 
       .list-actions {
         display: flex;
-        gap: 6px;
-        margin-top: 10px;
+        gap: 4px;
+        margin-top: 0;
       }
 
       .list-actions .wt-btn {
-        padding: 7px 9px;
+        padding: 5px 7px;
+        border-radius: 10px;
+        border-style: solid;
+        border-color: transparent;
+        background: transparent;
+        color: var(--boards-ink-soft);
+        font-size: 0.76rem;
+      }
+
+      .list-actions .wt-btn:hover {
+        border-color: rgba(22, 54, 70, 0.12);
+        background: rgba(22, 54, 70, 0.08);
       }
 
       .card-stack {
-        margin-top: 16px;
-        min-height: 60px;
+        margin-top: 10px;
+        min-height: 24px;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
       }
 
       .card-stack.drag-target {
-        outline: 2px dashed rgba(217, 119, 6, 0.42);
-        outline-offset: 6px;
-        border-radius: 20px;
+        outline: 2px dashed rgba(15, 127, 153, 0.42);
+        outline-offset: 4px;
+        border-radius: 14px;
       }
 
       .card-empty {
-        border: 1px dashed var(--wt-border);
-        border-radius: 16px;
-        padding: 15px;
-        text-align: center;
+        border: 1px dashed rgba(22, 54, 70, 0.18);
+        border-radius: 12px;
+        padding: 12px;
+        text-align: left;
         color: var(--boards-ink-soft);
-        font-size: 0.92rem;
+        font-size: 0.86rem;
+        background: rgba(255, 255, 255, 0.38);
       }
 
       .card-item {
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 18px;
-        padding: 14px 14px 12px;
-        background:
-          linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 38%),
-          var(--wt-panel-solid);
+        border: 1px solid rgba(22, 54, 70, 0.08);
+        border-radius: 12px;
+        padding: 12px;
+        background: var(--wt-panel-solid);
         cursor: pointer;
         transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
       }
 
       .card-item:hover {
         transform: translateY(-1px);
-        border-color: rgba(217, 119, 6, 0.26);
-        box-shadow: var(--boards-card-shadow);
+        border-color: rgba(15, 127, 153, 0.26);
+        box-shadow: 0 8px 18px rgba(4, 24, 32, 0.16);
       }
 
       .card-item.drag-target-before {
@@ -336,42 +492,26 @@
       }
 
       .card-item.file-target {
-        outline: 2px dashed rgba(15, 118, 110, 0.52);
+        outline: 2px dashed rgba(15, 127, 153, 0.52);
         outline-offset: 4px;
-      }
-
-      .card-top {
-        display: flex;
-        gap: 10px;
-        align-items: flex-start;
-      }
-
-      .card-grip {
-        width: 30px;
-        height: 30px;
-        border-radius: 10px;
-        border: 1px dashed var(--wt-border);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--boards-ink-soft);
-        cursor: grab;
-        flex: 0 0 auto;
       }
 
       .card-copy {
         min-width: 0;
-        flex: 1;
       }
 
       .card-copy h4 {
-        margin: 0 0 8px;
-        font-size: 1rem;
+        margin: 0 0 6px;
+        font-size: 0.96rem;
+        line-height: 1.35;
+        color: var(--boards-ink);
       }
 
       .card-markdown {
         color: var(--boards-ink-soft);
-        font-size: 0.92rem;
+        font-size: 0.88rem;
+        line-height: 1.42;
+        max-height: 9.25rem;
         overflow: hidden;
       }
 
@@ -395,43 +535,75 @@
       }
 
       .card-images {
-        margin-top: 12px;
+        margin-top: 10px;
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
+        gap: 6px;
       }
 
       .card-images img {
         width: 100%;
         aspect-ratio: 4 / 3;
         object-fit: cover;
-        border-radius: 12px;
-        border: 1px solid var(--wt-border);
+        border-radius: 10px;
+        border: 1px solid rgba(22, 54, 70, 0.12);
         display: block;
       }
 
-      .card-hint {
-        margin-top: 12px;
-        font-size: 0.78rem;
+      .add-card-btn {
+        width: 100%;
+        justify-content: flex-start;
+        margin-top: 4px;
+        padding: 10px;
+        border-color: transparent;
+        background: rgba(22, 54, 70, 0.04);
         color: var(--boards-ink-soft);
       }
 
       .status-bar {
-        min-height: 24px;
+        min-height: 0;
         font-size: 0.92rem;
-        color: var(--boards-ink-soft);
+        color: var(--boards-toolbar-text);
+        padding: 0 4px 2px;
+      }
+
+      .status-bar:empty {
+        display: none;
       }
 
       .status-bar.success {
-        color: var(--wt-success);
+        color: #d5ffe4;
       }
 
       .status-bar.error {
-        color: var(--wt-danger);
+        color: #ffd6dd;
       }
 
       .status-bar.warning {
-        color: var(--wt-warning);
+        color: #fff1c4;
+      }
+
+      .list-create {
+        width: 296px;
+        min-width: 296px;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.18);
+        color: var(--boards-toolbar-text);
+      }
+
+      .list-create:hover {
+        border-color: rgba(255, 255, 255, 0.24);
+        background: rgba(255, 255, 255, 0.24);
+      }
+
+      .list-create-icon {
+        font-size: 1.35rem;
+        line-height: 1;
       }
 
       .modal[hidden] {
@@ -591,17 +763,32 @@
         color: var(--boards-ink-soft);
       }
 
-      @media (max-width: 1100px) {
+      @media (max-width: 1080px) {
         .boards-page {
           grid-template-columns: 1fr;
         }
 
-        .sidebar {
-          min-height: 0;
+        .boards-rail {
+          border-right: none;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .board-list {
+          flex-direction: row;
+          padding-bottom: 4px;
+        }
+
+        .board-item {
+          min-width: 220px;
+          max-width: 220px;
         }
       }
 
       @media (max-width: 860px) {
+        .board-toolbar {
+          align-items: flex-start;
+        }
+
         .modal-grid {
           grid-template-columns: 1fr;
         }
@@ -611,8 +798,13 @@
         }
 
         .list-column {
-          width: min(88vw, 320px);
-          min-width: min(88vw, 320px);
+          width: min(84vw, 296px);
+          min-width: min(84vw, 296px);
+        }
+
+        .list-create {
+          width: min(84vw, 296px);
+          min-width: min(84vw, 296px);
         }
 
         .image-grid {
@@ -621,21 +813,22 @@
       }
 
       @media (max-width: 560px) {
-        .workspace,
-        .sidebar {
-          padding: 16px;
+        .boards-rail,
+        .boards-stage {
+          padding: 14px;
         }
 
-        .workspace-head {
+        .board-toolbar {
           flex-direction: column;
+          align-items: stretch;
         }
 
-        .sidebar-actions,
+        .rail-actions,
         .workspace-actions {
           width: 100%;
         }
 
-        .sidebar-actions .wt-btn,
+        .rail-actions .wt-btn,
         .workspace-actions .wt-btn {
           flex: 1;
           justify-content: center;
@@ -651,12 +844,11 @@
     </template>
 
     <main class="wt-page boards-page">
-      <aside class="panel sidebar">
-        <div class="sidebar-head">
-          <div class="eyebrow">List Manager</div>
+      <aside class="boards-rail">
+        <div class="rail-head">
+          <p class="eyebrow">Boards</p>
           <h1>Boards</h1>
-          <p class="sidebar-copy">Private Trello-style boards with Markdown cards and image drops saved to D1.</p>
-          <div class="sidebar-actions">
+          <div class="rail-actions">
             <button id="createBoardBtn" class="wt-btn wt-btn-primary" type="button">New board</button>
             <button id="refreshBoardsBtn" class="wt-btn wt-btn-ghost" type="button">Refresh</button>
           </div>
@@ -664,30 +856,32 @@
         <div id="boardList" class="board-list"></div>
       </aside>
 
-      <section class="panel workspace">
+      <section class="boards-stage">
         <div id="authPanel" class="auth-panel" hidden>
-          <h3>Sign in to manage boards</h3>
-          <p>Your boards, lists, cards, Markdown, and dropped images are stored in your account and synced through D1.</p>
+          <h3>Sign in to use Boards</h3>
+          <p>Your boards sync to your account so you can keep lists, cards, Markdown notes, and image drops in one place.</p>
           <a id="loginButton" class="wt-btn wt-btn-primary" href="/auth/google/login?returnTo=/boards">Sign in with Google</a>
         </div>
 
         <div id="emptyPanel" class="empty-panel" hidden>
-          <h3>No boards yet</h3>
-          <p>Create a board, add lists, then drag cards between columns. Drop an image on any card to attach it instantly.</p>
+          <h3>Create your first board</h3>
+          <p>Start with a board, add a few lists, then drag cards across the lane as work moves.</p>
           <button id="emptyCreateBoardBtn" class="wt-btn wt-btn-primary" type="button">Create your first board</button>
         </div>
 
-        <div id="boardPane" hidden>
-          <div class="workspace-head">
-            <div class="workspace-title">
-              <div class="eyebrow">Workspace</div>
-              <h2 id="boardTitle">Boards</h2>
-              <p id="boardDescription" class="muted"></p>
+        <div id="boardPane" class="board-pane" hidden>
+          <div class="board-toolbar">
+            <div class="board-toolbar-main">
+              <div class="board-title-wrap">
+                <h2 id="boardTitle">Boards</h2>
+                <p id="boardDescription" class="board-description"></p>
+              </div>
+              <span id="boardSummary" class="board-badge" hidden></span>
             </div>
             <div class="workspace-actions">
               <button id="renameBoardBtn" class="wt-btn wt-btn-ghost" type="button">Edit board</button>
-              <button id="deleteBoardBtn" class="wt-btn wt-btn-danger" type="button">Delete board</button>
               <button id="addListBtn" class="wt-btn wt-btn-primary" type="button">Add list</button>
+              <button id="deleteBoardBtn" class="wt-btn wt-btn-danger" type="button">Delete board</button>
             </div>
           </div>
           <div id="boardCanvas" class="board-canvas"></div>
@@ -760,6 +954,7 @@
         const boardCanvasEl = document.getElementById('boardCanvas');
         const boardTitleEl = document.getElementById('boardTitle');
         const boardDescriptionEl = document.getElementById('boardDescription');
+        const boardSummaryEl = document.getElementById('boardSummary');
         const statusBarEl = document.getElementById('statusBar');
         const cardModalEl = document.getElementById('cardModal');
         const cardModalTitleEl = document.getElementById('cardModalTitle');
@@ -905,8 +1100,10 @@
               type: 'button',
               onclick: () => setActiveBoard(board.id),
             }, [
-              el('h3', { text: board.title }),
-              el('p', { text: board.description || 'Markdown cards, drag-and-drop lanes, and private sync.' }),
+              el('div', { class: 'board-item-row' }, [
+                el('h3', { text: board.title }),
+              ]),
+              board.description ? el('p', { text: board.description }) : null,
               el('div', { class: 'board-meta' }, [
                 el('span', { class: 'meta-pill', text: formatBoardMeta(board) }),
               ]),
@@ -918,12 +1115,21 @@
           authPanelEl.hidden = state.auth.loggedIn;
           emptyPanelEl.hidden = !state.auth.loggedIn || !!state.boards.length;
           boardPaneEl.hidden = !state.auth.loggedIn || !state.board;
+          boardDescriptionEl.hidden = true;
+          boardSummaryEl.hidden = true;
 
           if (!state.auth.loggedIn) return;
           if (!state.board) return;
 
+          const totalCards = state.board.lists.reduce((sum, list) => sum + list.cards.length, 0);
           boardTitleEl.textContent = state.board.board.title;
-          boardDescriptionEl.textContent = state.board.board.description || 'Organize work in draggable lists and cards.';
+          boardDescriptionEl.textContent = state.board.board.description || '';
+          boardDescriptionEl.hidden = !state.board.board.description;
+          boardSummaryEl.textContent = formatBoardMeta({
+            list_count: state.board.lists.length,
+            card_count: totalCards,
+          });
+          boardSummaryEl.hidden = false;
           boardCanvasEl.innerHTML = '';
 
           state.board.lists.forEach((list) => {
@@ -944,31 +1150,31 @@
 
             listEl.appendChild(el('div', { class: 'list-head' }, [
               el('button', { class: 'drag-handle', type: 'button', text: '⋮⋮', title: 'Drag list' }),
-              el('div', { class: 'list-body' }, [
-                el('div', { class: 'list-title-row' }, [
-                  el('h3', { text: list.title }),
-                  el('span', { class: 'meta-pill', text: `${list.cards.length}` }),
-                ]),
-                el('div', { class: 'list-actions' }, [
-                  el('button', {
-                    class: 'wt-btn wt-btn-ghost',
-                    type: 'button',
-                    text: 'Rename',
-                    onclick: (event) => {
-                      event.stopPropagation();
-                      renameList(list);
-                    },
-                  }),
-                  el('button', {
-                    class: 'wt-btn wt-btn-danger',
-                    type: 'button',
-                    text: 'Delete',
-                    onclick: (event) => {
-                      event.stopPropagation();
-                      deleteList(list);
-                    },
-                  }),
-                ]),
+              el('div', { class: 'list-title-row' }, [
+                el('h3', { text: list.title }),
+                el('span', { class: 'list-count', text: `${list.cards.length}` }),
+              ]),
+              el('div', { class: 'list-actions' }, [
+                el('button', {
+                  class: 'wt-btn wt-btn-ghost',
+                  type: 'button',
+                  text: 'Edit',
+                  title: 'Rename list',
+                  onclick: (event) => {
+                    event.stopPropagation();
+                    renameList(list);
+                  },
+                }),
+                el('button', {
+                  class: 'wt-btn wt-btn-danger',
+                  type: 'button',
+                  text: 'Del',
+                  title: 'Delete list',
+                  onclick: (event) => {
+                    event.stopPropagation();
+                    deleteList(list);
+                  },
+                }),
               ]),
             ]));
 
@@ -1005,7 +1211,6 @@
               });
 
               cardEl.appendChild(el('div', { class: 'card-top' }, [
-                el('div', { class: 'card-grip', text: '⋮', title: 'Drag card' }),
                 el('div', { class: 'card-copy' }, [
                   el('h4', { text: card.title }),
                   el('div', { class: 'card-markdown', html: renderMarkdown(card.markdown || '') }),
@@ -1024,25 +1229,28 @@
                 cardEl.appendChild(imagesEl);
               }
 
-              cardEl.appendChild(el('div', {
-                class: 'card-hint',
-                text: 'Click to edit. Drop an image onto this card to attach it.',
-              }));
-
               stackEl.appendChild(cardEl);
             });
 
             listEl.appendChild(stackEl);
             listEl.appendChild(el('button', {
-              class: 'wt-btn wt-btn-primary',
+              class: 'wt-btn add-card-btn',
               type: 'button',
               text: '+ Add card',
               onclick: () => createCard(list.id),
-              style: 'margin-top: 14px;',
             }));
 
             boardCanvasEl.appendChild(listEl);
           });
+
+          boardCanvasEl.appendChild(el('button', {
+            class: 'wt-btn list-create',
+            type: 'button',
+            onclick: () => createList(),
+          }, [
+            el('span', { class: 'list-create-icon', text: '+' }),
+            el('span', { text: 'Add another list' }),
+          ]));
         }
 
         function renderAll() {
@@ -1649,7 +1857,7 @@
           bindStaticEvents();
           renderAll();
           await refreshAuth();
-          setStatus('Boards ready.');
+          setStatus('');
         }
 
         function startBoot() {
