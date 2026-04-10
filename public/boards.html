@@ -41,6 +41,10 @@
         box-sizing: border-box;
       }
 
+      [hidden] {
+        display: none !important;
+      }
+
       body.wt[data-wt-tool='boards'] {
         color: var(--boards-ink);
         background:
@@ -290,18 +294,71 @@
 
       .board-title-wrap {
         min-width: 0;
+        flex: 1;
       }
 
-      .board-title-wrap h2 {
+      .board-title-display {
+        min-width: 0;
+      }
+
+      .board-title-display.editable {
+        cursor: text;
+      }
+
+      .board-title-display h2 {
         margin: 0;
         font-size: 1.7rem;
         letter-spacing: -0.04em;
+      }
+
+      .board-title-display.editable:hover h2 {
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
       }
 
       .board-description {
         margin: 4px 0 0;
         color: var(--boards-toolbar-muted);
         font-size: 0.92rem;
+      }
+
+      .inline-board-editor {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: min(100%, 620px);
+      }
+
+      .inline-board-input,
+      .inline-board-textarea {
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.12);
+        color: var(--boards-toolbar-text);
+        padding: 10px 12px;
+        font: inherit;
+      }
+
+      .inline-board-input {
+        font-size: 1.15rem;
+        font-weight: 700;
+      }
+
+      .inline-board-textarea {
+        min-height: 78px;
+        resize: vertical;
+      }
+
+      .inline-board-input::placeholder,
+      .inline-board-textarea::placeholder {
+        color: rgba(239, 252, 255, 0.62);
+      }
+
+      .inline-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
       }
 
       .workspace-actions {
@@ -403,6 +460,15 @@
         justify-content: space-between;
       }
 
+      .list-title-row.editable {
+        cursor: text;
+      }
+
+      .list-title-row.editable:hover h3 {
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+      }
+
       .list-title-row h3 {
         margin: 0;
         min-width: 0;
@@ -421,6 +487,26 @@
         font-size: 0.76rem;
         background: rgba(22, 54, 70, 0.08);
         color: var(--boards-ink-soft);
+      }
+
+      .list-title-editor {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .inline-list-input {
+        min-width: 0;
+        width: 100%;
+        border: 1px solid rgba(22, 54, 70, 0.14);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.84);
+        color: var(--boards-ink);
+        padding: 6px 8px;
+        font: inherit;
+        font-size: 0.96rem;
+        font-weight: 700;
       }
 
       .list-actions {
@@ -636,6 +722,10 @@
         padding: 24px;
       }
 
+      .modal-panel-compact {
+        width: min(560px, 100%);
+      }
+
       .modal-head {
         display: flex;
         align-items: flex-start;
@@ -646,6 +736,11 @@
       .modal-head h3 {
         margin: 0;
         font-size: 1.6rem;
+      }
+
+      .modal-copy {
+        margin: 6px 0 0;
+        color: var(--boards-ink-soft);
       }
 
       .modal-grid {
@@ -693,6 +788,11 @@
         min-height: 330px;
         resize: vertical;
         font-family: var(--wt-font-mono);
+      }
+
+      #entityDescriptionInput {
+        min-height: 110px;
+        font-family: inherit;
       }
 
       .modal-preview {
@@ -873,8 +973,18 @@
           <div class="board-toolbar">
             <div class="board-toolbar-main">
               <div class="board-title-wrap">
-                <h2 id="boardTitle">Boards</h2>
-                <p id="boardDescription" class="board-description"></p>
+                <div id="boardTitleDisplay" class="board-title-display editable" role="button" tabindex="0" aria-label="Edit board details">
+                  <h2 id="boardTitle">Boards</h2>
+                  <p id="boardDescription" class="board-description"></p>
+                </div>
+                <div id="boardInlineEditor" class="inline-board-editor" hidden>
+                  <input id="boardTitleInlineInput" class="inline-board-input" type="text" maxlength="160" placeholder="Board name" />
+                  <textarea id="boardDescriptionInlineInput" class="inline-board-textarea" maxlength="400" placeholder="Short description (optional)"></textarea>
+                  <div class="inline-actions">
+                    <button id="saveBoardInlineBtn" class="wt-btn wt-btn-primary" type="button">Save board</button>
+                    <button id="cancelBoardInlineBtn" class="wt-btn wt-btn-ghost" type="button">Cancel</button>
+                  </div>
+                </div>
               </div>
               <span id="boardSummary" class="board-badge" hidden></span>
             </div>
@@ -891,8 +1001,8 @@
       </section>
     </main>
 
-    <div id="cardModal" class="modal" hidden>
-      <div class="modal-panel">
+      <div id="cardModal" class="modal" hidden>
+        <div class="modal-panel">
         <div class="modal-head">
           <div>
             <div class="eyebrow">Card editor</div>
@@ -932,6 +1042,52 @@
       </div>
     </div>
 
+    <div id="entityModal" class="modal" hidden>
+      <div class="modal-panel modal-panel-compact">
+        <div class="modal-head">
+          <div>
+            <div id="entityModalEyebrow" class="eyebrow">New item</div>
+            <h3 id="entityModalTitle">Create item</h3>
+            <p id="entityModalCopy" class="modal-copy"></p>
+          </div>
+          <div class="workspace-actions">
+            <button id="closeEntityModalBtn" class="wt-btn wt-btn-ghost" type="button">Cancel</button>
+            <button id="submitEntityModalBtn" class="wt-btn wt-btn-primary" type="button">Create</button>
+          </div>
+        </div>
+
+        <section class="modal-section" style="margin-top: 18px;">
+          <div class="field">
+            <label id="entityTitleLabel" for="entityTitleInput">Name</label>
+            <input id="entityTitleInput" type="text" maxlength="160" />
+          </div>
+          <div id="entityDescriptionField" class="field" hidden>
+            <label for="entityDescriptionInput">Description</label>
+            <textarea id="entityDescriptionInput" maxlength="400"></textarea>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div id="confirmModal" class="modal" hidden>
+      <div class="modal-panel modal-panel-compact">
+        <div class="modal-head">
+          <div>
+            <div class="eyebrow">Confirm</div>
+            <h3 id="confirmModalTitle">Delete item</h3>
+          </div>
+          <div class="workspace-actions">
+            <button id="closeConfirmModalBtn" class="wt-btn wt-btn-ghost" type="button">Cancel</button>
+            <button id="confirmModalActionBtn" class="wt-btn wt-btn-danger" type="button">Delete</button>
+          </div>
+        </div>
+
+        <section class="modal-section" style="margin-top: 18px;">
+          <p id="confirmModalCopy" class="muted" style="margin: 0;"></p>
+        </section>
+      </div>
+    </div>
+
     <script>
       (function() {
         const ACTIVE_BOARD_KEY = 'wt_boards_active_v1';
@@ -944,6 +1100,10 @@
           board: null,
           activeBoardId: '',
           editingCardId: '',
+          boardEdit: null,
+          listEdit: null,
+          entityModal: { open: false, kind: '', listId: '', title: '', description: '' },
+          confirmModal: { open: false, title: '', copy: '', confirmLabel: 'Delete', onConfirm: null },
           drag: null,
         };
 
@@ -954,6 +1114,10 @@
         const boardCanvasEl = document.getElementById('boardCanvas');
         const boardTitleEl = document.getElementById('boardTitle');
         const boardDescriptionEl = document.getElementById('boardDescription');
+        const boardTitleDisplayEl = document.getElementById('boardTitleDisplay');
+        const boardInlineEditorEl = document.getElementById('boardInlineEditor');
+        const boardTitleInlineInputEl = document.getElementById('boardTitleInlineInput');
+        const boardDescriptionInlineInputEl = document.getElementById('boardDescriptionInlineInput');
         const boardSummaryEl = document.getElementById('boardSummary');
         const statusBarEl = document.getElementById('statusBar');
         const cardModalEl = document.getElementById('cardModal');
@@ -963,6 +1127,19 @@
         const cardPreviewEl = document.getElementById('cardPreview');
         const modalUploadZoneEl = document.getElementById('modalUploadZone');
         const modalImageGridEl = document.getElementById('modalImageGrid');
+        const entityModalEl = document.getElementById('entityModal');
+        const entityModalEyebrowEl = document.getElementById('entityModalEyebrow');
+        const entityModalTitleEl = document.getElementById('entityModalTitle');
+        const entityModalCopyEl = document.getElementById('entityModalCopy');
+        const entityTitleLabelEl = document.getElementById('entityTitleLabel');
+        const entityTitleInputEl = document.getElementById('entityTitleInput');
+        const entityDescriptionFieldEl = document.getElementById('entityDescriptionField');
+        const entityDescriptionInputEl = document.getElementById('entityDescriptionInput');
+        const submitEntityModalBtnEl = document.getElementById('submitEntityModalBtn');
+        const confirmModalEl = document.getElementById('confirmModal');
+        const confirmModalTitleEl = document.getElementById('confirmModalTitle');
+        const confirmModalCopyEl = document.getElementById('confirmModalCopy');
+        const confirmModalActionBtnEl = document.getElementById('confirmModalActionBtn');
 
         if (window.marked && typeof window.marked.setOptions === 'function') {
           window.marked.setOptions({ gfm: true, breaks: true });
@@ -1023,6 +1200,20 @@
           return pieces.join(' • ');
         }
 
+        function cleanText(value) {
+          return String(value || '').trim();
+        }
+
+        function focusElementLater(selector) {
+          requestAnimationFrame(() => {
+            const target = typeof selector === 'string' ? document.querySelector(selector) : selector;
+            if (target && typeof target.focus === 'function') {
+              target.focus();
+              if (typeof target.select === 'function') target.select();
+            }
+          });
+        }
+
         function persistActiveBoard(id) {
           state.activeBoardId = id || '';
           if (id) localStorage.setItem(ACTIVE_BOARD_KEY, id);
@@ -1073,8 +1264,12 @@
               state.auth = { loggedIn: false, user: null };
               state.boards = [];
               state.board = null;
+              state.boardEdit = null;
+              state.listEdit = null;
               persistActiveBoard('');
               closeCardModal();
+              closeEntityModal();
+              closeConfirmModal();
               renderAll();
               setStatus('Signed out.', 'success');
             },
@@ -1111,12 +1306,69 @@
           });
         }
 
+        function renderEntityModal() {
+          const modalState = state.entityModal;
+          entityModalEl.hidden = !modalState.open;
+          if (!modalState.open) return;
+
+          let eyebrow = 'New item';
+          let title = 'Create item';
+          let copy = '';
+          let submitLabel = 'Create';
+          let titleLabel = 'Name';
+          let showDescription = false;
+
+          if (modalState.kind === 'board') {
+            eyebrow = 'New board';
+            title = 'Create board';
+            copy = 'Boards hold the lists and cards for a project or workflow.';
+            submitLabel = 'Create board';
+            titleLabel = 'Board name';
+            showDescription = true;
+          } else if (modalState.kind === 'list') {
+            eyebrow = 'New list';
+            title = 'Create list';
+            copy = 'Add a new lane to the current board.';
+            submitLabel = 'Create list';
+            titleLabel = 'List name';
+          } else if (modalState.kind === 'card') {
+            eyebrow = 'New card';
+            title = 'Create card';
+            copy = 'Start a new card in this list, then fill in the details.';
+            submitLabel = 'Create card';
+            titleLabel = 'Card name';
+          }
+
+          entityModalEyebrowEl.textContent = eyebrow;
+          entityModalTitleEl.textContent = title;
+          entityModalCopyEl.textContent = copy;
+          entityTitleLabelEl.textContent = titleLabel;
+          entityTitleInputEl.value = modalState.title;
+          entityDescriptionFieldEl.hidden = !showDescription;
+          entityDescriptionInputEl.value = modalState.description;
+          submitEntityModalBtnEl.textContent = submitLabel;
+        }
+
+        function renderConfirmModal() {
+          const modalState = state.confirmModal;
+          confirmModalEl.hidden = !modalState.open;
+          if (!modalState.open) return;
+
+          confirmModalTitleEl.textContent = modalState.title;
+          confirmModalCopyEl.textContent = modalState.copy;
+          confirmModalActionBtnEl.textContent = modalState.confirmLabel || 'Confirm';
+        }
+
         function renderWorkspace() {
           authPanelEl.hidden = state.auth.loggedIn;
           emptyPanelEl.hidden = !state.auth.loggedIn || !!state.boards.length;
           boardPaneEl.hidden = !state.auth.loggedIn || !state.board;
+          boardTitleDisplayEl.hidden = false;
+          boardInlineEditorEl.hidden = true;
           boardDescriptionEl.hidden = true;
           boardSummaryEl.hidden = true;
+          document.getElementById('renameBoardBtn').disabled = !state.board;
+          document.getElementById('renameBoardBtn').textContent = 'Edit board';
 
           if (!state.auth.loggedIn) return;
           if (!state.board) return;
@@ -1125,6 +1377,14 @@
           boardTitleEl.textContent = state.board.board.title;
           boardDescriptionEl.textContent = state.board.board.description || '';
           boardDescriptionEl.hidden = !state.board.board.description;
+          if (state.boardEdit) {
+            boardTitleDisplayEl.hidden = true;
+            boardInlineEditorEl.hidden = false;
+            boardTitleInlineInputEl.value = state.boardEdit.title;
+            boardDescriptionInlineInputEl.value = state.boardEdit.description;
+            document.getElementById('renameBoardBtn').disabled = true;
+            document.getElementById('renameBoardBtn').textContent = 'Editing…';
+          }
           boardSummaryEl.textContent = formatBoardMeta({
             list_count: state.board.lists.length,
             card_count: totalCards,
@@ -1150,32 +1410,88 @@
 
             listEl.appendChild(el('div', { class: 'list-head' }, [
               el('button', { class: 'drag-handle', type: 'button', text: '⋮⋮', title: 'Drag list' }),
-              el('div', { class: 'list-title-row' }, [
-                el('h3', { text: list.title }),
-                el('span', { class: 'list-count', text: `${list.cards.length}` }),
-              ]),
-              el('div', { class: 'list-actions' }, [
-                el('button', {
-                  class: 'wt-btn wt-btn-ghost',
-                  type: 'button',
-                  text: 'Edit',
-                  title: 'Rename list',
-                  onclick: (event) => {
-                    event.stopPropagation();
-                    renameList(list);
-                  },
-                }),
-                el('button', {
-                  class: 'wt-btn wt-btn-danger',
-                  type: 'button',
-                  text: 'Del',
-                  title: 'Delete list',
-                  onclick: (event) => {
-                    event.stopPropagation();
-                    deleteList(list);
-                  },
-                }),
-              ]),
+              state.listEdit && state.listEdit.id === list.id
+                ? el('div', { class: 'list-title-editor' }, [
+                    el('input', {
+                      class: 'inline-list-input',
+                      type: 'text',
+                      maxlength: '160',
+                      value: state.listEdit.title,
+                      'data-list-title-input': list.id,
+                      oninput: (event) => {
+                        state.listEdit.title = event.currentTarget.value;
+                      },
+                      onkeydown: (event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          saveListEdit();
+                        } else if (event.key === 'Escape') {
+                          event.preventDefault();
+                          cancelListEdit();
+                        }
+                      },
+                    }),
+                    el('span', { class: 'list-count', text: `${list.cards.length}` }),
+                  ])
+                : el('div', {
+                    class: 'list-title-row editable',
+                    role: 'button',
+                    tabindex: '0',
+                    title: 'Rename list',
+                    onclick: () => renameList(list),
+                    onkeydown: (event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        renameList(list);
+                      }
+                    },
+                  }, [
+                    el('h3', { text: list.title }),
+                    el('span', { class: 'list-count', text: `${list.cards.length}` }),
+                  ]),
+              state.listEdit && state.listEdit.id === list.id
+                ? el('div', { class: 'list-actions' }, [
+                    el('button', {
+                      class: 'wt-btn wt-btn-primary',
+                      type: 'button',
+                      text: 'Save',
+                      onclick: (event) => {
+                        event.stopPropagation();
+                        saveListEdit();
+                      },
+                    }),
+                    el('button', {
+                      class: 'wt-btn wt-btn-ghost',
+                      type: 'button',
+                      text: 'Cancel',
+                      onclick: (event) => {
+                        event.stopPropagation();
+                        cancelListEdit();
+                      },
+                    }),
+                  ])
+                : el('div', { class: 'list-actions' }, [
+                    el('button', {
+                      class: 'wt-btn wt-btn-ghost',
+                      type: 'button',
+                      text: 'Edit',
+                      title: 'Rename list',
+                      onclick: (event) => {
+                        event.stopPropagation();
+                        renameList(list);
+                      },
+                    }),
+                    el('button', {
+                      class: 'wt-btn wt-btn-danger',
+                      type: 'button',
+                      text: 'Del',
+                      title: 'Delete list',
+                      onclick: (event) => {
+                        event.stopPropagation();
+                        deleteList(list);
+                      },
+                    }),
+                  ]),
             ]));
 
             const stackEl = el('div', {
@@ -1259,6 +1575,8 @@
           renderAuthArea();
           renderSidebar();
           renderWorkspace();
+          renderEntityModal();
+          renderConfirmModal();
         }
 
         function clearDragClasses() {
@@ -1328,12 +1646,17 @@
           if (!state.auth.loggedIn) {
             state.boards = [];
             state.board = null;
+            state.boardEdit = null;
+            state.listEdit = null;
             persistActiveBoard('');
             closeCardModal();
+            closeEntityModal();
+            closeConfirmModal();
             renderAll();
             return;
           }
 
+          renderAll();
           await loadBoards();
         }
 
@@ -1368,6 +1691,8 @@
         async function setActiveBoard(boardId) {
           if (!boardId) return;
           try {
+            state.boardEdit = null;
+            state.listEdit = null;
             await loadBoard(boardId);
             setStatus('Board loaded.', 'success');
           } catch (error) {
@@ -1375,37 +1700,80 @@
           }
         }
 
-        async function createBoard() {
-          const title = window.prompt('Board title', 'New board');
-          if (title === null) return;
-          const description = window.prompt('Board description (optional)', '') ?? '';
-          try {
-            const created = await api('/api/boards/create', {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ title, description }),
-            });
-            await loadBoards();
-            if (created.id) await setActiveBoard(created.id);
-            setStatus('Board created.', 'success');
-          } catch (error) {
-            setStatus(error.message, 'error');
-          }
+        function openEntityModal(kind, options = {}) {
+          state.entityModal = {
+            open: true,
+            kind,
+            listId: options.listId || '',
+            title: options.title || '',
+            description: options.description || '',
+          };
+          renderEntityModal();
+          focusElementLater(entityTitleInputEl);
         }
 
-        async function renameBoard() {
+        function closeEntityModal() {
+          state.entityModal = { open: false, kind: '', listId: '', title: '', description: '' };
+          renderEntityModal();
+        }
+
+        function openConfirmModal(config) {
+          state.confirmModal = {
+            open: true,
+            title: config.title,
+            copy: config.copy,
+            confirmLabel: config.confirmLabel || 'Confirm',
+            onConfirm: config.onConfirm,
+          };
+          renderConfirmModal();
+        }
+
+        function closeConfirmModal() {
+          state.confirmModal = { open: false, title: '', copy: '', confirmLabel: 'Delete', onConfirm: null };
+          renderConfirmModal();
+        }
+
+        function createBoard() {
+          openEntityModal('board', { title: 'New board' });
+        }
+
+        function renameBoard() {
           if (!state.board) return;
           const current = state.board.board;
-          const title = window.prompt('Board title', current.title);
-          if (title === null) return;
-          const description = window.prompt('Board description (optional)', current.description || '');
-          if (description === null) return;
+          state.boardEdit = {
+            title: current.title,
+            description: current.description || '',
+          };
+          renderWorkspace();
+          focusElementLater(boardTitleInlineInputEl);
+        }
+
+        function cancelBoardEdit() {
+          state.boardEdit = null;
+          renderWorkspace();
+        }
+
+        async function saveBoardEdit() {
+          if (!state.board || !state.boardEdit) return;
+          const current = state.board.board;
+          const title = cleanText(state.boardEdit.title);
+          if (!title) {
+            setStatus('Board name cannot be empty.', 'warning');
+            focusElementLater(boardTitleInlineInputEl);
+            return;
+          }
+          const description = cleanText(state.boardEdit.description);
+          if (title === current.title && description === (current.description || '')) {
+            cancelBoardEdit();
+            return;
+          }
           try {
             await api('/api/boards/update', {
               method: 'POST',
               headers: { 'content-type': 'application/json' },
               body: JSON.stringify({ id: current.id, title, description }),
             });
+            state.boardEdit = null;
             await loadBoards();
             await loadBoard(current.id);
             setStatus('Board updated.', 'success');
@@ -1414,51 +1782,72 @@
           }
         }
 
-        async function deleteBoard() {
+        function deleteBoard() {
           if (!state.board) return;
           const current = state.board.board;
-          if (!window.confirm(`Delete "${current.title}" and all of its lists, cards, and images?`)) return;
-          try {
-            await api('/api/boards/delete', {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ id: current.id }),
-            });
-            closeCardModal();
-            await loadBoards();
-            setStatus('Board deleted.', 'success');
-          } catch (error) {
-            setStatus(error.message, 'error');
-          }
+          openConfirmModal({
+            title: `Delete "${current.title}"?`,
+            copy: 'This removes the board and all of its lists, cards, and attached images.',
+            confirmLabel: 'Delete board',
+            onConfirm: async () => {
+              try {
+                await api('/api/boards/delete', {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({ id: current.id }),
+                });
+                state.boardEdit = null;
+                state.listEdit = null;
+                closeCardModal();
+                await loadBoards();
+                setStatus('Board deleted.', 'success');
+              } catch (error) {
+                setStatus(error.message, 'error');
+              }
+            },
+          });
         }
 
-        async function createList() {
+        function createList() {
           if (!state.board) return;
-          const title = window.prompt('List title', 'New list');
-          if (title === null) return;
-          try {
-            await api('/api/boards/lists/create', {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ board_id: state.board.board.id, title }),
-            });
-            await loadBoards();
-            await loadBoard(state.board.board.id);
-            setStatus('List created.', 'success');
-          } catch (error) {
-            setStatus(error.message, 'error');
-          }
+          openEntityModal('list', { title: 'New list' });
         }
 
-        async function renameList(list) {
-          const title = window.prompt('List title', list.title);
-          if (title === null) return;
+        function renameList(list) {
+          state.listEdit = { id: list.id, title: list.title };
+          renderWorkspace();
+          focusElementLater(`[data-list-title-input="${list.id}"]`);
+        }
+
+        function cancelListEdit() {
+          state.listEdit = null;
+          renderWorkspace();
+        }
+
+        async function saveListEdit() {
+          if (!state.board || !state.listEdit) return;
+          const title = cleanText(state.listEdit.title);
+          if (!title) {
+            setStatus('List name cannot be empty.', 'warning');
+            focusElementLater(`[data-list-title-input="${state.listEdit.id}"]`);
+            return;
+          }
+          const current = listById(state.listEdit.id);
+          if (!current) {
+            cancelListEdit();
+            return;
+          }
+          if (title === current.title) {
+            cancelListEdit();
+            return;
+          }
           try {
             await api('/api/boards/lists/update', {
               method: 'POST',
               headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ id: list.id, title }),
+              body: JSON.stringify({ id: state.listEdit.id, title }),
             });
+            state.listEdit = null;
             await loadBoards();
             await loadBoard(state.board.board.id);
             setStatus('List updated.', 'success');
@@ -1467,35 +1856,83 @@
           }
         }
 
-        async function deleteList(list) {
-          if (!window.confirm(`Delete "${list.title}" and all of its cards?`)) return;
-          try {
-            await api('/api/boards/lists/delete', {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ id: list.id }),
-            });
-            closeCardModal();
-            await loadBoards();
-            await loadBoard(state.board.board.id);
-            setStatus('List deleted.', 'success');
-          } catch (error) {
-            setStatus(error.message, 'error');
-          }
+        function deleteList(list) {
+          openConfirmModal({
+            title: `Delete "${list.title}"?`,
+            copy: 'This removes the list and every card inside it.',
+            confirmLabel: 'Delete list',
+            onConfirm: async () => {
+              try {
+                await api('/api/boards/lists/delete', {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({ id: list.id }),
+                });
+                state.listEdit = null;
+                closeCardModal();
+                await loadBoards();
+                await loadBoard(state.board.board.id);
+                setStatus('List deleted.', 'success');
+              } catch (error) {
+                setStatus(error.message, 'error');
+              }
+            },
+          });
         }
 
-        async function createCard(listId) {
-          const title = window.prompt('Card title', 'Untitled card');
-          if (title === null) return;
+        function createCard(listId) {
+          openEntityModal('card', { listId, title: 'Untitled card' });
+        }
+
+        async function submitEntityModal() {
+          const modalState = state.entityModal;
+          if (!modalState.open) return;
+          const title = cleanText(modalState.title);
+          if (!title) {
+            setStatus('Please enter a name before continuing.', 'warning');
+            focusElementLater(entityTitleInputEl);
+            return;
+          }
           try {
-            const created = await api('/api/boards/cards/create', {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ list_id: listId, title, markdown: '' }),
-            });
-            await loadBoards();
-            await loadBoard(state.board.board.id, { reopenCardId: created.id });
-            setStatus('Card created.', 'success');
+            if (modalState.kind === 'board') {
+              const created = await api('/api/boards/create', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ title, description: cleanText(modalState.description) }),
+              });
+              closeEntityModal();
+              await loadBoards();
+              if (created.id) await setActiveBoard(created.id);
+              setStatus('Board created.', 'success');
+              return;
+            }
+
+            if (modalState.kind === 'list') {
+              if (!state.board) return;
+              await api('/api/boards/lists/create', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ board_id: state.board.board.id, title }),
+              });
+              closeEntityModal();
+              await loadBoards();
+              await loadBoard(state.board.board.id);
+              setStatus('List created.', 'success');
+              return;
+            }
+
+            if (modalState.kind === 'card') {
+              if (!state.board || !modalState.listId) return;
+              const created = await api('/api/boards/cards/create', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ list_id: modalState.listId, title, markdown: '' }),
+              });
+              closeEntityModal();
+              await loadBoards();
+              await loadBoard(state.board.board.id, { reopenCardId: created.id });
+              setStatus('Card created.', 'success');
+            }
           } catch (error) {
             setStatus(error.message, 'error');
           }
@@ -1589,20 +2026,26 @@
           if (!state.editingCardId) return;
           const found = cardById(state.editingCardId);
           if (!found) return;
-          if (!window.confirm(`Delete "${found.card.title}"?`)) return;
-          try {
-            await api('/api/boards/cards/delete', {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ id: state.editingCardId }),
-            });
-            closeCardModal();
-            await loadBoards();
-            await loadBoard(state.board.board.id);
-            setStatus('Card deleted.', 'success');
-          } catch (error) {
-            setStatus(error.message, 'error');
-          }
+          openConfirmModal({
+            title: `Delete "${found.card.title}"?`,
+            copy: 'This card and its attached images will be removed.',
+            confirmLabel: 'Delete card',
+            onConfirm: async () => {
+              try {
+                await api('/api/boards/cards/delete', {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({ id: state.editingCardId }),
+                });
+                closeCardModal();
+                await loadBoards();
+                await loadBoard(state.board.board.id);
+                setStatus('Card deleted.', 'success');
+              } catch (error) {
+                setStatus(error.message, 'error');
+              }
+            },
+          });
         }
 
         async function uploadImageToCard(cardId, file) {
@@ -1828,15 +2271,82 @@
           document.getElementById('renameBoardBtn').addEventListener('click', renameBoard);
           document.getElementById('deleteBoardBtn').addEventListener('click', deleteBoard);
           document.getElementById('addListBtn').addEventListener('click', createList);
+          document.getElementById('saveBoardInlineBtn').addEventListener('click', saveBoardEdit);
+          document.getElementById('cancelBoardInlineBtn').addEventListener('click', cancelBoardEdit);
           document.getElementById('saveCardBtn').addEventListener('click', saveCard);
           document.getElementById('deleteCardBtn').addEventListener('click', deleteCard);
           document.getElementById('closeCardModalBtn').addEventListener('click', closeCardModal);
+          document.getElementById('closeEntityModalBtn').addEventListener('click', closeEntityModal);
+          document.getElementById('submitEntityModalBtn').addEventListener('click', submitEntityModal);
+          document.getElementById('closeConfirmModalBtn').addEventListener('click', closeConfirmModal);
+          document.getElementById('confirmModalActionBtn').addEventListener('click', async () => {
+            const action = state.confirmModal.onConfirm;
+            closeConfirmModal();
+            if (typeof action === 'function') await action();
+          });
+          boardTitleDisplayEl.addEventListener('click', renameBoard);
+          boardTitleDisplayEl.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              renameBoard();
+            }
+          });
+          boardTitleInlineInputEl.addEventListener('input', (event) => {
+            if (!state.boardEdit) return;
+            state.boardEdit.title = event.currentTarget.value;
+          });
+          boardTitleInlineInputEl.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              saveBoardEdit();
+            } else if (event.key === 'Escape') {
+              event.preventDefault();
+              cancelBoardEdit();
+            }
+          });
+          boardDescriptionInlineInputEl.addEventListener('input', (event) => {
+            if (!state.boardEdit) return;
+            state.boardEdit.description = event.currentTarget.value;
+          });
+          boardDescriptionInlineInputEl.addEventListener('keydown', (event) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+              event.preventDefault();
+              saveBoardEdit();
+            } else if (event.key === 'Escape') {
+              event.preventDefault();
+              cancelBoardEdit();
+            }
+          });
           cardModalEl.addEventListener('click', (event) => {
             if (event.target === cardModalEl) closeCardModal();
+          });
+          entityModalEl.addEventListener('click', (event) => {
+            if (event.target === entityModalEl) closeEntityModal();
+          });
+          confirmModalEl.addEventListener('click', (event) => {
+            if (event.target === confirmModalEl) closeConfirmModal();
           });
           cardMarkdownInputEl.addEventListener('input', syncCardPreview);
           cardTitleInputEl.addEventListener('input', () => {
             cardModalTitleEl.textContent = cardTitleInputEl.value || 'Edit card';
+          });
+          entityTitleInputEl.addEventListener('input', (event) => {
+            state.entityModal.title = event.currentTarget.value;
+          });
+          entityTitleInputEl.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && state.entityModal.kind !== 'board') {
+              event.preventDefault();
+              submitEntityModal();
+            }
+          });
+          entityDescriptionInputEl.addEventListener('input', (event) => {
+            state.entityModal.description = event.currentTarget.value;
+          });
+          entityDescriptionInputEl.addEventListener('keydown', (event) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+              event.preventDefault();
+              submitEntityModal();
+            }
           });
           modalUploadZoneEl.addEventListener('dragover', (event) => {
             event.preventDefault();
