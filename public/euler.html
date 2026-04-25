@@ -205,6 +205,8 @@
         display: grid;
         gap: 8px;
         margin-top: 12px;
+        max-height: none;
+        overflow: visible;
       }
       .eu-doc-item {
         width: 100%;
@@ -277,6 +279,12 @@
         cursor: pointer;
         font: inherit;
         font-size: 0.86rem;
+      }
+      .eu-doc-count {
+        margin: 12px 0 0;
+        color: #667085;
+        font-size: 0.82rem;
+        text-align: center;
       }
       .eu-info-grid {
         display: grid;
@@ -450,12 +458,15 @@
       }
       .eu-preview-wrap {
         min-width: 0;
+        display: flex;
+        justify-content: center;
         overflow: auto;
         border-top: 1px solid rgba(15, 23, 42, 0.08);
       }
       [data-theme='dark'] .eu-preview-wrap { border-color: rgba(226, 237, 255, 0.1); }
       .eu-preview {
-        width: min(100%, var(--reader-width, 920px));
+        width: 100%;
+        max-width: var(--reader-width, 920px);
         margin: 0 auto;
         padding: 46px 36px 60px;
         color: #192338;
@@ -589,6 +600,62 @@
         box-shadow: none;
         background: transparent;
       }
+      .eu-icon-btn.active {
+        border-color: rgba(37, 99, 235, 0.45);
+        color: #1d4ed8;
+        background: #eef5ff;
+      }
+      [data-theme='dark'] .eu-icon-btn.active {
+        color: #93c5fd;
+        background: rgba(37, 99, 235, 0.18);
+      }
+      .eu-dialog {
+        width: min(420px, calc(100vw - 32px));
+        border: 1px solid rgba(15, 23, 42, 0.14);
+        border-radius: 8px;
+        padding: 0;
+        color: inherit;
+        background: #fff;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+      }
+      [data-theme='dark'] .eu-dialog {
+        border-color: rgba(226, 237, 255, 0.14);
+        background: #0f172a;
+      }
+      .eu-dialog::backdrop {
+        background: rgba(15, 23, 42, 0.38);
+      }
+      .eu-dialog form {
+        display: grid;
+        gap: 16px;
+        padding: 20px;
+      }
+      .eu-dialog h2 {
+        margin: 0;
+        font-size: 1.05rem;
+      }
+      .eu-dialog p {
+        margin: 0;
+        color: #475467;
+      }
+      .eu-dialog input {
+        width: 100%;
+        min-height: 38px;
+        border: 1px solid rgba(15, 23, 42, 0.12);
+        border-radius: 8px;
+        padding: 8px 10px;
+        background: rgba(255, 255, 255, 0.95);
+        color: inherit;
+      }
+      [data-theme='dark'] .eu-dialog input {
+        border-color: rgba(226, 237, 255, 0.13);
+        background: rgba(7, 11, 22, 0.44);
+      }
+      .eu-dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
       .eu-muted { color: #667085; }
       @media (max-width: 1180px) {
         .eu-shell {
@@ -669,7 +736,6 @@
   <body class="wt" data-wt-tool="euler" data-wt-title="Euler Preview">
     <div class="wt-header" role="banner"></div>
     <template id="wtHeaderExtra">
-      <button id="helpButton" class="wt-btn" type="button" title="Euler preview help" aria-label="Euler preview help">?</button>
       <button id="shareButton" class="wt-btn" type="button" title="Share Euler source" aria-label="Share Euler source">
         <svg class="eu-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/></svg>
       </button>
@@ -692,10 +758,7 @@
             <span class="eu-kbd">Ctrl K</span>
           </div>
           <div id="tabList" class="eu-doc-list" role="tablist" aria-label="Euler documents"></div>
-          <button id="showAllDocs" class="eu-link-btn" type="button">
-            <svg class="eu-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8l4 4v14H8z"/><path d="M16 3v5h4"/><path d="M4 7v14h4"/></svg>
-            Show all documents
-          </button>
+          <p id="docCount" class="eu-doc-count">0 documents</p>
         </section>
 
         <section class="eu-card" aria-labelledby="documentInfoTitle">
@@ -852,6 +915,41 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
       </section>
     </main>
 
+    <dialog id="renameDialog" class="eu-dialog" aria-labelledby="renameDialogTitle">
+      <form method="dialog">
+        <h2 id="renameDialogTitle">Rename document</h2>
+        <label>
+          <span class="eu-muted">Title</span>
+          <input id="renameInput" type="text" maxlength="200" autocomplete="off" />
+        </label>
+        <div class="eu-dialog-actions">
+          <button class="eu-text-btn" type="submit" value="cancel">Cancel</button>
+          <button class="eu-text-btn primary" type="submit" value="save">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="deleteDialog" class="eu-dialog" aria-labelledby="deleteDialogTitle">
+      <form method="dialog">
+        <h2 id="deleteDialogTitle">Delete document</h2>
+        <p id="deleteDialogMessage">This document will be removed.</p>
+        <div class="eu-dialog-actions">
+          <button class="eu-text-btn" type="submit" value="cancel">Cancel</button>
+          <button class="eu-text-btn danger" type="submit" value="delete">Delete</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="noticeDialog" class="eu-dialog" aria-labelledby="noticeDialogTitle">
+      <form method="dialog">
+        <h2 id="noticeDialogTitle">Document action</h2>
+        <p id="noticeDialogMessage"></p>
+        <div class="eu-dialog-actions">
+          <button class="eu-text-btn primary" type="submit" value="ok">OK</button>
+        </div>
+      </form>
+    </dialog>
+
     <script>
       (function() {
         function boot() {
@@ -860,6 +958,7 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
           const LOCAL_ACTIVE_KEY = 'euler_active_v1';
           const REMOTE_ACTIVE_KEY = 'euler_active_remote_v1';
           const READER_SETTINGS_KEY = 'euler_reader_settings_v1';
+          const BOOKMARKS_KEY = 'euler_bookmarks_v1';
           const DEFAULT_CONTENT = `[h1]Welcome[/h1]\n\nYou can use [b]BBCode[/b], inline TeX like $E=mc^2$, and blocks:\n\n$$\n\\int_{-\\infty}^{\\infty} e^{-x^2} \\, dx = \\sqrt{\\pi}\n$$\n\n[quote=\"euler\"]Obvious is the most dangerous word in mathematics.[/quote]\n\n[collapse=Code Example]\n[code=python]\n# Code highlighting demo\ndef fib(n):\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a\nprint(fib(10))\n[/code]\n[/collapse]\n\nList:[list=1]\n[*] First\n[*] Second\n[/list]\n\nHidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].\n`;
           const root = document.documentElement;
 
@@ -880,7 +979,7 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
           const fullView = $('fullView');
           const saveState = $('saveState');
           const docSearch = $('docSearch');
-          const showAllDocs = $('showAllDocs');
+          const docCount = $('docCount');
           const moreButton = $('moreButton');
           const moreMenu = $('moreMenu');
           const exportHtmlBtn = $('exportHtml');
@@ -888,13 +987,18 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
           const printButton = $('printButton');
           const bookmarkButton = $('bookmarkButton');
           const shareButton = $('shareButton');
-          const helpButton = $('helpButton');
           const fontSizeValue = $('fontSizeValue');
           const decreaseFont = $('decreaseFont');
           const increaseFont = $('increaseFont');
           const lineHeightSelect = $('lineHeightSelect');
           const widthSelect = $('widthSelect');
           const typeSelect = $('typeSelect');
+          const renameDialog = $('renameDialog');
+          const renameInput = $('renameInput');
+          const deleteDialog = $('deleteDialog');
+          const deleteDialogMessage = $('deleteDialogMessage');
+          const noticeDialog = $('noticeDialog');
+          const noticeDialogMessage = $('noticeDialogMessage');
           if (!input || !preview) return;
 
           function syncHighlightTheme(theme) {
@@ -920,6 +1024,9 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
           let searchText = '';
           let saveTimer;
           let readerSettings = loadReaderSettings();
+          let bookmarkIds = loadBookmarkIds();
+          let pendingRenameDoc = null;
+          let pendingDeleteDocId = '';
 
           function uid() {
             return 'd_' + Math.random().toString(36).slice(2, 9);
@@ -930,16 +1037,30 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
           }
 
           function normalizeDoc(doc, index) {
+            const id = String(doc.id || uid());
             const created = doc.created_at || doc.createdAt || nowIso();
             const updated = doc.updated_at || doc.updatedAt || created;
             return {
-              id: String(doc.id || uid()),
+              id,
               title: String(doc.title || `Doc ${index + 1}`),
               content: doc.content === null ? null : (typeof doc.content === 'string' ? doc.content : doc.content ?? ''),
               created_at: created,
               updated_at: updated,
-              bookmarked: !!doc.bookmarked,
+              bookmarked: bookmarkIds.has(id) || !!doc.bookmarked,
             };
+          }
+
+          function loadBookmarkIds() {
+            try {
+              const raw = JSON.parse(localStorage.getItem(BOOKMARKS_KEY) || '[]');
+              return new Set(Array.isArray(raw) ? raw.map(String) : []);
+            } catch {
+              return new Set();
+            }
+          }
+
+          function saveBookmarkIds() {
+            localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(Array.from(bookmarkIds)));
           }
 
           function loadLocalState() {
@@ -975,6 +1096,7 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
             preview.style.setProperty('--reader-font-size', `${fontSize}px`);
             preview.style.setProperty('--reader-line-height', readerSettings.lineHeight || '1.58');
             preview.style.setProperty('--reader-width', readerSettings.width || '920px');
+            preview.parentElement?.style.setProperty('--reader-width', readerSettings.width || '920px');
             const fontMap = {
               system: 'var(--wt-font-sans)',
               serif: 'var(--wt-font-serif)',
@@ -1149,6 +1271,13 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
               });
               tabList.appendChild(button);
             });
+            if (docCount) {
+              const total = docs.length;
+              const shown = filtered.length;
+              docCount.textContent = query
+                ? `${shown.toLocaleString()} of ${total.toLocaleString()} documents`
+                : `${total.toLocaleString()} ${total === 1 ? 'document' : 'documents'}`;
+            }
             if (!filtered.length) {
               const empty = document.createElement('div');
               empty.className = 'eu-muted';
@@ -1170,6 +1299,8 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
             $('infoReadingTime').textContent = `~${readingMinutes(words)} min`;
             $('readerMeta').textContent = formatRange(doc);
             bookmarkButton?.classList.toggle('active', !!doc?.bookmarked);
+            bookmarkButton?.setAttribute('aria-pressed', String(!!doc?.bookmarked));
+            bookmarkButton?.setAttribute('title', doc?.bookmarked ? 'Remove bookmark' : 'Bookmark document');
           }
 
           function renderPE(src) {
@@ -1426,29 +1557,44 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
             }
           }
 
+          function showNotice(message) {
+            if (!noticeDialog || !noticeDialogMessage) return;
+            noticeDialogMessage.textContent = message;
+            noticeDialog.showModal();
+          }
+
           function renameDoc() {
             const current = getActive();
             if (!current) return;
-            const next = prompt('Rename document', current.title || 'Untitled');
-            if (next === null) return;
-            const title = next.trim() || current.title || 'Untitled';
-            current.title = title.slice(0, 200);
-            current.updated_at = nowIso();
-            persistRename(current).catch(() => {});
+            pendingRenameDoc = current;
+            if (renameInput) renameInput.value = current.title || 'Untitled';
             closeMoreMenu();
-            renderDocuments();
-            renderInfo();
+            renameDialog?.showModal();
+            setTimeout(() => {
+              renameInput?.focus();
+              renameInput?.select();
+            }, 0);
           }
 
-          async function deleteDoc() {
+          function requestDeleteDoc() {
             if (docs.length <= 1) {
-              alert('At least one document must remain.');
+              showNotice('At least one document must remain.');
               return;
             }
             const current = getActive();
-            if (!current || !confirm(`Delete "${current.title || 'Untitled'}"?`)) return;
-            const idx = docs.findIndex(d => d.id === current.id);
+            if (!current) return;
+            pendingDeleteDocId = current.id;
+            if (deleteDialogMessage) {
+              deleteDialogMessage.textContent = `Delete "${current.title || 'Untitled'}"? This cannot be undone.`;
+            }
+            closeMoreMenu();
+            deleteDialog?.showModal();
+          }
+
+          async function deleteDoc(docId) {
+            const idx = docs.findIndex(d => d.id === docId);
             if (idx < 0) return;
+            const current = docs[idx];
             if (MODE === 'account') {
               await api('/api/pages/delete', {
                 method: 'POST',
@@ -1533,8 +1679,12 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
             const current = getActive();
             if (!current) return;
             current.bookmarked = !current.bookmarked;
+            if (current.bookmarked) bookmarkIds.add(current.id);
+            else bookmarkIds.delete(current.id);
+            saveBookmarkIds();
             if (MODE === 'local') saveLocalState(docs, active);
             renderInfo();
+            renderDocuments();
           }
 
           input.addEventListener('input', () => {
@@ -1547,14 +1697,35 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
           });
           newBtn?.addEventListener('click', () => newDoc().catch(() => {}));
           renameBtn?.addEventListener('click', renameDoc);
-          deleteBtn?.addEventListener('click', () => deleteDoc().catch(() => {}));
+          deleteBtn?.addEventListener('click', requestDeleteDoc);
           copyBtn?.addEventListener('click', copyRenderedHtml);
           exportHtmlBtn?.addEventListener('click', exportHtml);
           exportPdfBtn?.addEventListener('click', () => window.print());
           printButton?.addEventListener('click', () => window.print());
           bookmarkButton?.addEventListener('click', toggleBookmark);
           shareButton?.addEventListener('click', () => shareSource().catch(() => {}));
-          helpButton?.addEventListener('click', () => alert('Split View keeps the raw Euler forum source editor open. Full Width hides the editor and shows the rendered preview.'));
+          renameDialog?.addEventListener('close', () => {
+            if (renameDialog.returnValue !== 'save' || !pendingRenameDoc) {
+              pendingRenameDoc = null;
+              return;
+            }
+            const title = (renameInput?.value || '').trim() || pendingRenameDoc.title || 'Untitled';
+            pendingRenameDoc.title = title.slice(0, 200);
+            pendingRenameDoc.updated_at = nowIso();
+            persistRename(pendingRenameDoc).catch(() => setSaveState('Save failed', false));
+            pendingRenameDoc = null;
+            renderDocuments();
+            renderInfo();
+          });
+          deleteDialog?.addEventListener('close', () => {
+            if (deleteDialog.returnValue !== 'delete' || !pendingDeleteDocId) {
+              pendingDeleteDocId = '';
+              return;
+            }
+            const docId = pendingDeleteDocId;
+            pendingDeleteDocId = '';
+            deleteDoc(docId).catch(() => setSaveState('Delete failed', false));
+          });
           splitView?.addEventListener('click', () => setView('split'));
           fullView?.addEventListener('click', () => setView('full'));
           moreButton?.addEventListener('click', (e) => {
@@ -1568,11 +1739,6 @@ Hidden: [hide]Spoiler text[/hide], colors: [r]red[/r] and [g]green[/g].
           });
           docSearch?.addEventListener('input', () => {
             searchText = docSearch.value || '';
-            renderDocuments();
-          });
-          showAllDocs?.addEventListener('click', () => {
-            searchText = '';
-            if (docSearch) docSearch.value = '';
             renderDocuments();
           });
           document.addEventListener('keydown', (e) => {

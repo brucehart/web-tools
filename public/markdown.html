@@ -209,6 +209,8 @@
         display: grid;
         gap: 8px;
         margin-top: 12px;
+        max-height: none;
+        overflow: visible;
       }
       .md-doc-item {
         width: 100%;
@@ -284,6 +286,12 @@
         cursor: pointer;
         font: inherit;
         font-size: 0.86rem;
+      }
+      .md-doc-count {
+        margin: 12px 0 0;
+        color: #667085;
+        font-size: 0.82rem;
+        text-align: center;
       }
       .md-info-grid {
         display: grid;
@@ -458,12 +466,15 @@
       }
       .md-preview-wrap {
         min-width: 0;
+        display: flex;
+        justify-content: center;
         overflow: auto;
         border-top: 1px solid rgba(15, 23, 42, 0.08);
       }
       [data-theme='dark'] .md-preview-wrap { border-color: rgba(226, 237, 255, 0.1); }
       .md-preview {
-        width: min(100%, var(--reader-width, 920px));
+        width: 100%;
+        max-width: var(--reader-width, 920px);
         margin: 0 auto;
         padding: 46px 36px 60px;
         color: #192338;
@@ -595,6 +606,62 @@
         box-shadow: none;
         background: transparent;
       }
+      .md-icon-btn.active {
+        border-color: rgba(37, 99, 235, 0.45);
+        color: #1d4ed8;
+        background: #eef5ff;
+      }
+      [data-theme='dark'] .md-icon-btn.active {
+        color: #93c5fd;
+        background: rgba(37, 99, 235, 0.18);
+      }
+      .md-dialog {
+        width: min(420px, calc(100vw - 32px));
+        border: 1px solid rgba(15, 23, 42, 0.14);
+        border-radius: 8px;
+        padding: 0;
+        color: inherit;
+        background: #fff;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+      }
+      [data-theme='dark'] .md-dialog {
+        border-color: rgba(226, 237, 255, 0.14);
+        background: #0f172a;
+      }
+      .md-dialog::backdrop {
+        background: rgba(15, 23, 42, 0.38);
+      }
+      .md-dialog form {
+        display: grid;
+        gap: 16px;
+        padding: 20px;
+      }
+      .md-dialog h2 {
+        margin: 0;
+        font-size: 1.05rem;
+      }
+      .md-dialog p {
+        margin: 0;
+        color: #475467;
+      }
+      .md-dialog input {
+        width: 100%;
+        min-height: 38px;
+        border: 1px solid rgba(15, 23, 42, 0.12);
+        border-radius: 8px;
+        padding: 8px 10px;
+        background: rgba(255, 255, 255, 0.95);
+        color: inherit;
+      }
+      [data-theme='dark'] .md-dialog input {
+        border-color: rgba(226, 237, 255, 0.13);
+        background: rgba(7, 11, 22, 0.44);
+      }
+      .md-dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
       .md-hidden { display: none !important; }
       .md-muted { color: #667085; }
       @media (max-width: 1180px) {
@@ -676,7 +743,6 @@
   <body class="wt" data-wt-tool="markdown" data-wt-title="Markdown Viewer">
     <div class="wt-header" role="banner"></div>
     <template id="wtHeaderExtra">
-      <button id="helpButton" class="wt-btn" type="button" title="Markdown help" aria-label="Markdown help">?</button>
       <button id="shareButton" class="wt-btn" type="button" title="Share Markdown" aria-label="Share Markdown">
         <svg class="md-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/></svg>
       </button>
@@ -699,10 +765,7 @@
             <span class="md-kbd">Ctrl K</span>
           </div>
           <div id="tabList" class="md-doc-list" role="tablist" aria-label="Markdown documents"></div>
-          <button id="showAllDocs" class="md-link-btn" type="button">
-            <svg class="md-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8l4 4v14H8z"/><path d="M16 3v5h4"/><path d="M4 7v14h4"/></svg>
-            Show all documents
-          </button>
+          <p id="docCount" class="md-doc-count">0 documents</p>
         </section>
 
         <section class="md-card" aria-labelledby="documentInfoTitle">
@@ -853,6 +916,41 @@ $$
       </section>
     </main>
 
+    <dialog id="renameDialog" class="md-dialog" aria-labelledby="renameDialogTitle">
+      <form method="dialog">
+        <h2 id="renameDialogTitle">Rename document</h2>
+        <label>
+          <span class="md-muted">Title</span>
+          <input id="renameInput" type="text" maxlength="200" autocomplete="off" />
+        </label>
+        <div class="md-dialog-actions">
+          <button class="md-text-btn" type="submit" value="cancel">Cancel</button>
+          <button class="md-text-btn primary" type="submit" value="save">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="deleteDialog" class="md-dialog" aria-labelledby="deleteDialogTitle">
+      <form method="dialog">
+        <h2 id="deleteDialogTitle">Delete document</h2>
+        <p id="deleteDialogMessage">This document will be removed.</p>
+        <div class="md-dialog-actions">
+          <button class="md-text-btn" type="submit" value="cancel">Cancel</button>
+          <button class="md-text-btn danger" type="submit" value="delete">Delete</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="noticeDialog" class="md-dialog" aria-labelledby="noticeDialogTitle">
+      <form method="dialog">
+        <h2 id="noticeDialogTitle">Document action</h2>
+        <p id="noticeDialogMessage"></p>
+        <div class="md-dialog-actions">
+          <button class="md-text-btn primary" type="submit" value="ok">OK</button>
+        </div>
+      </form>
+    </dialog>
+
     <script>
       (function() {
         function boot() {
@@ -861,6 +959,7 @@ $$
           const LOCAL_ACTIVE_KEY = 'md_active_v1';
           const REMOTE_ACTIVE_KEY = 'md_active_remote_v1';
           const READER_SETTINGS_KEY = 'md_reader_settings_v1';
+          const BOOKMARKS_KEY = 'md_bookmarks_v1';
           const DEFAULT_CONTENT = `# Welcome\n\nType Markdown on the left and see HTML on the right.\n\n- Supports GitHub-flavored Markdown\n- Sanitizes output with DOMPurify\n- Renders LaTeX via MathJax: $E=mc^2$\n\nBlock math:\n\n$$\n\\int_{-\\infty}^{\\infty} e^{-x^2} \\mathrm{d}x = \\sqrt{\\pi}\n$$\n`;
           const root = document.documentElement;
 
@@ -881,7 +980,7 @@ $$
           const fullView = $('fullView');
           const saveState = $('saveState');
           const docSearch = $('docSearch');
-          const showAllDocs = $('showAllDocs');
+          const docCount = $('docCount');
           const moreButton = $('moreButton');
           const moreMenu = $('moreMenu');
           const exportHtmlBtn = $('exportHtml');
@@ -889,13 +988,18 @@ $$
           const printButton = $('printButton');
           const bookmarkButton = $('bookmarkButton');
           const shareButton = $('shareButton');
-          const helpButton = $('helpButton');
           const fontSizeValue = $('fontSizeValue');
           const decreaseFont = $('decreaseFont');
           const increaseFont = $('increaseFont');
           const lineHeightSelect = $('lineHeightSelect');
           const widthSelect = $('widthSelect');
           const typeSelect = $('typeSelect');
+          const renameDialog = $('renameDialog');
+          const renameInput = $('renameInput');
+          const deleteDialog = $('deleteDialog');
+          const deleteDialogMessage = $('deleteDialogMessage');
+          const noticeDialog = $('noticeDialog');
+          const noticeDialogMessage = $('noticeDialogMessage');
           if (!input || !preview) return;
 
           function syncHighlightTheme(theme) {
@@ -925,6 +1029,9 @@ $$
           let searchText = '';
           let saveTimer;
           let readerSettings = loadReaderSettings();
+          let bookmarkIds = loadBookmarkIds();
+          let pendingRenameDoc = null;
+          let pendingDeleteDocId = '';
 
           function uid() {
             return 'd_' + Math.random().toString(36).slice(2, 9);
@@ -935,16 +1042,30 @@ $$
           }
 
           function normalizeDoc(doc, index) {
+            const id = String(doc.id || uid());
             const created = doc.created_at || doc.createdAt || nowIso();
             const updated = doc.updated_at || doc.updatedAt || created;
             return {
-              id: String(doc.id || uid()),
+              id,
               title: String(doc.title || `Doc ${index + 1}`),
               content: doc.content === null ? null : (typeof doc.content === 'string' ? doc.content : doc.content ?? ''),
               created_at: created,
               updated_at: updated,
-              bookmarked: !!doc.bookmarked,
+              bookmarked: bookmarkIds.has(id) || !!doc.bookmarked,
             };
+          }
+
+          function loadBookmarkIds() {
+            try {
+              const raw = JSON.parse(localStorage.getItem(BOOKMARKS_KEY) || '[]');
+              return new Set(Array.isArray(raw) ? raw.map(String) : []);
+            } catch {
+              return new Set();
+            }
+          }
+
+          function saveBookmarkIds() {
+            localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(Array.from(bookmarkIds)));
           }
 
           function loadLocalState() {
@@ -980,6 +1101,7 @@ $$
             preview.style.setProperty('--reader-font-size', `${fontSize}px`);
             preview.style.setProperty('--reader-line-height', readerSettings.lineHeight || '1.58');
             preview.style.setProperty('--reader-width', readerSettings.width || '920px');
+            preview.parentElement?.style.setProperty('--reader-width', readerSettings.width || '920px');
             const fontMap = {
               system: 'var(--wt-font-sans)',
               serif: 'var(--wt-font-serif)',
@@ -1126,6 +1248,13 @@ $$
               });
               tabList.appendChild(button);
             });
+            if (docCount) {
+              const total = docs.length;
+              const shown = filtered.length;
+              docCount.textContent = query
+                ? `${shown.toLocaleString()} of ${total.toLocaleString()} documents`
+                : `${total.toLocaleString()} ${total === 1 ? 'document' : 'documents'}`;
+            }
             if (!filtered.length) {
               const empty = document.createElement('div');
               empty.className = 'md-muted';
@@ -1147,6 +1276,8 @@ $$
             $('infoReadingTime').textContent = `~${readingMinutes(words)} min`;
             $('readerMeta').textContent = formatRange(doc);
             bookmarkButton?.classList.toggle('active', !!doc?.bookmarked);
+            bookmarkButton?.setAttribute('aria-pressed', String(!!doc?.bookmarked));
+            bookmarkButton?.setAttribute('title', doc?.bookmarked ? 'Remove bookmark' : 'Bookmark document');
           }
 
           function escapeHtml(s) {
@@ -1343,29 +1474,44 @@ $$
             }
           }
 
+          function showNotice(message) {
+            if (!noticeDialog || !noticeDialogMessage) return;
+            noticeDialogMessage.textContent = message;
+            noticeDialog.showModal();
+          }
+
           function renameDoc() {
             const current = getActive();
             if (!current) return;
-            const next = prompt('Rename document', current.title || 'Untitled');
-            if (next === null) return;
-            const title = next.trim() || current.title || 'Untitled';
-            current.title = title.slice(0, 200);
-            current.updated_at = nowIso();
-            persistRename(current).catch(() => {});
+            pendingRenameDoc = current;
+            if (renameInput) renameInput.value = current.title || 'Untitled';
             closeMoreMenu();
-            renderDocuments();
-            renderInfo();
+            renameDialog?.showModal();
+            setTimeout(() => {
+              renameInput?.focus();
+              renameInput?.select();
+            }, 0);
           }
 
-          async function deleteDoc() {
+          function requestDeleteDoc() {
             if (docs.length <= 1) {
-              alert('At least one document must remain.');
+              showNotice('At least one document must remain.');
               return;
             }
             const current = getActive();
-            if (!current || !confirm(`Delete "${current.title || 'Untitled'}"?`)) return;
-            const idx = docs.findIndex(d => d.id === current.id);
+            if (!current) return;
+            pendingDeleteDocId = current.id;
+            if (deleteDialogMessage) {
+              deleteDialogMessage.textContent = `Delete "${current.title || 'Untitled'}"? This cannot be undone.`;
+            }
+            closeMoreMenu();
+            deleteDialog?.showModal();
+          }
+
+          async function deleteDoc(docId) {
+            const idx = docs.findIndex(d => d.id === docId);
             if (idx < 0) return;
+            const current = docs[idx];
             if (MODE === 'account') {
               await api('/api/pages/delete', {
                 method: 'POST',
@@ -1450,8 +1596,12 @@ $$
             const current = getActive();
             if (!current) return;
             current.bookmarked = !current.bookmarked;
+            if (current.bookmarked) bookmarkIds.add(current.id);
+            else bookmarkIds.delete(current.id);
+            saveBookmarkIds();
             if (MODE === 'local') saveLocalState(docs, active);
             renderInfo();
+            renderDocuments();
           }
 
           input.addEventListener('input', () => {
@@ -1464,14 +1614,35 @@ $$
           });
           newBtn?.addEventListener('click', () => newDoc().catch(() => {}));
           renameBtn?.addEventListener('click', renameDoc);
-          deleteBtn?.addEventListener('click', () => deleteDoc().catch(() => {}));
+          deleteBtn?.addEventListener('click', requestDeleteDoc);
           copyBtn?.addEventListener('click', copyRenderedHtml);
           exportHtmlBtn?.addEventListener('click', exportHtml);
           exportPdfBtn?.addEventListener('click', () => window.print());
           printButton?.addEventListener('click', () => window.print());
           bookmarkButton?.addEventListener('click', toggleBookmark);
           shareButton?.addEventListener('click', () => shareMarkdown().catch(() => {}));
-          helpButton?.addEventListener('click', () => alert('Split View keeps the raw Markdown editor open. Full Width hides the editor and shows the rendered document.'));
+          renameDialog?.addEventListener('close', () => {
+            if (renameDialog.returnValue !== 'save' || !pendingRenameDoc) {
+              pendingRenameDoc = null;
+              return;
+            }
+            const title = (renameInput?.value || '').trim() || pendingRenameDoc.title || 'Untitled';
+            pendingRenameDoc.title = title.slice(0, 200);
+            pendingRenameDoc.updated_at = nowIso();
+            persistRename(pendingRenameDoc).catch(() => setSaveState('Save failed', false));
+            pendingRenameDoc = null;
+            renderDocuments();
+            renderInfo();
+          });
+          deleteDialog?.addEventListener('close', () => {
+            if (deleteDialog.returnValue !== 'delete' || !pendingDeleteDocId) {
+              pendingDeleteDocId = '';
+              return;
+            }
+            const docId = pendingDeleteDocId;
+            pendingDeleteDocId = '';
+            deleteDoc(docId).catch(() => setSaveState('Delete failed', false));
+          });
           splitView?.addEventListener('click', () => setView('split'));
           fullView?.addEventListener('click', () => setView('full'));
           moreButton?.addEventListener('click', (e) => {
@@ -1485,11 +1656,6 @@ $$
           });
           docSearch?.addEventListener('input', () => {
             searchText = docSearch.value || '';
-            renderDocuments();
-          });
-          showAllDocs?.addEventListener('click', () => {
-            searchText = '';
-            if (docSearch) docSearch.value = '';
             renderDocuments();
           });
           document.addEventListener('keydown', (e) => {

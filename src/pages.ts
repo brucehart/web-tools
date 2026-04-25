@@ -31,7 +31,7 @@ async function createPage(env: Bindings, userId: string, tool: Tool, title: stri
 
 async function listPages(env: Bindings, userId: string, tool: Tool): Promise<Response> {
   const rows = await env.DB.prepare(
-    'SELECT id, title, created_at, updated_at FROM tool_pages WHERE user_id = ? AND tool = ? ORDER BY updated_at DESC LIMIT 200',
+    'SELECT id, title, created_at, updated_at FROM tool_pages WHERE user_id = ? AND tool = ? ORDER BY updated_at DESC',
   )
     .bind(userId, tool)
     .all();
