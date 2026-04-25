@@ -16,13 +16,137 @@
         --success: var(--wt-success);
         --danger: var(--wt-danger);
         --warning: var(--wt-warning);
-        --stage-bg: rgba(15, 23, 42, 0.1);
+        --stage-bg: #fbfcff;
       }
 
       body {
         margin: 0;
         min-height: 100vh;
         color: var(--wt-fg);
+      }
+
+      body[data-wt-tool='image-editor'].wt {
+        background: #f7f8fc;
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      body[data-wt-tool='image-editor'].wt[data-theme='dark'],
+      [data-theme='dark'] body[data-wt-tool='image-editor'].wt {
+        --stage-bg: #0a1020;
+        background: #080d19;
+      }
+
+      body[data-wt-tool='image-editor'] .wt-header {
+        position: sticky;
+        background: rgba(255, 255, 255, 0.92);
+        border-bottom-color: rgba(15, 23, 42, 0.08);
+        box-shadow: 0 1px 12px rgba(15, 23, 42, 0.04);
+      }
+
+      [data-theme='dark'] body[data-wt-tool='image-editor'] .wt-header {
+        background: rgba(10, 15, 28, 0.9);
+      }
+
+      body[data-wt-tool='image-editor'] .wt-header-inner {
+        max-width: none;
+        min-height: 52px;
+        padding: 7px 22px;
+      }
+
+      body[data-wt-tool='image-editor'] .wt-brand {
+        align-items: center;
+        gap: 10px;
+      }
+
+      body[data-wt-tool='image-editor'] .wt-logo-link {
+        width: 31px;
+        height: 31px;
+        border: 0;
+        border-radius: 8px;
+        background: linear-gradient(180deg, #3888f7, #2674e8);
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+        color: #fff;
+      }
+
+      body[data-wt-tool='image-editor'] .wt-logo-link:hover {
+        background: linear-gradient(180deg, #4694ff, #2d7cf0);
+        border-color: transparent;
+      }
+
+      body[data-wt-tool='image-editor'] .wt-logo {
+        display: none;
+      }
+
+      body[data-wt-tool='image-editor'] .wt-logo-link::before {
+        content: '';
+        width: 19px;
+        height: 19px;
+        background: center / contain no-repeat
+          url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='3' y='3' width='14' height='14' rx='3' stroke='white' stroke-width='1.6'/%3E%3Cpath d='M5.25 14.1L8.55 10.25L11.15 12.95L12.55 11.25L15.25 14.1' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='13.75' cy='6.75' r='1.2' fill='white'/%3E%3C/svg%3E");
+      }
+
+      body[data-wt-tool='image-editor'] .wt-toolname {
+        border-left: 0;
+        color: var(--wt-fg);
+        font-size: 14px;
+        font-weight: 750;
+        letter-spacing: 0;
+        padding-left: 0;
+      }
+
+      body[data-wt-tool='image-editor'] .wt-actions > a[title='Home'] {
+        display: none;
+      }
+
+      body[data-wt-tool='image-editor'] #wtToggleTheme {
+        min-width: 144px;
+        justify-content: flex-end;
+        border-radius: 999px;
+        padding: 7px 15px 7px 84px;
+        position: relative;
+        background-color: #fff;
+        background-image:
+          url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23304A6F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41'/%3E%3C/svg%3E"),
+          linear-gradient(rgba(15, 23, 42, 0.18), rgba(15, 23, 42, 0.18)),
+          url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23304A6F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z'/%3E%3C/svg%3E"),
+          linear-gradient(rgba(15, 23, 42, 0.18), rgba(15, 23, 42, 0.18));
+        background-repeat: no-repeat;
+        background-size: 16px 16px, 1px 16px, 16px 16px, 1px 16px;
+        background-position: 15px center, 44px center, 56px center, 84px center;
+        color: #1d2b45;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      [data-theme='dark'] body[data-wt-tool='image-editor'] #wtToggleTheme {
+        background-color: #0f172a;
+        color: #e6edff;
+        background-image:
+          url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23CBD8F4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41'/%3E%3C/svg%3E"),
+          linear-gradient(rgba(226, 237, 255, 0.22), rgba(226, 237, 255, 0.22)),
+          url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23CBD8F4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z'/%3E%3C/svg%3E"),
+          linear-gradient(rgba(226, 237, 255, 0.22), rgba(226, 237, 255, 0.22));
+      }
+
+      body[data-wt-tool='image-editor'] .image-editor-settings-button {
+        width: 34px;
+        height: 34px;
+        justify-content: center;
+        border-radius: 10px;
+        padding: 0;
+        background: #fff;
+        color: #304a6f;
+      }
+
+      [data-theme='dark'] body[data-wt-tool='image-editor'] .image-editor-settings-button {
+        background: #0f172a;
+        color: #cbd8f4;
+      }
+
+      body[data-wt-tool='image-editor'] .wt-page {
+        max-width: none;
+        padding: 16px 23px 34px;
       }
 
       .page {
@@ -34,20 +158,20 @@
       .stage-panel {
         background: var(--panel);
         border: 1px solid var(--border);
-        border-radius: 18px;
-        box-shadow: var(--wt-shadow-sm);
+        border-radius: 14px;
+        box-shadow: 0 5px 18px rgba(15, 23, 42, 0.06);
       }
 
       .workspace {
         display: grid;
         gap: 18px;
-        grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+        grid-template-columns: 352px minmax(0, 1fr);
         align-items: stretch;
       }
 
       .controls {
         display: grid;
-        gap: 16px;
+        gap: 10px;
         align-content: start;
       }
 
@@ -60,24 +184,35 @@
         border-bottom: 1px solid var(--border);
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 10px;
+        justify-content: flex-start;
+        gap: 8px;
       }
 
       .panel-head h2 {
         margin: 0;
-        font-size: 0.96rem;
+        font-size: 14px;
+        line-height: 1;
+        font-weight: 760;
       }
 
       .panel-body {
-        padding: 14px;
+        padding: 8px 12px 10px;
         display: grid;
-        gap: 14px;
+        gap: 8px;
+      }
+
+      .panel-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        color: var(--accent);
       }
 
       .field {
         display: grid;
-        gap: 6px;
+        gap: 4px;
       }
 
       .field-header-row {
@@ -89,53 +224,90 @@
 
       .field label,
       .field-header {
-        font-size: 0.86rem;
+        font-size: 11px;
         color: var(--muted);
-        font-weight: 600;
+        font-weight: 720;
       }
 
       .drop-zone {
         width: 100%;
-        min-height: 132px;
-        border: 2px dashed var(--border);
-        border-radius: 18px;
-        background:
-          radial-gradient(circle at top right, rgba(14, 165, 233, 0.1), transparent 42%),
-          rgba(127, 127, 127, 0.05);
+        min-height: 152px;
+        border: 1.5px dashed rgba(62, 130, 245, 0.28);
+        border-radius: 13px;
+        background: #fbfcff;
         color: inherit;
-        cursor: pointer;
         display: grid;
         place-items: center;
         text-align: center;
-        padding: 18px;
+        padding: 13px 12px 10px;
         transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+      }
+
+      [data-theme='dark'] .drop-zone {
+        background: rgba(15, 23, 42, 0.74);
+      }
+
+      .drop-content {
+        width: 100%;
+        display: grid;
+        justify-items: center;
+        gap: 6px;
+      }
+
+      .drop-picker {
+        appearance: none;
+        width: 100%;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        display: grid;
+        justify-items: center;
+        gap: 6px;
+        padding: 0;
+        text-align: center;
+        font: inherit;
+      }
+
+      .drop-icon {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: linear-gradient(180deg, #3888f7, #2877ec);
+        color: #fff;
+        box-shadow: 0 9px 18px rgba(37, 99, 235, 0.18);
       }
 
       .drop-zone strong {
         display: block;
-        margin-bottom: 6px;
-        font-size: 1rem;
+        margin-bottom: 2px;
+        font-size: 13px;
+        line-height: 1.15;
       }
 
       .drop-zone p {
         margin: 0;
         color: var(--muted);
-        font-size: 0.9rem;
+        font-size: 12px;
+        line-height: 1.25;
+        max-width: 260px;
       }
 
       .drop-zone.drag-over,
       body.dragging .drop-zone {
         border-color: var(--accent);
-        background:
-          radial-gradient(circle at top right, rgba(14, 165, 233, 0.16), transparent 45%),
-          rgba(37, 99, 235, 0.08);
+        background: rgba(37, 99, 235, 0.06);
       }
 
       .hint,
       .meta-note {
         margin: 0;
         color: var(--muted);
-        font-size: 0.87rem;
+        font-size: 11px;
+        line-height: 1.15;
       }
 
       .btn-row,
@@ -145,47 +317,55 @@
         gap: 8px;
       }
 
-      .btn-row .wt-btn,
       .toolbar-row .wt-btn {
         justify-content: center;
       }
 
-      .btn-row .wt-btn {
-        flex: 1 1 0;
+      .drop-clear-button {
+        width: 100%;
+        min-height: 24px;
+        justify-content: center;
+        margin-top: 5px;
+        border-radius: 999px;
+        background: #fff;
+        color: #18243a;
+        font-size: 0.81rem;
+        padding: 6px 10px;
       }
 
       .meta-grid {
         display: grid;
-        gap: 10px;
+        gap: 7px;
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       .meta-item {
         border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 10px;
-        background: rgba(127, 127, 127, 0.05);
+        border-radius: 9px;
+        padding: 7px 10px 6px;
+        background: #fbfcff;
+        min-height: 45px;
       }
 
       .meta-item strong {
         display: block;
         margin-bottom: 4px;
-        color: var(--muted);
-        font-size: 0.8rem;
+        color: var(--accent);
+        font-size: 10px;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.025em;
       }
 
       .meta-item span {
         display: block;
         min-height: 1.3em;
-        font-size: 0.94rem;
+        font-size: 12px;
         word-break: break-word;
       }
 
       .control-stack {
         display: grid;
-        gap: 12px;
+        gap: 7px;
       }
 
       .scale-row {
@@ -228,9 +408,10 @@
 
       .text-input {
         border: 1px solid var(--border);
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.06);
-        padding: 8px 10px;
+        border-radius: 8px;
+        background: #fff;
+        padding: 7px 9px;
+        min-height: 28px;
       }
 
       .input-with-suffix {
@@ -263,13 +444,14 @@
       .radio-chip {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
+        gap: 7px;
+        min-height: 28px;
+        padding: 6px 12px;
         border: 1px solid var(--border);
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.04);
+        background: #fff;
         cursor: pointer;
-        font-size: 0.92rem;
+        font-size: 12px;
       }
 
       .radio-chip input {
@@ -277,15 +459,15 @@
       }
 
       .stage-panel {
+        height: calc(100vh - 106px);
         min-height: 720px;
         display: grid;
-        grid-template-rows: auto 1fr auto;
+        grid-template-rows: auto minmax(0, 1fr) auto;
         overflow: hidden;
       }
 
       .stage-head {
-        padding: 12px 14px;
-        border-bottom: 1px solid var(--border);
+        padding: 10px 14px 8px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -295,7 +477,9 @@
 
       .stage-head h2 {
         margin: 0;
-        font-size: 0.96rem;
+        font-size: 14px;
+        line-height: 1;
+        font-weight: 760;
       }
 
       .status {
@@ -303,10 +487,10 @@
         align-items: center;
         gap: 8px;
         border-radius: 999px;
-        padding: 7px 10px;
-        font-size: 0.86rem;
+        padding: 7px 13px;
+        font-size: 0.82rem;
         border: 1px solid var(--border);
-        background: rgba(127, 127, 127, 0.06);
+        background: #fff;
       }
 
       .status[data-kind='success'] {
@@ -327,10 +511,10 @@
       .stage-viewport {
         position: relative;
         overflow: auto;
-        background:
-          radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 38%),
-          radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.16), transparent 34%),
-          var(--stage-bg);
+        margin: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 13px;
+        background: var(--stage-bg);
       }
 
       .stage-viewport.is-pannable {
@@ -356,15 +540,21 @@
       .checkerboard {
         position: absolute;
         inset: 0;
-        background-image:
-          linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
-          linear-gradient(-45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
-          linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.08) 75%),
-          linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.08) 75%);
-        background-size: 22px 22px;
-        background-position: 0 0, 0 11px, 11px -11px, -11px 0;
-        opacity: 0.6;
+        background-image: radial-gradient(circle, rgba(126, 147, 179, 0.26) 1px, transparent 1.15px);
+        background-size: 16px 16px;
+        background-position: 1px 1px;
+        opacity: 0.62;
         pointer-events: none;
+      }
+
+      [data-theme='dark'] .stage-viewport {
+        background: var(--stage-bg);
+        border-color: rgba(226, 237, 255, 0.1);
+      }
+
+      [data-theme='dark'] .checkerboard {
+        background-image: radial-gradient(circle, rgba(148, 163, 184, 0.28) 1px, transparent 1.15px);
+        opacity: 0.5;
       }
 
       .drag-banner {
@@ -399,23 +589,170 @@
       .empty-state {
         position: relative;
         z-index: 1;
-        max-width: 420px;
-        padding: 26px;
-        border-radius: 20px;
-        border: 1px solid var(--border);
-        background: rgba(255, 255, 255, 0.08);
-        box-shadow: var(--wt-shadow-sm);
+        width: min(380px, 100%);
+        display: grid;
+        justify-items: center;
+        gap: 17px;
         text-align: center;
+        transform: translateY(-23px);
+      }
+
+      .empty-illustration {
+        width: 250px;
+        height: 170px;
+        position: relative;
+        color: #2f7ff2;
+      }
+
+      .empty-blob {
+        position: absolute;
+        inset: 48px 18px 18px;
+        background: #eaf2ff;
+        border-radius: 64px 66px 72px 78px;
+      }
+
+      [data-theme='dark'] .empty-blob {
+        background: #17243b;
+      }
+
+      .empty-ring {
+        position: absolute;
+        width: 96px;
+        height: 96px;
+        top: 20px;
+        left: 42px;
+        border: 1px solid rgba(98, 150, 244, 0.22);
+        border-radius: 50%;
+      }
+
+      [data-theme='dark'] .empty-ring {
+        border-color: rgba(122, 162, 247, 0.22);
+      }
+
+      .empty-photo {
+        position: absolute;
+        top: 39px;
+        left: 59px;
+        width: 122px;
+        height: 112px;
+        border: 10px solid #eff5ff;
+        border-radius: 12px;
+        background: #76a9fb;
+        box-shadow: 0 14px 28px rgba(70, 111, 181, 0.2);
+        transform: rotate(-8deg);
+      }
+
+      [data-theme='dark'] .empty-photo {
+        border-color: #1f3150;
+        background: #356fc8;
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+      }
+
+      .empty-photo::before {
+        content: '';
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        bottom: 9px;
+        height: 50px;
+        background: linear-gradient(135deg, #3a89f6 0 48%, #5da0fb 48%);
+        clip-path: polygon(0 100%, 38% 18%, 59% 58%, 78% 35%, 100% 100%);
+      }
+
+      [data-theme='dark'] .empty-photo::before {
+        background: linear-gradient(135deg, #2471dc 0 48%, #4d8df0 48%);
+      }
+
+      .empty-photo::after {
+        content: '';
+        position: absolute;
+        top: 17px;
+        right: 16px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #fff;
+      }
+
+      [data-theme='dark'] .empty-photo::after {
+        background: #e7f0ff;
+      }
+
+      .empty-file {
+        position: absolute;
+        top: 91px;
+        left: 144px;
+        width: 100px;
+        height: 82px;
+        border: 2px dashed rgba(47, 127, 242, 0.55);
+        border-radius: 13px;
+        background: #fff;
+        box-shadow: 0 12px 24px rgba(70, 111, 181, 0.18);
+        transform: rotate(8deg);
+        display: grid;
+        place-items: center;
+      }
+
+      [data-theme='dark'] .empty-file {
+        border-color: rgba(122, 162, 247, 0.62);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.26);
+      }
+
+      .empty-file svg {
+        transform: rotate(-8deg);
+      }
+
+      .spark {
+        position: absolute;
+        color: #a9c9ff;
+      }
+
+      .spark.one {
+        top: 70px;
+        left: 222px;
+      }
+
+      .spark.two {
+        top: 118px;
+        left: 23px;
+      }
+
+      .spark.three {
+        top: 22px;
+        left: 198px;
+      }
+
+      .empty-copy-card {
+        width: 100%;
+        padding: 21px 24px;
+        border-radius: 13px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+        text-align: center;
+      }
+
+      [data-theme='dark'] .empty-copy-card,
+      [data-theme='dark'] .empty-file {
+        background: rgba(15, 23, 42, 0.94);
+      }
+
+      [data-theme='dark'] .empty-copy-card {
+        border-color: rgba(226, 237, 255, 0.12);
+        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28);
       }
 
       .empty-state h3 {
         margin: 0 0 8px;
-        font-size: 1.2rem;
+        font-size: 15px;
+        line-height: 1.2;
       }
 
       .empty-state p {
         margin: 0;
         color: var(--muted);
+        font-size: 11px;
+        line-height: 1.45;
       }
 
       .stage-inner {
@@ -536,8 +873,8 @@
       }
 
       .stage-toolbar {
-        padding: 12px 14px;
-        border-top: 1px solid var(--border);
+        margin: 0 12px 12px;
+        padding: 11px 14px 0;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -546,22 +883,156 @@
       }
 
       .stage-toolbar strong {
-        font-size: 0.88rem;
+        font-size: 12px;
         color: var(--muted);
         font-weight: 600;
-        margin-right: 6px;
+        margin-right: 4px;
       }
 
       .toolbar-group {
         display: flex;
         align-items: center;
-        gap: 8px 12px;
+        gap: 8px;
         flex-wrap: wrap;
       }
 
       .toolbar-group span {
-        font-size: 0.92rem;
+        font-size: 12px;
         font-variant-numeric: tabular-nums;
+      }
+
+      .toolbar-icon {
+        width: 16px;
+        height: 16px;
+        display: inline-flex;
+        color: #334b70;
+      }
+
+      .toolbar-icon-button {
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        padding: 0;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: #334b70;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+      }
+
+      .toolbar-icon-button:hover:not(:disabled) {
+        background: rgba(37, 99, 235, 0.1);
+        color: var(--accent);
+      }
+
+      .toolbar-icon-button:active:not(:disabled) {
+        transform: translateY(1px);
+      }
+
+      .toolbar-icon-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.42;
+      }
+
+      .toolbar-icon-button svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      [data-theme='dark'] .toolbar-icon,
+      [data-theme='dark'] .toolbar-icon-button {
+        color: #b8c7e8;
+      }
+
+      .zoom-status {
+        min-width: 141px;
+        min-height: 34px;
+        justify-content: space-between;
+        border: 1px solid var(--border);
+        border-radius: 11px;
+        padding: 0 12px;
+        background: #f8fbff;
+      }
+
+      .state-status {
+        min-width: 154px;
+        justify-content: center;
+      }
+
+      .state-status:last-child {
+        justify-content: flex-end;
+      }
+
+      .export-actions .toolbar-row {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .export-actions .wt-btn {
+        min-height: 33px;
+      }
+
+      .export-actions .wt-btn svg {
+        flex: 0 0 auto;
+      }
+
+      .control-stack .toolbar-row .wt-btn {
+        flex: 1 1 0;
+      }
+
+      body[data-wt-tool='image-editor'] .wt-btn,
+      body[data-wt-tool='image-editor'] .wt-select {
+        border-radius: 8px;
+        min-height: 24px;
+        padding: 4px 8px;
+        font-size: 12px;
+      }
+
+      .control-stack .toolbar-row {
+        gap: 6px;
+      }
+
+      .control-stack .field:last-child .toolbar-row .wt-btn {
+        flex: 0 0 auto;
+      }
+
+      body[data-wt-tool='image-editor'] .wt-btn.wt-btn-primary {
+        background: #2f7df2;
+        border-color: #2f7df2;
+        box-shadow: 0 10px 20px rgba(37, 99, 235, 0.16);
+      }
+
+      body[data-wt-tool='image-editor'] .wt-btn.wt-btn-ghost {
+        border-style: solid;
+        background: #fff;
+      }
+
+      body[data-wt-tool='image-editor'] .wt-select {
+        background: #fff;
+      }
+
+      body[data-wt-tool='image-editor'] .drop-clear-button {
+        border-radius: 999px;
+      }
+
+      body[data-wt-tool='image-editor'] .image-editor-settings-button {
+        border-radius: 10px;
+        min-height: 34px;
+        padding: 0;
+      }
+
+      [data-theme='dark'] body[data-wt-tool='image-editor'] .wt-btn,
+      [data-theme='dark'] body[data-wt-tool='image-editor'] .wt-select,
+      [data-theme='dark'] .text-input,
+      [data-theme='dark'] .meta-item,
+      [data-theme='dark'] .radio-chip,
+      [data-theme='dark'] .zoom-status,
+      [data-theme='dark'] .status {
+        background: rgba(15, 23, 42, 0.78);
       }
 
       [hidden] {
@@ -574,6 +1045,7 @@
         }
 
         .stage-panel {
+          height: auto;
           min-height: 620px;
         }
       }
@@ -595,8 +1067,18 @@
           min-height: 500px;
         }
 
+        .stage-viewport,
+        .stage-toolbar {
+          margin-left: 10px;
+          margin-right: 10px;
+        }
+
         .stage-surface {
           padding: 18px;
+        }
+
+        .empty-state {
+          transform: none;
         }
 
         .select-row,
@@ -618,24 +1100,51 @@
   </head>
   <body class="wt" data-wt-tool="image-editor" data-wt-title="Image Editor">
     <div class="wt-header" role="banner"></div>
+    <template id="wtHeaderExtra">
+      <button
+        id="imageEditorSettingsButton"
+        class="wt-btn image-editor-settings-button"
+        type="button"
+        aria-label="Jump to export settings"
+        title="Export settings"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+          <path d="M4 7h10M18 7h2M4 17h2M10 17h10" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
+          <circle cx="16" cy="7" r="2.1" stroke="currentColor" stroke-width="1.9" />
+          <circle cx="8" cy="17" r="2.1" stroke="currentColor" stroke-width="1.9" />
+        </svg>
+      </button>
+    </template>
 
     <main class="wt-page page">
       <section class="workspace">
         <aside class="controls">
           <section class="panel">
             <div class="panel-head">
+              <span class="panel-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" focusable="false">
+                  <path d="M12 4v10m0-10 4 4m-4-4-4 4M5 14v3.5A2.5 2.5 0 0 0 7.5 20h9A2.5 2.5 0 0 0 19 17.5V14" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
               <h2>Import</h2>
             </div>
             <div class="panel-body">
               <input id="fileInput" type="file" accept="image/*" hidden />
-              <button id="dropZone" class="drop-zone" type="button">
-                <span>
-                  <strong>Drop an image here</strong>
-                  <p>or click to choose a file. You can also paste directly on this page.</p>
+              <div id="dropZone" class="drop-zone">
+                <span class="drop-content">
+                  <button id="chooseImageButton" class="drop-picker" type="button">
+                    <span class="drop-icon" aria-hidden="true">
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" focusable="false">
+                        <path d="M12 5v10m0-10 4 4m-4-4-4 4M5 15v3.5A2.5 2.5 0 0 0 7.5 21h9A2.5 2.5 0 0 0 19 18.5V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </span>
+                    <span>
+                      <strong>Drop an image here</strong>
+                      <p>or click to choose a file. You can also paste directly on this page.</p>
+                    </span>
+                  </button>
+                  <button id="clearImageButton" class="wt-btn wt-btn-ghost drop-clear-button" type="button">Clear Image</button>
                 </span>
-              </button>
-              <div class="btn-row">
-                <button id="clearImageButton" class="wt-btn wt-btn-ghost" type="button">Clear Image</button>
               </div>
               <p class="hint">Supported by your browser's image decoder. One image is loaded at a time.</p>
               <div class="meta-grid">
@@ -661,6 +1170,12 @@
 
           <section class="panel">
             <div class="panel-head">
+              <span class="panel-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" focusable="false">
+                  <path d="M12 3v3M12 18v3M3 12h3M18 12h3M6.7 6.7l2.1 2.1M15.2 15.2l2.1 2.1M17.3 6.7l-2.1 2.1M8.8 15.2l-2.1 2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.8" />
+                </svg>
+              </span>
               <h2>Adjust</h2>
             </div>
             <div class="panel-body control-stack">
@@ -700,8 +1215,13 @@
             </div>
           </section>
 
-          <section class="panel">
+          <section id="exportPanel" class="panel">
             <div class="panel-head">
+              <span class="panel-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" focusable="false">
+                  <path d="M8 7h8M12 4v9m0 0 3-3m-3 3-3-3M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
               <h2>Export</h2>
             </div>
             <div class="panel-body">
@@ -833,11 +1353,22 @@
                 <p id="qualityNote" class="meta-note">Transparent areas are flattened onto a white background for JPG export.</p>
               </div>
 
-              <div class="field">
+              <div class="field export-actions">
                 <div class="field-header">Export Actions</div>
                 <div class="toolbar-row">
-                  <button id="exportButton" class="wt-btn wt-btn-primary" type="button">Download Edited Image</button>
-                  <button id="copyImageButton" class="wt-btn" type="button">Copy Edited Image</button>
+                  <button id="exportButton" class="wt-btn wt-btn-primary" type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                      <path d="M12 4v10m0 0 4-4m-4 4-4-4M5 17v1.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <span>Download Edited Image</span>
+                  </button>
+                  <button id="copyImageButton" class="wt-btn" type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                      <rect x="8" y="8" width="11" height="11" rx="2" stroke="currentColor" stroke-width="2" />
+                      <path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                    <span>Copy Edited Image</span>
+                  </button>
                 </div>
                 <p id="clipboardSupportHint" class="meta-note" hidden>
                   Image clipboard copy requires ClipboardItem support in a secure browser context.
@@ -863,11 +1394,33 @@
             </div>
             <div class="stage-surface">
               <div id="emptyState" class="empty-state">
-                <h3>Ready for clipboard or drag-and-drop</h3>
-                <p>
-                  Load one image, inspect it with zoom, rotate in 90 degree steps, crop a rectangle,
-                  scale it by percentage or pixels, and export the result as PNG, JPG, WEBP, or AVIF.
-                </p>
+                <div class="empty-illustration" aria-hidden="true">
+                  <div class="empty-blob"></div>
+                  <div class="empty-ring"></div>
+                  <div class="empty-photo"></div>
+                  <div class="empty-file">
+                    <svg width="52" height="52" viewBox="0 0 52 52" fill="none" focusable="false">
+                      <path d="M26 39V16m0 0 9 9m-9-9-9 9" stroke="#2F7FF2" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </div>
+                  <svg class="spark one" width="18" height="18" viewBox="0 0 18 18" fill="none" focusable="false">
+                    <path d="M9 1.5 10.9 7.1 16.5 9 10.9 10.9 9 16.5 7.1 10.9 1.5 9 7.1 7.1 9 1.5Z" fill="currentColor" />
+                  </svg>
+                  <svg class="spark two" width="18" height="18" viewBox="0 0 18 18" fill="none" focusable="false">
+                    <path d="M9 1.5 10.9 7.1 16.5 9 10.9 10.9 9 16.5 7.1 10.9 1.5 9 7.1 7.1 9 1.5Z" fill="currentColor" />
+                  </svg>
+                  <svg class="spark three" width="18" height="18" viewBox="0 0 18 18" fill="none" focusable="false">
+                    <path d="M9 1.5 10.9 7.1 16.5 9 10.9 10.9 9 16.5 7.1 10.9 1.5 9 7.1 7.1 9 1.5Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <div class="empty-copy-card">
+                  <h3>Ready for clipboard or drag-and-drop</h3>
+                  <p>
+                    Load one image, inspect it with zoom, rotate in 90 degree steps,
+                    crop a rectangle, scale it by percentage or pixels, and export the result
+                    as PNG, JPG, WEBP, or AVIF.
+                  </p>
+                </div>
               </div>
 
               <div id="stageInner" class="stage-inner" hidden>
@@ -889,15 +1442,48 @@
           </div>
 
           <div class="stage-toolbar">
-            <div class="toolbar-group">
-              <strong>Zoom</strong>
+            <div class="toolbar-group zoom-status" aria-label="Zoom level">
+              <button
+                id="bottomZoomOutButton"
+                class="toolbar-icon-button"
+                type="button"
+                aria-label="Zoom out"
+                title="Zoom out"
+              >
+                <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                  <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.9" />
+                  <path d="M8 11h6M16.5 16.5 21 21" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
+                </svg>
+              </button>
               <span id="zoomValue">100%</span>
+              <button
+                id="bottomZoomInButton"
+                class="toolbar-icon-button"
+                type="button"
+                aria-label="Zoom in"
+                title="Zoom in"
+              >
+                <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                  <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.9" />
+                  <path d="M11 8v6M8 11h6M16.5 16.5 21 21" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
+                </svg>
+              </button>
             </div>
-            <div class="toolbar-group">
+            <div class="toolbar-group state-status">
+              <span class="toolbar-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                  <path d="M4 12a8 8 0 1 0 2.35-5.65M4 5.5v6h6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
               <strong>Rotation</strong>
-              <span id="rotationValue">0 deg</span>
+              <span id="rotationValue">0&deg;</span>
             </div>
-            <div class="toolbar-group">
+            <div class="toolbar-group state-status">
+              <span class="toolbar-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                  <path d="M6 3v12a3 3 0 0 0 3 3h12M3 6h12a3 3 0 0 1 3 3v12" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
               <strong>Crop</strong>
               <span id="cropValue">None</span>
             </div>
@@ -918,10 +1504,13 @@
 
         const fileInput = document.getElementById('fileInput');
         const dropZone = document.getElementById('dropZone');
+        const chooseImageButton = document.getElementById('chooseImageButton');
         const clearImageButton = document.getElementById('clearImageButton');
         const zoomOutButton = document.getElementById('zoomOutButton');
         const zoomResetButton = document.getElementById('zoomResetButton');
         const zoomInButton = document.getElementById('zoomInButton');
+        const bottomZoomOutButton = document.getElementById('bottomZoomOutButton');
+        const bottomZoomInButton = document.getElementById('bottomZoomInButton');
         const rotateLeftButton = document.getElementById('rotateLeftButton');
         const rotateRightButton = document.getElementById('rotateRightButton');
         const cropToggleButton = document.getElementById('cropToggleButton');
@@ -997,7 +1586,7 @@
         let cropInteraction = null;
         let panInteraction = null;
 
-        dropZone.addEventListener('click', () => fileInput.click());
+        chooseImageButton.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', async () => {
           const file = fileInput.files && fileInput.files[0];
           if (!file) return;
@@ -1012,6 +1601,8 @@
 
         zoomInButton.addEventListener('click', () => changeZoom(1.2));
         zoomOutButton.addEventListener('click', () => changeZoom(1 / 1.2));
+        bottomZoomInButton.addEventListener('click', () => changeZoom(1.2));
+        bottomZoomOutButton.addEventListener('click', () => changeZoom(1 / 1.2));
         zoomResetButton.addEventListener('click', () => {
           if (!hasImage()) return;
           state.zoom = 1;
@@ -1100,6 +1691,11 @@
         });
         copyImageButton.addEventListener('click', async () => {
           await copyImageToClipboard();
+        });
+
+        document.getElementById('imageEditorSettingsButton')?.addEventListener('click', () => {
+          exportFormat.focus({ preventScroll: true });
+          document.getElementById('exportPanel')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         });
 
         cropLayer.addEventListener('pointerdown', onCropPointerDown);
@@ -1216,6 +1812,8 @@
           zoomOutButton.disabled = !imageLoaded;
           zoomResetButton.disabled = !imageLoaded;
           zoomInButton.disabled = !imageLoaded;
+          bottomZoomOutButton.disabled = !imageLoaded;
+          bottomZoomInButton.disabled = !imageLoaded;
           rotateLeftButton.disabled = !imageLoaded || cropActive;
           rotateRightButton.disabled = !imageLoaded || cropActive;
           cropToggleButton.disabled = !imageLoaded;
@@ -1291,7 +1889,7 @@
 
           const scale = getDisplayScale();
           zoomValue.textContent = hasImage() ? `${Math.round(scale * 100)}%` : '100%';
-          rotationValue.textContent = `${state.rotation} deg`;
+          rotationValue.textContent = `${state.rotation}\u00b0`;
           cropValue.textContent = state.crop
             ? `${Math.round(state.crop.w)} x ${Math.round(state.crop.h)}`
             : 'None';
