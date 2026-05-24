@@ -319,6 +319,16 @@
             background: rgba(255, 255, 255, 0.05);
         }
 
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+
+        .btn:disabled:hover {
+            background: transparent;
+            color: inherit;
+        }
+
         .btn.primary {
             background: var(--accent-gradient);
             border-color: var(--accent);
@@ -346,6 +356,11 @@
         .btn.danger:hover {
             background: var(--danger);
             color: white;
+        }
+
+        .btn.danger:disabled:hover {
+            background: var(--danger-soft);
+            color: var(--danger);
         }
 
         .btn.sm {
@@ -882,6 +897,7 @@
                         <option value="finance">💰 Finance</option>
                         <option value="other">📌 Other</option>
                     </select>
+                    <button id="deleteCompletedBtn" class="btn danger sm" disabled>Delete Completed</button>
                     <button id="refreshBtn" class="btn ghost sm">Refresh</button>
                 </div>
             </div>
@@ -1006,6 +1022,14 @@
             qs('#statPending').textContent = pending;
             qs('#statCompleted').textContent = completed;
             qs('#statHigh').textContent = high;
+
+            const deleteCompletedBtn = qs('#deleteCompletedBtn');
+            if (deleteCompletedBtn) {
+                deleteCompletedBtn.disabled = completed === 0;
+                deleteCompletedBtn.title = completed === 0
+                    ? 'No completed tasks to delete'
+                    : `Delete ${completed} completed ${completed === 1 ? 'task' : 'tasks'}`;
+            }
         }
 
         function formatDueDate(dueDateStr) {
@@ -1069,6 +1093,7 @@
             }
 
             list.innerHTML = '';
+            updateStats();
 
             if (filtered.length === 0) {
                 const noFilters = filterStatus === 'all' && filterPriority === 'all' && filterCategory === 'all';
@@ -1119,8 +1144,6 @@
 
                 list.appendChild(item);
             });
-
-            updateStats();
         }
 
         async function loadTodos() {
@@ -1191,6 +1214,27 @@
                 loadTodos();
             } catch (e) {
                 alert('Failed to delete task: ' + e.message);
+            }
+        }
+
+        async function deleteCompletedTodos() {
+            const completed = TODOS.filter(t => t.completed).length;
+            if (completed === 0) return;
+            const label = `${completed} completed ${completed === 1 ? 'task' : 'tasks'}`;
+            if (!confirm(`Delete ${label}? This cannot be undone.`)) return;
+
+            const button = qs('#deleteCompletedBtn');
+            if (button) button.disabled = true;
+            try {
+                await api('/api/todo/delete-completed', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' }
+                });
+                await loadTodos();
+            } catch (e) {
+                alert('Failed to delete completed tasks: ' + e.message);
+            } finally {
+                updateStats();
             }
         }
 
@@ -1303,6 +1347,7 @@
         });
 
         qs('#refreshBtn').addEventListener('click', loadTodos);
+        qs('#deleteCompletedBtn').addEventListener('click', deleteCompletedTodos);
         qs('#filterStatus').addEventListener('change', renderTodos);
         qs('#filterPriority').addEventListener('change', renderTodos);
         qs('#filterCategory').addEventListener('change', renderTodos);
