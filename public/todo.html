@@ -96,155 +96,118 @@
 
         /* Page Layout */
         .page {
-            max-width: 900px;
+            max-width: 980px;
             margin: 0 auto;
-            padding: 20px 14px 40px;
+            padding: 12px 12px 32px;
         }
 
-        /* Hero Section */
-        .hero {
-            display: grid;
-            grid-template-columns: 1.8fr 1fr;
-            gap: 12px;
-            align-items: center;
-            margin: 14px 0 24px;
-            border: 1px solid var(--border);
-            background: linear-gradient(135deg, rgba(47, 124, 246, 0.12), rgba(124, 58, 237, 0.08)), var(--pane-bg);
-            color: var(--fg);
-            border-radius: 16px;
-            padding: 20px 24px;
-            box-shadow: var(--shadow);
-        }
-
-        .hero h2 {
-            margin: 0 0 6px;
-            font-size: 1.35rem;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .hero p {
-            margin: 4px 0 0;
-            color: var(--muted);
-        }
-
-        .kicker {
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-size: 0.8rem;
-            color: var(--muted);
-            margin-bottom: 4px;
-        }
-
-        .status-block {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            align-items: flex-start;
-            justify-content: center;
-        }
-
-        .status-pill {
-            padding: .4rem .8rem;
-            border-radius: 999px;
-            border: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.02);
-            font-weight: 600;
-            font-size: 0.85rem;
-        }
-
-        .status-pill[data-variant="loading"] {
-            border-style: dashed;
-        }
-
-        .status-pill[data-variant="account"] {
-            border-color: var(--success);
-            color: var(--success);
-            background: var(--success-soft);
-        }
-
-        .status-pill[data-variant="guest"] {
-            border-color: var(--warning);
-            color: var(--warning);
-            background: var(--warning-soft);
-        }
-
-        /* Stats Row */
+        /* Stats Row — compact inline stat strip */
         .stats-row {
             display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 8px;
+            margin: 4px 0 12px;
             flex-wrap: wrap;
         }
 
         .stat-card {
             flex: 1;
-            min-width: 120px;
-            padding: 14px 18px;
+            min-width: 90px;
+            padding: 8px 12px;
             background: var(--pane-bg);
             border: 1px solid var(--border);
-            border-radius: 14px;
+            border-radius: 10px;
             box-shadow: var(--shadow-sm);
-            text-align: center;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 8px;
         }
 
         .stat-card .stat-value {
-            font-size: 1.8rem;
+            font-size: 1.15rem;
             font-weight: 700;
             background: var(--accent-gradient);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
+            line-height: 1;
         }
 
         .stat-card .stat-label {
-            font-size: 0.85rem;
+            font-size: 0.72rem;
             color: var(--muted);
-            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         /* Panels */
         .panel {
             border: 1px solid var(--border);
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             background: var(--pane-bg);
-            box-shadow: var(--shadow);
-            margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 12px;
         }
 
         .panel-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 14px 18px;
+            gap: 8px;
+            padding: 8px 12px;
             border-bottom: 1px solid var(--border);
             background: rgba(255, 255, 255, 0.02);
+            flex-wrap: wrap;
         }
 
         .panel-header strong {
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
 
         .panel-content {
-            padding: 18px;
+            padding: 10px 12px;
         }
+
+        /* Collapsible Create Panel */
+        .panel-toggle {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font: inherit;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0;
+        }
+
+        .panel-toggle .chev {
+            display: inline-block;
+            transition: transform 0.15s ease;
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .panel[data-collapsed="true"] .panel-content { display: none; }
+        .panel[data-collapsed="true"] .panel-toggle .chev { transform: rotate(-90deg); }
 
         /* Form */
         .form-row {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
+            align-items: flex-end;
         }
 
         .form-row:last-child {
             margin-bottom: 0;
         }
+
+        .form-row > div { display: flex; flex-direction: column; }
 
         input,
         select,
@@ -256,12 +219,13 @@
         input,
         select,
         textarea {
-            padding: .65rem .8rem;
-            border-radius: 10px;
+            padding: .45rem .6rem;
+            border-radius: 8px;
             border: 1px solid var(--border);
             background: transparent;
             color: inherit;
-            transition: all 0.2s ease;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            font-size: 0.9rem;
         }
 
         input:focus,
@@ -280,15 +244,17 @@
 
         textarea {
             resize: vertical;
-            min-height: 80px;
+            min-height: 56px;
             font-family: inherit;
         }
 
         label {
             display: block;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             color: var(--muted);
-            margin-bottom: 4px;
+            margin-bottom: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .muted {
@@ -306,13 +272,14 @@
         }
 
         .btn {
-            padding: .65rem 1.2rem;
-            border-radius: 10px;
+            padding: .45rem .85rem;
+            border-radius: 8px;
             border: 1px solid var(--border);
             background: transparent;
             color: inherit;
             font-weight: 500;
-            transition: all 0.2s ease;
+            font-size: 0.88rem;
+            transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
         }
 
         .btn:hover {
@@ -334,12 +301,12 @@
             border-color: var(--accent);
             color: #fff;
             font-weight: 600;
-            box-shadow: 0 8px 24px rgba(47, 124, 246, 0.35);
+            box-shadow: 0 4px 14px rgba(47, 124, 246, 0.28);
         }
 
         .btn.primary:hover {
             transform: translateY(-1px);
-            box-shadow: 0 12px 28px rgba(47, 124, 246, 0.4);
+            box-shadow: 0 8px 18px rgba(47, 124, 246, 0.34);
         }
 
         .btn.ghost {
@@ -364,40 +331,73 @@
         }
 
         .btn.sm {
-            padding: .4rem .75rem;
-            font-size: 0.85rem;
+            padding: .3rem .55rem;
+            font-size: 0.8rem;
+        }
+
+        /* Keyboard hint badge */
+        kbd, .kbd {
+            display: inline-block;
+            padding: 1px 5px;
+            min-width: 16px;
+            text-align: center;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.7rem;
+            line-height: 1.4;
+            color: var(--muted);
+            background: rgba(127, 127, 127, 0.12);
+            border: 1px solid var(--border);
+            border-bottom-width: 2px;
+            border-radius: 4px;
+            vertical-align: baseline;
+        }
+
+        .btn .kbd,
+        .icon-btn .kbd {
+            margin-left: 6px;
+            opacity: 0.85;
         }
 
         /* To-Do List */
         .todo-list {
-            padding: 8px;
+            padding: 6px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            max-height: 600px;
+            gap: 4px;
+            max-height: 60vh;
             overflow-y: auto;
         }
+
+        .todo-list:focus { outline: none; }
 
         .todo-item {
             display: grid;
             grid-template-columns: auto 1fr auto auto auto;
             align-items: center;
-            gap: 12px;
-            padding: 14px 16px;
+            gap: 10px;
+            padding: 6px 10px;
             border: 1px solid var(--border);
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.02);
-            transition: all 0.2s ease;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.015);
+            transition: border-color 0.15s ease, background 0.15s ease;
+            cursor: pointer;
+            outline: none;
         }
 
         .todo-item:hover {
-            transform: translateX(4px);
             border-color: var(--accent);
-            box-shadow: var(--shadow-sm);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .todo-item.focused,
+        .todo-item:focus-visible {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+            box-shadow: 0 0 0 2px var(--accent-soft);
         }
 
         .todo-item.completed {
-            opacity: 0.6;
+            opacity: 0.55;
         }
 
         .todo-item.completed .todo-title {
@@ -406,9 +406,10 @@
 
         /* Checkbox */
         .checkbox-wrapper {
-            width: 24px;
-            height: 24px;
+            width: 18px;
+            height: 18px;
             position: relative;
+            flex-shrink: 0;
         }
 
         .checkbox-wrapper input {
@@ -421,14 +422,14 @@
         }
 
         .checkbox-custom {
-            width: 24px;
-            height: 24px;
+            width: 18px;
+            height: 18px;
             border: 2px solid var(--border);
-            border-radius: 6px;
+            border-radius: 5px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
             background: transparent;
         }
 
@@ -440,11 +441,11 @@
         .checkbox-custom::after {
             content: '✓';
             color: white;
-            font-size: 14px;
+            font-size: 11px;
             font-weight: 700;
             opacity: 0;
             transform: scale(0);
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
         }
 
         .checkbox-wrapper input:checked+.checkbox-custom::after {
@@ -455,29 +456,31 @@
         .todo-content {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 1px;
             min-width: 0;
         }
 
         .todo-title {
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.92rem;
             word-break: break-word;
+            line-height: 1.3;
         }
 
         .todo-meta {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
             align-items: center;
+            font-size: 0.75rem;
         }
 
         /* Priority Pills */
         .priority-pill {
-            font-size: 0.75rem;
-            padding: 3px 10px;
+            font-size: 0.65rem;
+            padding: 2px 7px;
             border-radius: 999px;
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -499,9 +502,9 @@
 
         /* Category Pills */
         .category-pill {
-            font-size: 0.7rem;
-            padding: 2px 8px;
-            border-radius: 6px;
+            font-size: 0.65rem;
+            padding: 1px 6px;
+            border-radius: 4px;
             font-weight: 500;
             background: var(--accent-soft);
             color: var(--accent);
@@ -545,64 +548,83 @@
 
         /* Due Date */
         .due-date {
-            font-size: 0.8rem;
+            font-size: 0.72rem;
             color: var(--muted);
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
         }
 
         .due-date.overdue {
             color: var(--danger);
+            font-weight: 600;
         }
 
         .due-date.today {
             color: var(--warning);
+            font-weight: 600;
         }
 
         .todo-actions {
             display: flex;
-            gap: 6px;
-            opacity: 0.6;
-            transition: opacity 0.2s;
+            gap: 4px;
+            opacity: 0.55;
+            transition: opacity 0.15s;
         }
 
-        .todo-item:hover .todo-actions {
+        .todo-item:hover .todo-actions,
+        .todo-item.focused .todo-actions {
             opacity: 1;
+        }
+
+        .todo-actions .btn {
+            padding: 3px 7px;
+            font-size: 0.8rem;
+            line-height: 1;
         }
 
         /* Filter/Sort Bar */
         .filter-bar {
             display: flex;
-            gap: 10px;
+            gap: 6px;
             flex-wrap: wrap;
             align-items: center;
         }
 
         .filter-bar select {
-            min-width: 120px;
+            min-width: 110px;
+            padding: .3rem .5rem;
+            font-size: 0.82rem;
+        }
+
+        #searchInput {
+            min-width: 160px;
+            padding: .3rem .55rem;
+            font-size: 0.82rem;
         }
 
         /* Empty State */
         .empty-state {
             text-align: center;
-            padding: 48px 24px;
+            padding: 28px 18px;
             color: var(--muted);
         }
 
         .empty-state .empty-icon {
-            font-size: 4rem;
-            margin-bottom: 16px;
+            font-size: 2.4rem;
+            margin-bottom: 8px;
             opacity: 0.5;
         }
 
         .empty-state h3 {
-            margin: 0 0 8px;
+            margin: 0 0 4px;
             color: var(--fg);
+            font-size: 1rem;
         }
 
         .empty-state p {
             margin: 0;
+            font-size: 0.85rem;
         }
 
         /* Auth Required */
@@ -646,26 +668,19 @@
 
         /* Responsive */
         @media (max-width: 768px) {
-            .hero {
-                grid-template-columns: 1fr;
-            }
-
-            .status-block {
-                margin-top: 12px;
-            }
-
             .todo-item {
-                grid-template-columns: auto 1fr;
+                grid-template-columns: auto 1fr auto;
+                gap: 8px;
             }
 
             .todo-item .priority-pill {
                 grid-column: 2;
+                justify-self: start;
             }
 
             .todo-actions {
-                grid-column: 2;
-                justify-content: flex-end;
-                margin-top: 8px;
+                grid-column: 3;
+                grid-row: 1;
             }
         }
 
@@ -798,6 +813,65 @@
             padding: 16px 20px;
             border-top: 1px solid var(--border);
         }
+
+        /* Shortcuts modal */
+        .shortcut-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .shortcut-table td {
+            padding: 6px 8px;
+            font-size: 0.86rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .shortcut-table tr:last-child td { border-bottom: none; }
+
+        .shortcut-table td:first-child {
+            white-space: nowrap;
+            width: 1%;
+        }
+
+        .shortcut-table td:last-child { color: var(--muted); }
+
+        .shortcut-group-title {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--muted);
+            margin: 12px 0 4px;
+            font-weight: 600;
+        }
+        .shortcut-group-title:first-child { margin-top: 0; }
+
+        /* Floating help button */
+        .help-fab {
+            position: fixed;
+            bottom: 18px;
+            right: 18px;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--pane-bg);
+            color: var(--muted);
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+            z-index: 90;
+        }
+
+        .help-fab:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 
@@ -830,13 +904,18 @@
         </div>
 
         <!-- Create Panel -->
-        <section class="panel" id="createPanel" style="display: none;">
+        <section class="panel" id="createPanel" style="display: none;" data-collapsed="false">
             <div class="panel-header">
-                <strong>➕ Add New Task</strong>
+                <button type="button" class="panel-toggle" id="createToggle" aria-expanded="true" aria-controls="createContent" title="Toggle (N to focus title)">
+                    <span class="chev">▼</span>
+                    <strong>➕ Add New Task</strong>
+                </button>
+                <span class="muted small">Press <kbd>N</kbd> to focus · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to save</span>
             </div>
-            <div class="panel-content">
+            <div class="panel-content" id="createContent">
                 <div class="form-row">
                     <input type="text" id="todoTitle" class="grow" placeholder="What needs to be done?" />
+                    <button id="createBtn" class="btn primary">Create <span class="kbd">⌃⏎</span></button>
                 </div>
                 <div class="form-row">
                     <textarea id="todoDescription" placeholder="Description (optional)"></textarea>
@@ -862,11 +941,10 @@
                             <option value="other">📌 Other</option>
                         </select>
                     </div>
-                    <div style="flex: 1;">
-                        <label for="todoDueDate">Due Date (optional)</label>
+                    <div style="flex: 1; min-width: 140px;">
+                        <label for="todoDueDate">Due Date</label>
                         <input type="date" id="todoDueDate" style="width: 100%;" />
                     </div>
-                    <button id="createBtn" class="btn primary" style="align-self: flex-end;">Create Task</button>
                 </div>
             </div>
         </section>
@@ -874,20 +952,21 @@
         <!-- Tasks List Panel -->
         <section class="panel" id="tasksPanel" style="display: none;">
             <div class="panel-header">
-                <strong>📋 Your Tasks</strong>
+                <strong>📋 Tasks</strong>
                 <div class="filter-bar">
-                    <select id="filterStatus">
+                    <input type="search" id="searchInput" placeholder="Search… ( / )" />
+                    <select id="filterStatus" title="Status filter (S)">
                         <option value="all">All</option>
                         <option value="pending">Pending</option>
                         <option value="completed">Completed</option>
                     </select>
-                    <select id="filterPriority">
+                    <select id="filterPriority" title="Priority filter (P)">
                         <option value="all">All Priorities</option>
                         <option value="high">High</option>
                         <option value="medium">Medium</option>
                         <option value="low">Low</option>
                     </select>
-                    <select id="filterCategory">
+                    <select id="filterCategory" title="Category filter (C)">
                         <option value="all">All Categories</option>
                         <option value="personal">🏠 Personal</option>
                         <option value="work">💼 Work</option>
@@ -897,11 +976,11 @@
                         <option value="finance">💰 Finance</option>
                         <option value="other">📌 Other</option>
                     </select>
-                    <button id="deleteCompletedBtn" class="btn danger sm" disabled>Delete Completed</button>
-                    <button id="refreshBtn" class="btn ghost sm">Refresh</button>
+                    <button id="deleteCompletedBtn" class="btn danger sm" disabled title="Delete completed (Shift+Del)">Clear Done</button>
+                    <button id="refreshBtn" class="btn ghost sm" title="Refresh (R)">↻</button>
                 </div>
             </div>
-            <div class="todo-list" id="todoList">
+            <div class="todo-list" id="todoList" tabindex="-1">
                 <div class="muted loading">Loading tasks...</div>
             </div>
         </section>
@@ -973,11 +1052,55 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn ghost" onclick="closeEditModal()">Cancel</button>
-                <button class="btn primary" onclick="saveEdit()">Save Changes</button>
+                <button class="btn ghost" onclick="closeEditModal()">Cancel <span class="kbd">Esc</span></button>
+                <button class="btn primary" onclick="saveEdit()">Save <span class="kbd">⌃⏎</span></button>
             </div>
         </div>
     </div>
+
+    <!-- Shortcuts Modal -->
+    <div class="modal-overlay" id="shortcutsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>⌨️ Keyboard Shortcuts</h3>
+                <button class="modal-close" onclick="closeShortcutsModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcut-group-title">Global</div>
+                <table class="shortcut-table">
+                    <tr><td><kbd>?</kbd></td><td>Show / hide this help</td></tr>
+                    <tr><td><kbd>N</kbd></td><td>New task (focus title field)</td></tr>
+                    <tr><td><kbd>/</kbd></td><td>Focus search</td></tr>
+                    <tr><td><kbd>R</kbd></td><td>Refresh tasks</td></tr>
+                    <tr><td><kbd>S</kbd></td><td>Open status filter</td></tr>
+                    <tr><td><kbd>P</kbd></td><td>Open priority filter</td></tr>
+                    <tr><td><kbd>C</kbd></td><td>Open category filter</td></tr>
+                    <tr><td><kbd>Shift</kbd>+<kbd>Del</kbd></td><td>Clear completed tasks</td></tr>
+                    <tr><td><kbd>Esc</kbd></td><td>Close modal / blur input</td></tr>
+                </table>
+
+                <div class="shortcut-group-title">Task List</div>
+                <table class="shortcut-table">
+                    <tr><td><kbd>↑</kbd> / <kbd>↓</kbd> or <kbd>J</kbd> / <kbd>K</kbd></td><td>Move selection</td></tr>
+                    <tr><td><kbd>Home</kbd> / <kbd>End</kbd></td><td>Jump to first / last task</td></tr>
+                    <tr><td><kbd>Space</kbd> or <kbd>X</kbd></td><td>Toggle completion</td></tr>
+                    <tr><td><kbd>E</kbd> or <kbd>Enter</kbd></td><td>Edit selected task</td></tr>
+                    <tr><td><kbd>Del</kbd> or <kbd>D</kbd></td><td>Delete selected task</td></tr>
+                </table>
+
+                <div class="shortcut-group-title">Forms</div>
+                <table class="shortcut-table">
+                    <tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>Submit (create / save edit)</td></tr>
+                    <tr><td><kbd>Esc</kbd></td><td>Cancel / close modal</td></tr>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button class="btn primary" onclick="closeShortcutsModal()">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <button class="help-fab" id="helpFab" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
 
 	    <script>
 	        const qs = (sel) => document.querySelector(sel);
@@ -1004,6 +1127,8 @@
 
         let TODO_STATE = { loggedIn: false, user: null };
         let TODOS = [];
+        let FILTERED_TODOS = [];
+        let FOCUS_INDEX = -1;
 
         function setModeLabel(text, variant = 'loading') {
             const pill = qs('#modePill');
@@ -1075,6 +1200,7 @@
             const filterStatus = qs('#filterStatus').value;
             const filterPriority = qs('#filterPriority').value;
             const filterCategory = qs('#filterCategory').value;
+            const searchTerm = (qs('#searchInput')?.value || '').trim().toLowerCase();
 
             let filtered = [...TODOS];
 
@@ -1092,29 +1218,54 @@
                 filtered = filtered.filter(t => t.category === filterCategory);
             }
 
+            if (searchTerm) {
+                filtered = filtered.filter(t =>
+                    (t.title || '').toLowerCase().includes(searchTerm) ||
+                    (t.description || '').toLowerCase().includes(searchTerm)
+                );
+            }
+
+            FILTERED_TODOS = filtered;
+            const prevFocusId = FOCUS_INDEX >= 0 && FILTERED_TODOS[FOCUS_INDEX] ? FILTERED_TODOS[FOCUS_INDEX].id : null;
+
             list.innerHTML = '';
             updateStats();
 
             if (filtered.length === 0) {
-                const noFilters = filterStatus === 'all' && filterPriority === 'all' && filterCategory === 'all';
+                FOCUS_INDEX = -1;
+                const noFilters = filterStatus === 'all' && filterPriority === 'all' && filterCategory === 'all' && !searchTerm;
                 const empty = el('div', { class: 'empty-state' }, [
                     el('div', { class: 'empty-icon' }, ['📝']),
                     el('h3', {}, [noFilters ? 'No tasks yet' : 'No matching tasks']),
-                    el('p', {}, [noFilters ? 'Add your first task above to get started!' : 'Try adjusting your filters.'])
+                    el('p', {}, [noFilters ? 'Press N to add your first task.' : 'Try adjusting filters or search.'])
                 ]);
                 list.appendChild(empty);
                 return;
             }
 
-            filtered.forEach(todo => {
+            filtered.forEach((todo, index) => {
                 const due = formatDueDate(todo.due_date);
 
-                const item = el('div', { class: `todo-item ${todo.completed ? 'completed' : ''}` }, [
+                const item = el('div', {
+                    class: `todo-item ${todo.completed ? 'completed' : ''}`,
+                    'data-todo-id': String(todo.id),
+                    'data-index': String(index),
+                    tabindex: '0',
+                    onclick: (e) => {
+                        // Don't override action button clicks
+                        if (e.target.closest('button') || e.target.closest('input[type="checkbox"]')) return;
+                        setFocusedIndex(index, true);
+                    },
+                    ondblclick: (e) => {
+                        if (e.target.closest('button') || e.target.closest('input[type="checkbox"]')) return;
+                        openEditModal(todo);
+                    }
+                }, [
                     el('div', { class: 'checkbox-wrapper' }, [
                         el('input', {
                             type: 'checkbox',
                             checked: !!todo.completed,
-                            title: 'Toggle completion',
+                            title: 'Toggle completion (Space)',
                             onchange: () => toggleTodo(todo.id)
                         }),
                         el('span', { class: 'checkbox-custom' })
@@ -1131,19 +1282,57 @@
                     el('div', { class: 'todo-actions' }, [
                         el('button', {
                             class: 'btn ghost sm',
-                            title: 'Edit task',
-                            onclick: () => openEditModal(todo)
+                            title: 'Edit (E)',
+                            onclick: (e) => { e.stopPropagation(); openEditModal(todo); }
                         }, ['✏️']),
                         el('button', {
                             class: 'btn ghost sm',
-                            title: 'Delete task',
-                            onclick: () => deleteTodo(todo.id)
+                            title: 'Delete (Del)',
+                            onclick: (e) => { e.stopPropagation(); deleteTodo(todo.id); }
                         }, ['🗑️'])
                     ])
                 ]);
 
                 list.appendChild(item);
             });
+
+            // Restore previous focus by id, otherwise clamp
+            if (prevFocusId != null) {
+                const idx = FILTERED_TODOS.findIndex(t => t.id === prevFocusId);
+                FOCUS_INDEX = idx >= 0 ? idx : Math.min(FOCUS_INDEX, FILTERED_TODOS.length - 1);
+            } else if (FOCUS_INDEX >= FILTERED_TODOS.length) {
+                FOCUS_INDEX = FILTERED_TODOS.length - 1;
+            }
+            applyFocusedClass();
+        }
+
+        function applyFocusedClass() {
+            const list = qs('#todoList');
+            if (!list) return;
+            list.querySelectorAll('.todo-item').forEach((node, idx) => {
+                node.classList.toggle('focused', idx === FOCUS_INDEX);
+            });
+        }
+
+        function setFocusedIndex(index, focusEl = false) {
+            if (!FILTERED_TODOS.length) { FOCUS_INDEX = -1; return; }
+            FOCUS_INDEX = Math.max(0, Math.min(index, FILTERED_TODOS.length - 1));
+            applyFocusedClass();
+            if (focusEl) {
+                const node = qs(`.todo-item[data-index="${FOCUS_INDEX}"]`);
+                if (node) {
+                    node.focus({ preventScroll: true });
+                    node.scrollIntoView({ block: 'nearest' });
+                }
+            } else {
+                const node = qs(`.todo-item[data-index="${FOCUS_INDEX}"]`);
+                if (node) node.scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        function getFocusedTodo() {
+            if (FOCUS_INDEX < 0 || FOCUS_INDEX >= FILTERED_TODOS.length) return null;
+            return FILTERED_TODOS[FOCUS_INDEX];
         }
 
         async function loadTodos() {
@@ -1342,8 +1531,11 @@
 	        // Theme toggle lives in the shared header.
 
 	        qs('#createBtn').addEventListener('click', createTodo);
-        qs('#todoTitle').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') createTodo();
+        qs('#todoTitle').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); createTodo(); }
+        });
+        qs('#todoDescription').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); createTodo(); }
         });
 
         qs('#refreshBtn').addEventListener('click', loadTodos);
@@ -1351,14 +1543,181 @@
         qs('#filterStatus').addEventListener('change', renderTodos);
         qs('#filterPriority').addEventListener('change', renderTodos);
         qs('#filterCategory').addEventListener('change', renderTodos);
+        qs('#searchInput').addEventListener('input', renderTodos);
+        qs('#searchInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') { e.target.blur(); e.target.value = ''; renderTodos(); }
+            else if (e.key === 'Enter') { e.preventDefault(); focusFirstTodo(); }
+        });
+
+        // Collapsible create panel
+        qs('#createToggle').addEventListener('click', () => {
+            const panel = qs('#createPanel');
+            const collapsed = panel.getAttribute('data-collapsed') === 'true';
+            panel.setAttribute('data-collapsed', collapsed ? 'false' : 'true');
+            qs('#createToggle').setAttribute('aria-expanded', collapsed ? 'true' : 'false');
+        });
 
         // Modal event listeners
         qs('#editModal').addEventListener('click', (e) => {
             if (e.target === qs('#editModal')) closeEditModal();
         });
+        qs('#editTitle').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(); }
+        });
+        qs('#editDescription').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveEdit(); }
+        });
+
+        // Shortcuts modal
+        function openShortcutsModal() { qs('#shortcutsModal').classList.add('active'); }
+        function closeShortcutsModal() { qs('#shortcutsModal').classList.remove('active'); }
+        window.closeShortcutsModal = closeShortcutsModal;
+        qs('#helpFab').addEventListener('click', openShortcutsModal);
+        qs('#shortcutsModal').addEventListener('click', (e) => {
+            if (e.target === qs('#shortcutsModal')) closeShortcutsModal();
+        });
+
+        function focusFirstTodo() {
+            if (!FILTERED_TODOS.length) return;
+            setFocusedIndex(0, true);
+        }
+
+        function isTypingTarget(target) {
+            if (!target) return false;
+            const tag = target.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+            if (target.isContentEditable) return true;
+            return false;
+        }
+
+        function anyModalOpen() {
+            return qs('#editModal').classList.contains('active') ||
+                qs('#shortcutsModal').classList.contains('active');
+        }
+
+        // Global keyboard handler
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && qs('#editModal').classList.contains('active')) {
-                closeEditModal();
+            // Always allow Escape to close modals / blur inputs
+            if (e.key === 'Escape') {
+                if (qs('#shortcutsModal').classList.contains('active')) {
+                    closeShortcutsModal();
+                    return;
+                }
+                if (qs('#editModal').classList.contains('active')) {
+                    closeEditModal();
+                    return;
+                }
+                if (document.activeElement && isTypingTarget(document.activeElement)) {
+                    document.activeElement.blur();
+                    return;
+                }
+            }
+
+            // If a modal is open, don't process global shortcuts (forms handle their own keys)
+            if (anyModalOpen()) return;
+
+            // '?' opens help even when not typing
+            if (e.key === '?' && !isTypingTarget(e.target)) {
+                e.preventDefault();
+                openShortcutsModal();
+                return;
+            }
+
+            // Skip global shortcuts when typing in a field
+            if (isTypingTarget(e.target)) return;
+
+            // Don't process when not logged in
+            if (!TODO_STATE.loggedIn) return;
+
+            const key = e.key.toLowerCase();
+
+            // Single-key global shortcuts
+            switch (key) {
+                case 'n':
+                    e.preventDefault();
+                    // Expand create panel if collapsed, then focus title
+                    qs('#createPanel').setAttribute('data-collapsed', 'false');
+                    qs('#createToggle').setAttribute('aria-expanded', 'true');
+                    qs('#todoTitle').focus();
+                    return;
+                case '/':
+                    e.preventDefault();
+                    qs('#searchInput').focus();
+                    qs('#searchInput').select();
+                    return;
+                case 'r':
+                    e.preventDefault();
+                    loadTodos();
+                    return;
+                case 's':
+                    e.preventDefault();
+                    qs('#filterStatus').focus();
+                    return;
+                case 'p':
+                    e.preventDefault();
+                    qs('#filterPriority').focus();
+                    return;
+                case 'c':
+                    e.preventDefault();
+                    qs('#filterCategory').focus();
+                    return;
+            }
+
+            // Shift+Delete: clear completed
+            if ((e.key === 'Delete' || e.key === 'Backspace') && e.shiftKey) {
+                e.preventDefault();
+                deleteCompletedTodos();
+                return;
+            }
+
+            // List navigation / actions
+            if (!FILTERED_TODOS.length) return;
+
+            switch (e.key) {
+                case 'ArrowDown':
+                case 'j':
+                case 'J':
+                    e.preventDefault();
+                    setFocusedIndex(FOCUS_INDEX < 0 ? 0 : FOCUS_INDEX + 1, true);
+                    return;
+                case 'ArrowUp':
+                case 'k':
+                case 'K':
+                    e.preventDefault();
+                    setFocusedIndex(FOCUS_INDEX <= 0 ? 0 : FOCUS_INDEX - 1, true);
+                    return;
+                case 'Home':
+                    e.preventDefault();
+                    setFocusedIndex(0, true);
+                    return;
+                case 'End':
+                    e.preventDefault();
+                    setFocusedIndex(FILTERED_TODOS.length - 1, true);
+                    return;
+            }
+
+            const focused = getFocusedTodo();
+            if (!focused) return;
+
+            switch (e.key) {
+                case ' ':
+                case 'x':
+                case 'X':
+                    e.preventDefault();
+                    toggleTodo(focused.id);
+                    return;
+                case 'Enter':
+                case 'e':
+                case 'E':
+                    e.preventDefault();
+                    openEditModal(focused);
+                    return;
+                case 'Delete':
+                case 'd':
+                case 'D':
+                    e.preventDefault();
+                    deleteTodo(focused.id);
+                    return;
             }
         });
 
