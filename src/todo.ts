@@ -154,6 +154,15 @@ async function deleteTodo(request: Request, env: Bindings, userId: string): Prom
     return json({ ok: true });
 }
 
+async function deleteCompletedTodos(env: Bindings, userId: string): Promise<Response> {
+    const row = (await env.DB.prepare('SELECT COUNT(*) AS count FROM todos WHERE user_id = ? AND completed = 1')
+        .bind(userId)
+        .first()) as { count?: number } | null;
+    const deleted = Number(row?.count || 0);
+    await env.DB.prepare('DELETE FROM todos WHERE user_id = ? AND completed = 1').bind(userId).run();
+    return json({ ok: true, deleted });
+}
+
 async function toggleTodo(request: Request, env: Bindings, userId: string): Promise<Response> {
     const body = await readJson<{ id?: string }>(request);
     const id = (body.id || '').toString();
@@ -219,6 +228,12 @@ export async function handleTodoApi(
         const user = await requireUser(request, env);
         if (user instanceof Response) return user;
         return deleteTodo(request, env, (user as any).id);
+    }
+
+    if (path === '/api/todo/delete-completed' && request.method === 'POST') {
+        const user = await requireUser(request, env);
+        if (user instanceof Response) return user;
+        return deleteCompletedTodos(env, (user as any).id);
     }
 
     if (path === '/api/todo/toggle' && request.method === 'POST') {

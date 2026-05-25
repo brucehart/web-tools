@@ -309,6 +309,7 @@ describe('Pretty routes and Pages API', () => {
 		expect(response.headers.get('content-type')).toContain('text/html');
 		const body = await response.text();
 		expect(body).toContain('<title>To-Do List</title>');
+		expect(body).toContain('id="deleteCompletedBtn"');
 	});
 
 	it('serves boards at /boards (unit)', async () => {
@@ -339,6 +340,93 @@ describe('Pretty routes and Pages API', () => {
 		const response = await worker.fetch(request, env, ctx);
 		await waitOnExecutionContext(ctx);
 		expect(response.status).toBe(401);
+	});
+
+	it('deletes completed todos without touching pending or other users', async () => {
+		(env as any).INTERNAL_TEST_KEY = 'k';
+
+		const seedUser = async (email: string) => {
+			const request = new IncomingRequest('http://example.com/api/_internal/seed', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json', 'x-internal-key': 'k' },
+				body: JSON.stringify({ email, name: email }),
+			});
+			const ctx = createExecutionContext();
+			const response = await worker.fetch(request, env, ctx);
+			await waitOnExecutionContext(ctx);
+			expect(response.status).toBe(200);
+			const seeded = await response.json<any>();
+			return String(seeded.token || '');
+		};
+
+		const createTodo = async (token: string, title: string) => {
+			const request = new IncomingRequest('http://example.com/api/todo/create', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json', cookie: `wt_session=${token}` },
+				body: JSON.stringify({ title }),
+			});
+			const ctx = createExecutionContext();
+			const response = await worker.fetch(request, env, ctx);
+			await waitOnExecutionContext(ctx);
+			expect(response.status).toBe(200);
+			return response.json<any>();
+		};
+
+		const toggleTodo = async (token: string, id: string) => {
+			const request = new IncomingRequest('http://example.com/api/todo/toggle', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json', cookie: `wt_session=${token}` },
+				body: JSON.stringify({ id }),
+			});
+			const ctx = createExecutionContext();
+			const response = await worker.fetch(request, env, ctx);
+			await waitOnExecutionContext(ctx);
+			expect(response.status).toBe(200);
+			const body = await response.json<any>();
+			expect(body.completed).toBe(true);
+		};
+
+		const listTodos = async (token: string) => {
+			const request = new IncomingRequest('http://example.com/api/todo/list', {
+				headers: { cookie: `wt_session=${token}` },
+			});
+			const ctx = createExecutionContext();
+			const response = await worker.fetch(request, env, ctx);
+			await waitOnExecutionContext(ctx);
+			expect(response.status).toBe(200);
+			return response.json<any[]>();
+		};
+
+		const tokenOne = await seedUser('todo-delete-one@example.com');
+		const tokenTwo = await seedUser('todo-delete-two@example.com');
+
+		const pending = await createTodo(tokenOne, 'Keep pending');
+		const completedOne = await createTodo(tokenOne, 'Delete completed one');
+		const completedTwo = await createTodo(tokenOne, 'Delete completed two');
+		const otherCompleted = await createTodo(tokenTwo, 'Other user completed');
+
+		await toggleTodo(tokenOne, completedOne.id);
+		await toggleTodo(tokenOne, completedTwo.id);
+		await toggleTodo(tokenTwo, otherCompleted.id);
+
+		const deleteReq = new IncomingRequest('http://example.com/api/todo/delete-completed', {
+			method: 'POST',
+			headers: { cookie: `wt_session=${tokenOne}` },
+		});
+		const deleteCtx = createExecutionContext();
+		const deleteRes = await worker.fetch(deleteReq, env, deleteCtx);
+		await waitOnExecutionContext(deleteCtx);
+		expect(deleteRes.status).toBe(200);
+		const deleted = await deleteRes.json<any>();
+		expect(deleted).toEqual({ ok: true, deleted: 2 });
+
+		const remainingForOne = await listTodos(tokenOne);
+		expect(remainingForOne.map((todo) => todo.id)).toEqual([pending.id]);
+		expect(remainingForOne[0].completed).toBe(0);
+
+		const remainingForTwo = await listTodos(tokenTwo);
+		expect(remainingForTwo.map((todo) => todo.id)).toContain(otherCompleted.id);
+		expect(remainingForTwo.find((todo) => todo.id === otherCompleted.id)?.completed).toBe(1);
 	});
 
 	it('creates and fetches a markdown page (unit)', async () => {

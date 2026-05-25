@@ -33,6 +33,21 @@ async function ensureSchema(env: Bindings): Promise<void> {
     )
   `).run();
   await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS todos (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      completed INTEGER NOT NULL DEFAULT 0,
+      priority TEXT NOT NULL CHECK (priority IN ('low','medium','high')) DEFAULT 'medium',
+      category TEXT DEFAULT 'personal',
+      due_date TEXT,
+      created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+      updated_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+    )
+  `).run();
+  await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_todos_user_completed ON todos(user_id, completed)').run();
+  await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS boards (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
