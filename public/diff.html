@@ -62,6 +62,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
+        flex-wrap: wrap;
         gap: 10px;
         border-bottom: 1px solid var(--border);
         padding: 10px 12px;
@@ -96,8 +97,40 @@
 
       .controls {
         display: flex;
+        align-items: center;
         flex-wrap: wrap;
         gap: 10px;
+      }
+
+      .output-options {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .toggle-control,
+      .number-control {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 34px;
+        color: var(--wt-fg);
+        font-size: 0.84rem;
+      }
+
+      .toggle-control input {
+        margin: 0;
+      }
+
+      .number-control input {
+        width: 4.5rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 8px;
+        background: var(--wt-input);
+        color: inherit;
+        font: inherit;
       }
 
       .stats {
@@ -205,6 +238,16 @@
         font-weight: 600;
       }
 
+      .diff-row-gap {
+        background: rgba(127, 127, 127, 0.06);
+      }
+
+      .diff-row-gap .text,
+      .diff-row-gap .marker {
+        color: var(--muted);
+        font-style: italic;
+      }
+
       @media (max-width: 900px) {
         .editor-grid {
           grid-template-columns: 1fr;
@@ -257,6 +300,16 @@
             <button id="compareBtn" class="wt-btn wt-btn-primary" type="button">Compare</button>
             <button id="swapBtn" class="wt-btn" type="button">Swap</button>
             <button id="clearBtn" class="wt-btn wt-btn-ghost" type="button">Clear</button>
+            <div class="output-options" aria-label="Diff output options">
+              <label class="toggle-control" for="contextOnlyToggle">
+                <input id="contextOnlyToggle" type="checkbox" />
+                <span>Nearby changes</span>
+              </label>
+              <label class="number-control" for="contextLinesInput">
+                <span>Context</span>
+                <input id="contextLinesInput" type="number" min="0" max="200" step="1" value="3" />
+              </label>
+            </div>
           </div>
           <div class="stats">
             <span class="stat"><span class="stat-key">Added</span><span id="addedCount">0</span></span>
@@ -275,15 +328,21 @@
     <script>
       const STORAGE_ORIGINAL = 'wt_diff_original';
       const STORAGE_CHANGED = 'wt_diff_changed';
+      const STORAGE_CONTEXT_ONLY = 'wt_diff_context_only';
+      const STORAGE_CONTEXT_LINES = 'wt_diff_context_lines';
       const SOFT_LINE_LIMIT = 10000;
       const EXACT_DIFF_CELL_LIMIT = 4000000;
       const MAX_DIFF_RECURSION_DEPTH = 64;
+      const DEFAULT_CONTEXT_LINES = 3;
+      const MAX_CONTEXT_LINES = 200;
 
       const originalInput = document.getElementById('originalInput');
       const changedInput = document.getElementById('changedInput');
       const compareBtn = document.getElementById('compareBtn');
       const swapBtn = document.getElementById('swapBtn');
       const clearBtn = document.getElementById('clearBtn');
+      const contextOnlyToggle = document.getElementById('contextOnlyToggle');
+      const contextLinesInput = document.getElementById('contextLinesInput');
       const warningEl = document.getElementById('warning');
       const diffOutput = document.getElementById('diffOutput');
 
@@ -293,6 +352,7 @@
       const unchangedCount = document.getElementById('unchangedCount');
       const originalLinesEl = document.getElementById('originalLines');
       const changedLinesEl = document.getElementById('changedLines');
+      let currentGroups = null;
 
       function normalizeNewlines(text) {
         return String(text || '').replace(/\r\n?/g, '\n');
@@ -352,6 +412,36 @@
         const text = document.createElement('pre');
         text.className = 'text';
         text.textContent = item.line === '' ? ' ' : item.line;
+
+        row.append(left, right, marker, text);
+        return row;
+      }
+
+      function formatLineRange(firstLine, lastLine) {
+        return firstLine === lastLine ? String(firstLine) : `${firstLine}-${lastLine}`;
+      }
+
+      function createGapRow(items) {
+        const first = items[0];
+        const last = items[items.length - 1];
+        const row = document.createElement('div');
+        row.className = 'diff-row diff-row-gap';
+
+        const left = document.createElement('span');
+        left.className = 'ln';
+        left.textContent = formatLineRange(first.oldNo, last.oldNo);
+
+        const right = document.createElement('span');
+        right.className = 'ln';
+        right.textContent = formatLineRange(first.newNo, last.newNo);
+
+        const marker = document.createElement('span');
+        marker.className = 'marker';
+        marker.textContent = '...';
+
+        const text = document.createElement('pre');
+        text.className = 'text';
+        text.textContent = `${items.length} unchanged line${items.length === 1 ? '' : 's'} hidden`;
 
         row.append(left, right, marker, text);
         return row;
@@ -721,6 +811,54 @@
         return stats;
       }
 
+      function normalizeContextLines() {
+        const parsed = Number.parseInt(contextLinesInput.value, 10);
+        const value = Number.isFinite(parsed)
+          ? Math.min(Math.max(parsed, 0), MAX_CONTEXT_LINES)
+          : DEFAULT_CONTEXT_LINES;
+        contextLinesInput.value = String(value);
+        return value;
+      }
+
+      function appendEqualItems(fragment, items) {
+        for (const item of items) fragment.appendChild(createRow('equal', item, false));
+      }
+
+      function appendHiddenGap(fragment, items) {
+        if (items.length > 0) fragment.appendChild(createGapRow(items));
+      }
+
+      function appendChangeGroup(fragment, group) {
+        if (group.type === 'add') {
+          for (const item of group.items) fragment.appendChild(createRow('add', item, false));
+          return;
+        }
+
+        if (group.type === 'remove') {
+          for (const item of group.items) fragment.appendChild(createRow('remove', item, false));
+          return;
+        }
+
+        for (const item of group.removed) fragment.appendChild(createRow('remove', item, true));
+        for (const item of group.added) fragment.appendChild(createRow('add', item, true));
+      }
+
+      function appendContextEqualGroup(fragment, items, showAfterPreviousChange, showBeforeNextChange, contextLines) {
+        const leadingCount = showAfterPreviousChange ? Math.min(contextLines, items.length) : 0;
+        const trailingCount = showBeforeNextChange
+          ? Math.min(contextLines, items.length - leadingCount)
+          : 0;
+
+        if (leadingCount + trailingCount >= items.length) {
+          appendEqualItems(fragment, items);
+          return;
+        }
+
+        if (leadingCount > 0) appendEqualItems(fragment, items.slice(0, leadingCount));
+        appendHiddenGap(fragment, items.slice(leadingCount, items.length - trailingCount));
+        if (trailingCount > 0) appendEqualItems(fragment, items.slice(items.length - trailingCount));
+      }
+
       function renderDiff(groups) {
         diffOutput.innerHTML = '';
         if (groups.length === 0) {
@@ -728,26 +866,34 @@
           return;
         }
 
+        const contextOnly = contextOnlyToggle.checked;
+        const contextLines = normalizeContextLines();
+        const hasChangedLines = groups.some((group) => group.type !== 'equal');
+        if (contextOnly && !hasChangedLines) {
+          renderEmptyState('No changed lines to show.');
+          return;
+        }
+
         const fragment = document.createDocumentFragment();
 
-        for (const group of groups) {
+        for (let index = 0; index < groups.length; index++) {
+          const group = groups[index];
           if (group.type === 'equal') {
-            for (const item of group.items) fragment.appendChild(createRow('equal', item, false));
+            if (contextOnly) {
+              appendContextEqualGroup(
+                fragment,
+                group.items,
+                index > 0,
+                index < groups.length - 1,
+                contextLines,
+              );
+            } else {
+              appendEqualItems(fragment, group.items);
+            }
             continue;
           }
 
-          if (group.type === 'add') {
-            for (const item of group.items) fragment.appendChild(createRow('add', item, false));
-            continue;
-          }
-
-          if (group.type === 'remove') {
-            for (const item of group.items) fragment.appendChild(createRow('remove', item, false));
-            continue;
-          }
-
-          for (const item of group.removed) fragment.appendChild(createRow('remove', item, true));
-          for (const item of group.added) fragment.appendChild(createRow('add', item, true));
+          appendChangeGroup(fragment, group);
         }
 
         diffOutput.appendChild(fragment);
@@ -767,6 +913,15 @@
         }
       }
 
+      function saveOutputSettings() {
+        try {
+          localStorage.setItem(STORAGE_CONTEXT_ONLY, contextOnlyToggle.checked ? 'true' : 'false');
+          localStorage.setItem(STORAGE_CONTEXT_LINES, String(normalizeContextLines()));
+        } catch {
+          // Ignore localStorage failures.
+        }
+      }
+
       function loadInputs() {
         try {
           originalInput.value = localStorage.getItem(STORAGE_ORIGINAL) || '';
@@ -774,6 +929,19 @@
         } catch {
           originalInput.value = '';
           changedInput.value = '';
+        }
+      }
+
+      function loadOutputSettings() {
+        try {
+          contextOnlyToggle.checked = localStorage.getItem(STORAGE_CONTEXT_ONLY) === 'true';
+          const storedContext = Number.parseInt(localStorage.getItem(STORAGE_CONTEXT_LINES) || '', 10);
+          contextLinesInput.value = Number.isFinite(storedContext)
+            ? String(Math.min(Math.max(storedContext, 0), MAX_CONTEXT_LINES))
+            : String(DEFAULT_CONTEXT_LINES);
+        } catch {
+          contextOnlyToggle.checked = false;
+          contextLinesInput.value = String(DEFAULT_CONTEXT_LINES);
         }
       }
 
@@ -790,6 +958,7 @@
 
         if (originalLines.length === 0 && changedLines.length === 0) {
           setStats({ added: 0, removed: 0, changed: 0, unchanged: 0 });
+          currentGroups = null;
           renderEmptyState('Enter text in both panels, then click Compare.');
           return;
         }
@@ -803,12 +972,14 @@
 
         if (result.error) {
           setStats({ added: 0, removed: 0, changed: 0, unchanged: 0 });
+          currentGroups = null;
           renderEmptyState(result.error);
           return;
         }
 
         const groups = groupOperations(result.ops);
         const stats = summarize(groups);
+        currentGroups = groups;
         setStats(stats);
         renderDiff(groups);
       }
@@ -829,6 +1000,7 @@
         setWarning('');
         updateLineCounts();
         setStats({ added: 0, removed: 0, changed: 0, unchanged: 0 });
+        currentGroups = null;
         renderEmptyState('Enter text in both panels, then click Compare.');
       }
 
@@ -837,7 +1009,13 @@
         updateLineCounts();
       }
 
+      function onOutputOptionChange() {
+        saveOutputSettings();
+        if (currentGroups) renderDiff(currentGroups);
+      }
+
       loadInputs();
+      loadOutputSettings();
       updateLineCounts();
       setStats({ added: 0, removed: 0, changed: 0, unchanged: 0 });
       renderEmptyState('Enter text in both panels, then click Compare.');
@@ -845,6 +1023,8 @@
       compareBtn.addEventListener('click', compare);
       swapBtn.addEventListener('click', swapInputs);
       clearBtn.addEventListener('click', clearAll);
+      contextOnlyToggle.addEventListener('change', onOutputOptionChange);
+      contextLinesInput.addEventListener('input', onOutputOptionChange);
 
       originalInput.addEventListener('input', onInputChange);
       changedInput.addEventListener('input', onInputChange);

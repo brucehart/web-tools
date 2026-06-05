@@ -50,6 +50,8 @@ describe('Tools index and Markdown viewer', () => {
 		expect(body).toContain('<title>Text Diff</title>');
 		expect(body).toContain('id="originalInput"');
 		expect(body).toContain('id="changedInput"');
+		expect(body).toContain('id="contextOnlyToggle"');
+		expect(body).toContain('id="contextLinesInput"');
 	});
 
 	it('serves format converter at /format-tools (unit)', async () => {
