@@ -276,7 +276,8 @@
       const STORAGE_ORIGINAL = 'wt_diff_original';
       const STORAGE_CHANGED = 'wt_diff_changed';
       const SOFT_LINE_LIMIT = 10000;
-      const HARD_CELL_LIMIT = 4000000;
+      const EXACT_DIFF_CELL_LIMIT = 4000000;
+      const MAX_DIFF_RECURSION_DEPTH = 64;
 
       const originalInput = document.getElementById('originalInput');
       const changedInput = document.getElementById('changedInput');
@@ -356,24 +357,40 @@
         return row;
       }
 
-      function buildLineDiff(originalLines, changedLines) {
-        const n = originalLines.length;
-        const m = changedLines.length;
-        const cellCount = (n + 1) * (m + 1);
-        if (cellCount > HARD_CELL_LIMIT) {
-          return {
-            error:
-              'Inputs are too large for in-browser diffing. Reduce the text size or compare in smaller sections.',
-          };
-        }
+      function appendEqual(ops, line, oldIndex, newIndex) {
+        ops.push({ type: 'equal', line, oldNo: oldIndex + 1, newNo: newIndex + 1 });
+      }
 
+      function appendAddRange(ops, changedLines, start, end) {
+        for (let index = start; index < end; index++) {
+          ops.push({ type: 'add', line: changedLines[index], oldNo: null, newNo: index + 1 });
+        }
+      }
+
+      function appendRemoveRange(ops, originalLines, start, end) {
+        for (let index = start; index < end; index++) {
+          ops.push({ type: 'remove', line: originalLines[index], oldNo: index + 1, newNo: null });
+        }
+      }
+
+      function appendGroupedChange(ops, originalLines, changedLines, oldStart, oldEnd, newStart, newEnd) {
+        appendRemoveRange(ops, originalLines, oldStart, oldEnd);
+        appendAddRange(ops, changedLines, newStart, newEnd);
+      }
+
+      function buildExactLineDiff(originalLines, changedLines, oldStart, oldEnd, newStart, newEnd) {
+        const n = oldEnd - oldStart;
+        const m = newEnd - newStart;
         const table = Array.from({ length: n + 1 }, () => new Uint32Array(m + 1));
+
         for (let i = 1; i <= n; i++) {
           for (let j = 1; j <= m; j++) {
-            if (originalLines[i - 1] === changedLines[j - 1]) {
+            if (originalLines[oldStart + i - 1] === changedLines[newStart + j - 1]) {
               table[i][j] = table[i - 1][j - 1] + 1;
             } else {
-              table[i][j] = Math.max(table[i - 1][j], table[i][j - 1]);
+              const removeScore = table[i - 1][j];
+              const addScore = table[i][j - 1];
+              table[i][j] = removeScore > addScore ? removeScore : addScore;
             }
           }
         }
@@ -383,25 +400,248 @@
         const ops = [];
 
         while (i > 0 || j > 0) {
-          if (i > 0 && j > 0 && originalLines[i - 1] === changedLines[j - 1]) {
-            ops.push({ type: 'equal', line: originalLines[i - 1], oldNo: i, newNo: j });
+          if (
+            i > 0 &&
+            j > 0 &&
+            originalLines[oldStart + i - 1] === changedLines[newStart + j - 1]
+          ) {
+            ops.push({
+              type: 'equal',
+              line: originalLines[oldStart + i - 1],
+              oldNo: oldStart + i,
+              newNo: newStart + j,
+            });
             i--;
             j--;
             continue;
           }
 
           if (j > 0 && (i === 0 || table[i][j - 1] >= table[i - 1][j])) {
-            ops.push({ type: 'add', line: changedLines[j - 1], oldNo: null, newNo: j });
+            ops.push({
+              type: 'add',
+              line: changedLines[newStart + j - 1],
+              oldNo: null,
+              newNo: newStart + j,
+            });
             j--;
             continue;
           }
 
-          ops.push({ type: 'remove', line: originalLines[i - 1], oldNo: i, newNo: null });
+          ops.push({
+            type: 'remove',
+            line: originalLines[oldStart + i - 1],
+            oldNo: oldStart + i,
+            newNo: null,
+          });
           i--;
         }
 
         ops.reverse();
-        return { ops };
+        return ops;
+      }
+
+      function findUniqueAnchors(originalLines, changedLines, oldStart, oldEnd, newStart, newEnd) {
+        const records = new Map();
+
+        for (let index = oldStart; index < oldEnd; index++) {
+          const line = originalLines[index];
+          let record = records.get(line);
+          if (!record) {
+            record = { oldCount: 0, newCount: 0, oldIndex: -1, newIndex: -1 };
+            records.set(line, record);
+          }
+
+          record.oldCount += 1;
+          record.oldIndex = record.oldCount === 1 ? index : -1;
+        }
+
+        for (let index = newStart; index < newEnd; index++) {
+          const record = records.get(changedLines[index]);
+          if (!record) continue;
+
+          record.newCount += 1;
+          record.newIndex = record.newCount === 1 ? index : -1;
+        }
+
+        const candidates = [];
+        for (const record of records.values()) {
+          if (record.oldCount === 1 && record.newCount === 1) {
+            candidates.push({ oldIndex: record.oldIndex, newIndex: record.newIndex });
+          }
+        }
+
+        candidates.sort((a, b) => a.oldIndex - b.oldIndex);
+        if (candidates.length <= 1) return candidates;
+
+        const previous = new Int32Array(candidates.length);
+        previous.fill(-1);
+        const tailIndexes = [];
+        const tailValues = [];
+
+        for (let index = 0; index < candidates.length; index++) {
+          const value = candidates[index].newIndex;
+          let low = 0;
+          let high = tailValues.length;
+
+          while (low < high) {
+            const mid = Math.floor((low + high) / 2);
+            if (tailValues[mid] < value) {
+              low = mid + 1;
+            } else {
+              high = mid;
+            }
+          }
+
+          if (low > 0) previous[index] = tailIndexes[low - 1];
+          tailValues[low] = value;
+          tailIndexes[low] = index;
+        }
+
+        const anchors = [];
+        let cursor = tailIndexes[tailIndexes.length - 1];
+        while (cursor >= 0) {
+          anchors.push(candidates[cursor]);
+          cursor = previous[cursor];
+        }
+
+        anchors.reverse();
+        return anchors;
+      }
+
+      function diffRange(originalLines, changedLines, oldStart, oldEnd, newStart, newEnd, ops, depth) {
+        while (
+          oldStart < oldEnd &&
+          newStart < newEnd &&
+          originalLines[oldStart] === changedLines[newStart]
+        ) {
+          appendEqual(ops, originalLines[oldStart], oldStart, newStart);
+          oldStart++;
+          newStart++;
+        }
+
+        let suffixCount = 0;
+        while (
+          oldStart < oldEnd - suffixCount &&
+          newStart < newEnd - suffixCount &&
+          originalLines[oldEnd - suffixCount - 1] === changedLines[newEnd - suffixCount - 1]
+        ) {
+          suffixCount++;
+        }
+
+        const trimmedOldEnd = oldEnd - suffixCount;
+        const trimmedNewEnd = newEnd - suffixCount;
+        let usedGroupedFallback = false;
+
+        if (oldStart === trimmedOldEnd) {
+          appendAddRange(ops, changedLines, newStart, trimmedNewEnd);
+        } else if (newStart === trimmedNewEnd) {
+          appendRemoveRange(ops, originalLines, oldStart, trimmedOldEnd);
+        } else {
+          const oldLength = trimmedOldEnd - oldStart;
+          const newLength = trimmedNewEnd - newStart;
+          const cellCount = (oldLength + 1) * (newLength + 1);
+
+          if (cellCount <= EXACT_DIFF_CELL_LIMIT) {
+            const exactOps = buildExactLineDiff(
+              originalLines,
+              changedLines,
+              oldStart,
+              trimmedOldEnd,
+              newStart,
+              trimmedNewEnd,
+            );
+            for (const op of exactOps) ops.push(op);
+          } else if (depth >= MAX_DIFF_RECURSION_DEPTH) {
+            appendGroupedChange(
+              ops,
+              originalLines,
+              changedLines,
+              oldStart,
+              trimmedOldEnd,
+              newStart,
+              trimmedNewEnd,
+            );
+            usedGroupedFallback = true;
+          } else {
+            const anchors = findUniqueAnchors(
+              originalLines,
+              changedLines,
+              oldStart,
+              trimmedOldEnd,
+              newStart,
+              trimmedNewEnd,
+            );
+
+            if (anchors.length === 0) {
+              appendGroupedChange(
+                ops,
+                originalLines,
+                changedLines,
+                oldStart,
+                trimmedOldEnd,
+                newStart,
+                trimmedNewEnd,
+              );
+              usedGroupedFallback = true;
+            } else {
+              let previousOld = oldStart;
+              let previousNew = newStart;
+
+              for (const anchor of anchors) {
+                usedGroupedFallback =
+                  diffRange(
+                    originalLines,
+                    changedLines,
+                    previousOld,
+                    anchor.oldIndex,
+                    previousNew,
+                    anchor.newIndex,
+                    ops,
+                    depth + 1,
+                  ) || usedGroupedFallback;
+                appendEqual(ops, originalLines[anchor.oldIndex], anchor.oldIndex, anchor.newIndex);
+                previousOld = anchor.oldIndex + 1;
+                previousNew = anchor.newIndex + 1;
+              }
+
+              usedGroupedFallback =
+                diffRange(
+                  originalLines,
+                  changedLines,
+                  previousOld,
+                  trimmedOldEnd,
+                  previousNew,
+                  trimmedNewEnd,
+                  ops,
+                  depth + 1,
+                ) || usedGroupedFallback;
+            }
+          }
+        }
+
+        for (let offset = 0; offset < suffixCount; offset++) {
+          const oldIndex = trimmedOldEnd + offset;
+          const newIndex = trimmedNewEnd + offset;
+          appendEqual(ops, originalLines[oldIndex], oldIndex, newIndex);
+        }
+
+        return usedGroupedFallback;
+      }
+
+      function buildLineDiff(originalLines, changedLines) {
+        const ops = [];
+        const grouped = diffRange(
+          originalLines,
+          changedLines,
+          0,
+          originalLines.length,
+          0,
+          changedLines.length,
+          ops,
+          0,
+        );
+
+        return { ops, grouped };
       }
 
       function groupOperations(ops) {
@@ -541,12 +781,11 @@
         const originalLines = toLines(originalInput.value);
         const changedLines = toLines(changedInput.value);
         const totalLines = originalLines.length + changedLines.length;
+        let warningMessage = '';
 
         setWarning('');
         if (totalLines > SOFT_LINE_LIMIT) {
-          setWarning(
-            `Large input detected (${totalLines} lines total). Comparison may be slower than usual.`,
-          );
+          warningMessage = `Large input detected (${totalLines} lines total). Comparison may be slower than usual.`;
         }
 
         if (originalLines.length === 0 && changedLines.length === 0) {
@@ -556,6 +795,12 @@
         }
 
         const result = buildLineDiff(originalLines, changedLines);
+        if (result.grouped) {
+          const groupedMessage = 'Some large changed sections were grouped to keep comparison responsive.';
+          warningMessage = warningMessage ? `${warningMessage} ${groupedMessage}` : groupedMessage;
+        }
+        setWarning(warningMessage);
+
         if (result.error) {
           setStats({ added: 0, removed: 0, changed: 0, unchanged: 0 });
           renderEmptyState(result.error);
