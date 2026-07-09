@@ -167,14 +167,10 @@
         gap: 1rem;
       }
 
-      .grid-4 {
+      .usage-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
         gap: 1rem;
-      }
-      
-      @media (min-width: 600px) {
-        .grid-4 { grid-template-columns: repeat(4, 1fr); }
       }
 
       .btn {
@@ -341,7 +337,7 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
           <div class="muted-text">Automatically parses various formats (OpenAI, Anthropic, etc.)</div>
         </div>
 
-        <div class="grid-4">
+        <div class="usage-grid">
           <div>
             <label for="inTok">Input</label>
             <input id="inTok" type="number" min="0" step="1" value="0" />
@@ -349,6 +345,10 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
           <div>
             <label for="cacheTok">Cached</label>
             <input id="cacheTok" type="number" min="0" step="1" value="0" />
+          </div>
+          <div>
+            <label for="cacheWriteTok">Cache writes</label>
+            <input id="cacheWriteTok" type="number" min="0" step="1" value="0" />
           </div>
           <div>
             <label for="outTok">Output</label>
@@ -403,6 +403,18 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
 
           <div class="price-row">
             <div>
+              <label>Cache Write Price</label>
+              <input id="cacheWritePrice" type="number" step="0.0000001" min="0" value="0" />
+            </div>
+            <select id="cacheWriteUnit" class="unit-select">
+              <option value="per">/ 1</option>
+              <option value="k">/ 1K</option>
+              <option value="m">/ 1M</option>
+            </select>
+          </div>
+
+          <div class="price-row">
+            <div>
               <label>Output Price</label>
               <input id="outPrice" type="number" step="0.0000001" min="0" value="0" />
             </div>
@@ -424,6 +436,11 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
               <option value="m">/ 1M</option>
             </select>
           </div>
+        </div>
+
+        <div class="muted-text">
+          OpenAI frontier presets use Standard pricing. Long-context variants are labeled.
+          <a href="https://developers.openai.com/api/docs/pricing" target="_blank" rel="noopener noreferrer">View OpenAI pricing</a>.
         </div>
 
         <div class="actions-bar" style="margin-top: 1rem; justify-content: flex-end;">
@@ -467,14 +484,15 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
         const $ = (id) => document.getElementById(id);
 
         const fields = {
-          usageText: $('usageText'), inTok: $('inTok'), cacheTok: $('cacheTok'), outTok: $('outTok'), reasonTok: $('reasonTok'),
+          usageText: $('usageText'), inTok: $('inTok'), cacheTok: $('cacheTok'), cacheWriteTok: $('cacheWriteTok'), outTok: $('outTok'), reasonTok: $('reasonTok'),
           modelSelect: $('modelSelect'), modelName: $('modelName'), loadModel: $('loadModel'), deleteModel: $('deleteModel'), saveModel: $('saveModel'), addDefaults: $('addDefaults'), exportModels: $('exportModels'), importModels: $('importModels'),
-          inPrice: $('inPrice'), inUnit: $('inUnit'), cachePrice: $('cachePrice'), cacheUnit: $('cacheUnit'), outPrice: $('outPrice'), outUnit: $('outUnit'), reasonPrice: $('reasonPrice'), reasonUnit: $('reasonUnit'),
+          inPrice: $('inPrice'), inUnit: $('inUnit'), cachePrice: $('cachePrice'), cacheUnit: $('cacheUnit'), cacheWritePrice: $('cacheWritePrice'), cacheWriteUnit: $('cacheWriteUnit'), outPrice: $('outPrice'), outUnit: $('outUnit'), reasonPrice: $('reasonPrice'), reasonUnit: $('reasonUnit'),
           rows: $('rows'), totalDisplay: $('totalDisplay'), summaryText: $('summaryText'), copySummary: $('copySummary'), toast: $('toast')
         };
 
         const STORAGE_MODELS = 'llm_cost_models_v1';
         const STORAGE_LAST = 'llm_cost_last_v1';
+        const STORAGE_FRONTIER_PRICING_VERSION = 'llm_cost_frontier_pricing_version_v1';
 
         function showToast(msg) {
           fields.toast.textContent = msg;
@@ -516,14 +534,16 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
           let output = get(/\boutput\s*=\s*(\d+)/i);
           let cached = get(/\(\+\s*(\d+)\s*cached\)/i);
           if (!cached) cached = get(/\bcached\s*=\s*(\d+)/i);
+          let cacheWrite = get(/\bcache[\s_-]*writes?\s*=\s*(\d+)/i);
           let reasoning = get(/\breasoning\s*(?:tokens)?\s*(\d+)/i);
           
           if (!input) input = get(/\binput\s*[:\-]\s*(\d+)/i);
           if (!output) output = get(/\boutput\s*[:\-]\s*(\d+)/i);
           if (!reasoning) reasoning = get(/\breasoning\s*[:\-]\s*(\d+)/i);
           if (!cached) cached = get(/\bcached\s*[:\-]\s*(\d+)/i);
+          if (!cacheWrite) cacheWrite = get(/\bcache[\s_-]*writes?\s*[:\-]\s*(\d+)/i);
           
-          return { input, cached, output, reasoning };
+          return { input, cached, cacheWrite, output, reasoning };
         }
 
         function unitNorm(unit) {
@@ -539,6 +559,7 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
           return {
             in: { price: Number(fields.inPrice.value || '0'), unit: fields.inUnit.value },
             cache: { price: Number(fields.cachePrice.value || '0'), unit: fields.cacheUnit.value },
+            cacheWrite: { price: Number(fields.cacheWritePrice.value || '0'), unit: fields.cacheWriteUnit.value },
             out: { price: Number(fields.outPrice.value || '0'), unit: fields.outUnit.value },
             reason: { price: Number(fields.reasonPrice.value || '0'), unit: fields.reasonUnit.value },
           };
@@ -549,6 +570,8 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
           fields.inUnit.value = String(p?.in?.unit ?? 'k');
           fields.cachePrice.value = String(p?.cache?.price ?? 0);
           fields.cacheUnit.value = String(p?.cache?.unit ?? 'k');
+          fields.cacheWritePrice.value = String(p?.cacheWrite?.price ?? 0);
+          fields.cacheWriteUnit.value = String(p?.cacheWrite?.unit ?? 'm');
           fields.outPrice.value = String(p?.out?.price ?? 0);
           fields.outUnit.value = String(p?.out?.unit ?? 'k');
           fields.reasonPrice.value = String(p?.reason?.price ?? 0);
@@ -559,6 +582,7 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
           const usage = {
             input: Number(fields.inTok.value || '0'),
             cached: Number(fields.cacheTok.value || '0'),
+            cacheWrite: Number(fields.cacheWriteTok.value || '0'),
             output: Number(fields.outTok.value || '0'),
             reasoning: Number(fields.reasonTok.value || '0'),
           };
@@ -566,12 +590,14 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
           const perToken = {
             in: pricing.in.price * unitNorm(pricing.in.unit),
             cache: pricing.cache.price * unitNorm(pricing.cache.unit),
+            cacheWrite: pricing.cacheWrite.price * unitNorm(pricing.cacheWrite.unit),
             out: pricing.out.price * unitNorm(pricing.out.unit),
             reason: pricing.reason.price * unitNorm(pricing.reason.unit),
           };
           const costs = {
             in: usage.input * perToken.in,
             cache: usage.cached * perToken.cache,
+            cacheWrite: usage.cacheWrite * perToken.cacheWrite,
             out: usage.output * perToken.out,
             reason: usage.reasoning * perToken.reason,
           };
@@ -579,6 +605,7 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
           const rows = [
             { name: 'Input', tok: usage.input, unit: perToken.in, cost: costs.in },
             { name: 'Cached Input', tok: usage.cached, unit: perToken.cache, cost: costs.cache },
+            { name: 'Cache Write', tok: usage.cacheWrite, unit: perToken.cacheWrite, cost: costs.cacheWrite },
             { name: 'Output', tok: usage.output, unit: perToken.out, cost: costs.out },
             { name: 'Reasoning', tok: usage.reasoning, unit: perToken.reason, cost: costs.reason }
           ];
@@ -602,7 +629,7 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
 
           fields.totalDisplay.textContent = toMoney(total, 2);
           
-          const summary = `Total ${toMoney(total, 4)} · In: ${usage.input.toLocaleString()} | Cached: ${usage.cached.toLocaleString()} | Out: ${usage.output.toLocaleString()}${usage.reasoning ? ' | Reasoning: ' + usage.reasoning.toLocaleString() : ''}`;
+          const summary = `Total ${toMoney(total, 4)} · In: ${usage.input.toLocaleString()} | Cached: ${usage.cached.toLocaleString()}${usage.cacheWrite ? ' | Cache writes: ' + usage.cacheWrite.toLocaleString() : ''} | Out: ${usage.output.toLocaleString()}${usage.reasoning ? ' | Reasoning: ' + usage.reasoning.toLocaleString() : ''}`;
           fields.summaryText.textContent = summary;
 
           localStorage.setItem(STORAGE_LAST, JSON.stringify({ usage, pricing }));
@@ -611,6 +638,7 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
         function applyUsage(u) {
           fields.inTok.value = String(u?.input ?? 0);
           fields.cacheTok.value = String(u?.cached ?? 0);
+          fields.cacheWriteTok.value = String(u?.cacheWrite ?? 0);
           fields.outTok.value = String(u?.output ?? 0);
           fields.reasonTok.value = String(u?.reasoning ?? 0);
         }
@@ -622,7 +650,7 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
           calculate();
         });
 
-        ['inTok','cacheTok','outTok','reasonTok','inPrice','cachePrice','outPrice','reasonPrice','inUnit','cacheUnit','outUnit','reasonUnit'].forEach(id => {
+        ['inTok','cacheTok','cacheWriteTok','outTok','reasonTok','inPrice','cachePrice','cacheWritePrice','outPrice','reasonPrice','inUnit','cacheUnit','cacheWriteUnit','outUnit','reasonUnit'].forEach(id => {
           $(id).addEventListener('input', calculate);
           $(id).addEventListener('change', calculate);
         });
@@ -674,13 +702,11 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
 
         fields.addDefaults.addEventListener('click', () => {
           const models = loadModels();
-          if (addDefaults(models)) {
-            saveModels(models);
-            refreshModelSelect();
-            showToast('Defaults added');
-          } else {
-            showToast('Defaults already present');
-          }
+          writeDefaults(models, DEFAULT_MODELS);
+          localStorage.setItem(STORAGE_FRONTIER_PRICING_VERSION, FRONTIER_PRICING_VERSION);
+          saveModels(models);
+          refreshModelSelect();
+          showToast('Defaults reset');
         });
 
         fields.exportModels.addEventListener('click', async () => {
@@ -712,7 +738,43 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
           }
         });
 
+        function perMillion(price) {
+          return { price, unit: 'm' };
+        }
+
+        function frontierPricing(input, cachedInput, cacheWrite, output) {
+          return {
+            in: perMillion(input),
+            cache: perMillion(cachedInput),
+            cacheWrite: perMillion(cacheWrite),
+            out: perMillion(output),
+            // OpenAI bills reasoning tokens at the model's output-token rate.
+            reason: perMillion(output),
+          };
+        }
+
+        const FRONTIER_PRICING_VERSION = '2026-07-09-standard';
+        const OPENAI_FRONTIER_MODELS = {
+          'gpt-5.6-sol': frontierPricing(5.00, 0.50, 6.25, 30.00),
+          'gpt-5.6-terra': frontierPricing(2.50, 0.25, 3.125, 15.00),
+          'gpt-5.6-luna': frontierPricing(1.00, 0.10, 1.25, 6.00),
+          'gpt-5.5': frontierPricing(5.00, 0.50, 0, 30.00),
+          'gpt-5.5-pro': frontierPricing(30.00, 0, 0, 180.00),
+          'gpt-5.4': frontierPricing(2.50, 0.25, 0, 15.00),
+          'gpt-5.4-mini': frontierPricing(0.75, 0.075, 0, 4.50),
+          'gpt-5.4-nano': frontierPricing(0.20, 0.02, 0, 1.25),
+          'gpt-5.4-pro': frontierPricing(30.00, 0, 0, 180.00),
+          'gpt-5.6-sol (long context)': frontierPricing(10.00, 1.00, 12.50, 45.00),
+          'gpt-5.6-terra (long context)': frontierPricing(5.00, 0.50, 6.25, 22.50),
+          'gpt-5.6-luna (long context)': frontierPricing(2.00, 0.20, 2.50, 9.00),
+          'gpt-5.5 (long context)': frontierPricing(10.00, 1.00, 0, 45.00),
+          'gpt-5.5-pro (long context)': frontierPricing(60.00, 0, 0, 270.00),
+          'gpt-5.4 (long context)': frontierPricing(5.00, 0.50, 0, 22.50),
+          'gpt-5.4-pro (long context)': frontierPricing(60.00, 0, 0, 270.00),
+        };
+
         const DEFAULT_MODELS = {
+          ...OPENAI_FRONTIER_MODELS,
           'gpt-4o': { in: { price: 2.50, unit: 'm' }, cache: { price: 1.25, unit: 'm' }, out: { price: 10.00, unit: 'm' }, reason: { price: 0, unit: 'm' } },
           'gpt-4o-mini': { in: { price: 0.15, unit: 'm' }, cache: { price: 0.075, unit: 'm' }, out: { price: 0.60, unit: 'm' }, reason: { price: 0, unit: 'm' } },
           'claude-3.5-sonnet': { in: { price: 3.00, unit: 'm' }, cache: { price: 0.30, unit: 'm' }, out: { price: 15.00, unit: 'm' }, reason: { price: 0, unit: 'm' } },
@@ -721,18 +783,21 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
           'o1-mini': { in: { price: 3.00, unit: 'm' }, cache: { price: 1.50, unit: 'm' }, out: { price: 12.00, unit: 'm' }, reason: { price: 3.00, unit: 'm' } },
         };
 
-        function addDefaults(models) {
-          let updated = false;
-          for (const [name, cfg] of Object.entries(DEFAULT_MODELS)) {
-            if (!models[name]) { models[name] = cfg; updated = true; }
+        function writeDefaults(models, defaults) {
+          for (const [name, cfg] of Object.entries(defaults)) {
+            models[name] = cfg;
           }
-          return updated;
         }
 
-        function seedDefaultsOnce() {
+        function seedDefaults() {
           const models = loadModels();
           if (Object.keys(models).length === 0) {
-            addDefaults(models);
+            writeDefaults(models, DEFAULT_MODELS);
+            localStorage.setItem(STORAGE_FRONTIER_PRICING_VERSION, FRONTIER_PRICING_VERSION);
+            saveModels(models);
+          } else if (localStorage.getItem(STORAGE_FRONTIER_PRICING_VERSION) !== FRONTIER_PRICING_VERSION) {
+            writeDefaults(models, OPENAI_FRONTIER_MODELS);
+            localStorage.setItem(STORAGE_FRONTIER_PRICING_VERSION, FRONTIER_PRICING_VERSION);
             saveModels(models);
           }
           refreshModelSelect();
@@ -747,7 +812,7 @@ Example: Token usage: total=17771 input=16418 (+ 61312 cached) output=1353"></te
         }
 
         // Init
-        seedDefaultsOnce();
+        seedDefaults();
         restoreLast();
         calculate();
       })();
