@@ -42,7 +42,9 @@ const PRETTY_ROUTES: Record<string, string> = {
 };
 
 const KNOWN_HTML = new Set(Object.values(PRETTY_ROUTES));
-const CANONICAL_HTML_ROUTES = new Map<string, string>();
+const CANONICAL_HTML_ROUTES = new Map<string, string>([
+  ['/index.html', '/'],
+]);
 
 for (const [route, assetPath] of Object.entries(PRETTY_ROUTES)) {
   if (!route.endsWith('/') && !CANONICAL_HTML_ROUTES.has(assetPath)) {

@@ -17,9 +17,19 @@
 		"@jsquash/avif": "^2.1.1"
 	},
 	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "^0.12.10",
-		"typescript": "^5.5.2",
-		"vitest": "~3.2.0",
-		"wrangler": "^4.72.0"
+		"@cloudflare/vitest-pool-workers": "^0.16.16",
+		"typescript": "^5.9.3",
+		"vitest": "^4.1.9",
+		"wrangler": "^4.101.0"
+	},
+	"overrides": {
+		"esbuild": "0.28.1",
+		"undici": "7.24.8",
+		"ws": "8.21.0"
+	},
+	"allowScripts": {
+		"esbuild@0.28.1": true,
+		"sharp@0.34.5": true,
+		"workerd@1.20260616.1": true
 	}
 }
