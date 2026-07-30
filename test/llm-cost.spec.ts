@@ -11,10 +11,14 @@ describe('GET /llm-cost', () => {
     const body = await response.text();
     expect(body).toContain('<title>LLM Cost Calculator</title>');
     expect(body).toContain("'gpt-5.6-sol': frontierPricing(5.00, 0.50, 6.25, 30.00)");
+    expect(body).toContain("'gpt-5.6-terra': frontierPricing(2.50, 0.25, 3.125, 15.00)");
+    expect(body).toContain("'gpt-5.6-luna': frontierPricing(1.00, 0.10, 1.25, 6.00)");
     expect(body).toContain("'gpt-5.5': frontierPricing(5.00, 0.50, 0, 30.00)");
     expect(body).toContain("'gpt-5.4-mini': frontierPricing(0.75, 0.075, 0, 4.50)");
     expect(body).toContain("'gpt-5.4-nano': frontierPricing(0.20, 0.02, 0, 1.25)");
     expect(body).toContain("'gpt-5.4-pro (long context)': frontierPricing(60.00, 0, 0, 270.00)");
+    expect(body).toContain("'gpt-5.6-terra (long context)': frontierPricing(5.00, 0.50, 6.25, 22.50)");
+    expect(body).toContain("'gpt-5.6-luna (long context)': frontierPricing(2.00, 0.20, 2.50, 9.00)");
     expect(body).toContain('id="cacheWriteTok"');
     expect(body).toContain('id="cacheWritePrice"');
     expect(body).toContain('https://developers.openai.com/api/docs/pricing');
