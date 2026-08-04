@@ -55,6 +55,16 @@
 			"database_id": "f09d1fa6-3f91-4679-ae32-78c588c1e0bb"
 		}
 	],
+	"ratelimits": [
+		{
+			"name": "WEBHOOK_RATE_LIMITER",
+			"namespace_id": "40040",
+			"simple": {
+				"limit": 120,
+				"period": 60
+			}
+		}
+	],
 	"vars": {
 		"OAUTH_REDIRECT_URL": "https://web-tools.bruce-hart.workers.dev/auth/google/callback",
 		"GOOGLE_CLIENT_ID": "23831454371-uqiege2i9k1bg9qnktbnhdlccm5pi934.apps.googleusercontent.com",

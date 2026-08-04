@@ -329,7 +329,7 @@
     <div class="layout">
       <div class="hero">
         <h1>WebHook Tester</h1>
-        <p>Create a unique URL, send any HTTP request to it, and inspect the full headers and body in real time — like webhook.site.</p>
+        <p>Create a unique URL, send any HTTP request to it, and inspect its headers and up to 64 KiB of body in real time — like webhook.site.</p>
       </div>
 
       <div id="authPanel" class="panel">
@@ -356,7 +356,10 @@
         <div id="activePanel" class="panel" style="display:none">
           <div class="panel-head">
             <h2>Active endpoint</h2>
-            <button id="copyBtn" class="btn" type="button">Copy URL</button>
+            <div>
+              <button id="copyBtn" class="btn" type="button">Copy URL</button>
+              <button id="deleteBtn" class="btn" type="button">Delete endpoint</button>
+            </div>
           </div>
           <div class="section">
             <p class="mut" style="margin:0 0 4px">Send any HTTP request to this URL. Try it with <code>curl</code>:</p>
@@ -367,7 +370,7 @@
             </div>
             <div class="row">
               <div class="mut">Captured requests</div>
-              <button id="clearBtn" class="btn" type="button">Clear view</button>
+              <button id="clearBtn" class="btn" type="button">Clear captured requests</button>
             </div>
             <div id="events" class="section" style="padding:0"></div>
           </div>
@@ -386,7 +389,7 @@
         return res.json();
       }
 
-      let state = { id: null, events: [], pollTimer: null, seq: 0 };
+      let state = { id: null, events: [], pollTimer: null, pollGeneration: 0, seq: 0 };
 
       const authPanel = qs('#authPanel');
       const toolPanel = qs('#toolPanel');
@@ -428,7 +431,8 @@
         if (!keys.length) return '<p class="mut">None</p>';
         let html = '<table class="kv">';
         keys.forEach((k) => {
-          html += '<tr><th>' + escapeHtml(k) + '</th><td>' + escapeHtml(entries[k]) + '</td></tr>';
+          const value = Array.isArray(entries[k]) ? entries[k].join('\n') : entries[k];
+          html += '<tr><th>' + escapeHtml(k) + '</th><td>' + escapeHtml(value) + '</td></tr>';
         });
         return html + '</table>';
       }
@@ -484,8 +488,11 @@
 
       async function loadEvents() {
         if (!state.id) return;
+        const id = state.id;
+        const seq = ++state.seq;
         try {
-          const events = await api('/api/webhook/events?id=' + encodeURIComponent(state.id));
+          const events = await api('/api/webhook/events?id=' + encodeURIComponent(id));
+          if (id !== state.id || seq !== state.seq) return;
           state.events = events;
           renderEvents();
         } catch (err) {
@@ -528,17 +535,22 @@
 
       function startPolling() {
         stopPolling();
-        state.pollTimer = setInterval(() => {
-          state.seq++;
-          loadEvents();
-        }, 2000);
+        const generation = state.pollGeneration;
+        const poll = async () => {
+          await loadEvents();
+          if (generation !== state.pollGeneration) return;
+          state.pollTimer = setTimeout(poll, 2000);
+        };
+        state.pollTimer = setTimeout(poll, 2000);
       }
 
       function stopPolling() {
         if (state.pollTimer) {
-          clearInterval(state.pollTimer);
+          clearTimeout(state.pollTimer);
           state.pollTimer = null;
         }
+        state.pollGeneration++;
+        state.seq++;
       }
 
       async function copyUrl() {
@@ -554,22 +566,54 @@
 
       qs('#createBtn').addEventListener('click', async (e) => {
         e.preventDefault();
-        const created = await api('/api/webhook/create', { method: 'POST' });
-        state.id = created.id;
-        state.events = [];
-        renderEvents();
-        urlInput.value = buildUrl(state.id);
-        curlHint.textContent = 'curl -X POST ' + buildUrl(state.id) + '/payload -H "Content-Type: application/json" -d \'{"hello":"world"}\'';
-        listenBanner.classList.add('show');
-        showToast('New web-hook created');
+        try {
+          const created = await api('/api/webhook/create', { method: 'POST' });
+          state.id = created.id;
+          state.events = [];
+          state.seq++;
+          renderEvents();
+          urlInput.value = buildUrl(state.id);
+          curlHint.textContent = 'curl -X POST ' + buildUrl(state.id) + '/payload -H "Content-Type: application/json" -d \'{"hello":"world"}\'';
+          listenBanner.classList.add('show');
+          showToast('New web-hook created');
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : 'Unable to create web-hook');
+        }
       });
 
       qs('#copyBtn').addEventListener('click', copyUrl);
       qs('#copyInline').addEventListener('click', copyUrl);
 
-      qs('#clearBtn').addEventListener('click', () => {
-        state.events = [];
-        renderEvents();
+      qs('#deleteBtn').addEventListener('click', async () => {
+        if (!state.id || !window.confirm('Delete this endpoint and all of its captured requests?')) return;
+        try {
+          await api('/api/webhook/delete', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ id: state.id }),
+          });
+          stopPolling();
+          state.id = null;
+          state.events = [];
+          activePanel.style.display = 'none';
+          await initActive();
+          showToast('Endpoint deleted');
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : 'Unable to delete endpoint');
+        }
+      });
+
+      qs('#clearBtn').addEventListener('click', async () => {
+        if (!state.id) return;
+        try {
+          await api('/api/webhook/events?id=' + encodeURIComponent(state.id), { method: 'DELETE' });
+          state.events = [];
+          state.seq++;
+          renderEvents();
+          showToast('Captured requests cleared');
+        } catch (err) {
+          showToast('Unable to clear requests');
+        }
       });
 
       refreshAuth();

@@ -121,6 +121,87 @@ describe('WebHook Tester', () => {
     expect(postEv.body).toContain('"hello"');
   });
 
+  it('preserves duplicate query values and bounds Unicode body capture', async () => {
+    const token = await seedUser(env, 'webhook-body@example.com');
+    const id = await createHook(env, token);
+    const unicodeBody = 'こんにちは'.repeat(20_000);
+
+    const capture = new IncomingRequest(`http://example.com/h/${id}/payload?tag=one&tag=two`, {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain; charset=utf-8' },
+      body: unicodeBody,
+    });
+    const captureCtx = createExecutionContext();
+    const captureRes = await worker.fetch(capture, env, captureCtx);
+    await waitOnExecutionContext(captureCtx);
+    expect(captureRes.status).toBe(200);
+
+    const list = new IncomingRequest(`http://example.com/api/webhook/events?id=${id}`, {
+      headers: { cookie: `wt_session=${token}` },
+    });
+    const listCtx = createExecutionContext();
+    const listRes = await worker.fetch(list, env, listCtx);
+    await waitOnExecutionContext(listCtx);
+    const events = await listRes.json<any[]>();
+
+    expect(events).toHaveLength(1);
+    expect(events[0].query).toEqual({ tag: ['one', 'two'] });
+    expect(events[0].body).toContain('こんにちは');
+    expect(events[0].body).toContain('[body truncated after 65536 bytes]');
+    expect(new TextEncoder().encode(events[0].body).byteLength).toBeLessThan(66_000);
+  });
+
+  it('clears captured events permanently for the owner', async () => {
+    const token = await seedUser(env, 'webhook-clear@example.com');
+    const id = await createHook(env, token);
+
+    const captureRes = await SELF.fetch(`http://example.com/h/${id}`, { method: 'POST', body: 'event' });
+    expect(captureRes.status).toBe(200);
+
+    const clear = new IncomingRequest(`http://example.com/api/webhook/events?id=${id}`, {
+      method: 'DELETE',
+      headers: { cookie: `wt_session=${token}` },
+    });
+    const clearCtx = createExecutionContext();
+    const clearRes = await worker.fetch(clear, env, clearCtx);
+    await waitOnExecutionContext(clearCtx);
+    expect(clearRes.status).toBe(200);
+
+    const list = new IncomingRequest(`http://example.com/api/webhook/events?id=${id}`, {
+      headers: { cookie: `wt_session=${token}` },
+    });
+    const listCtx = createExecutionContext();
+    const listRes = await worker.fetch(list, env, listCtx);
+    await waitOnExecutionContext(listCtx);
+    expect(await listRes.json<any[]>()).toEqual([]);
+  });
+
+  it('retains only the newest 100 events per web-hook', async () => {
+    const token = await seedUser(env, 'webhook-retention@example.com');
+    const id = await createHook(env, token);
+    const statements = Array.from({ length: 100 }, (_, index) =>
+      env.DB.prepare(
+        'INSERT INTO webhook_events (id, webhook_id, method, path, headers, query, body, ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      ).bind(`seed-event-${index}`, id, 'POST', `/seed/${index}`, '{}', '{}', String(index), ''),
+    );
+    await env.DB.batch(statements);
+
+    const captureRes = await SELF.fetch(`http://example.com/h/${id}/newest`, { method: 'POST', body: 'newest' });
+    expect(captureRes.status).toBe(200);
+
+    const list = new IncomingRequest(`http://example.com/api/webhook/events?id=${id}&limit=500`, {
+      headers: { cookie: `wt_session=${token}` },
+    });
+    const listCtx = createExecutionContext();
+    const listRes = await worker.fetch(list, env, listCtx);
+    await waitOnExecutionContext(listCtx);
+    const events = await listRes.json<any[]>();
+
+    expect(events).toHaveLength(100);
+    expect(events[0].path).toBe(`/h/${id}/newest`);
+    expect(events.some((event) => event.id === 'seed-event-0')).toBe(false);
+  });
+
   it('does not list events for a non-owner', async () => {
     (env as any).INTERNAL_TEST_KEY = 'k';
     const ownerToken = await seedUser(env, 'webhook-owner2@example.com');
@@ -134,6 +215,31 @@ describe('WebHook Tester', () => {
     const response = await worker.fetch(list, env, ctx);
     await waitOnExecutionContext(ctx);
     expect(response.status).toBe(403);
+
+    const clear = new IncomingRequest(`http://example.com/api/webhook/events?id=${id}`, {
+      method: 'DELETE',
+      headers: { cookie: `wt_session=${otherToken}` },
+    });
+    const clearCtx = createExecutionContext();
+    const clearResponse = await worker.fetch(clear, env, clearCtx);
+    await waitOnExecutionContext(clearCtx);
+    expect(clearResponse.status).toBe(403);
+  });
+
+  it('limits each account to 10 web-hooks', async () => {
+    const token = await seedUser(env, 'webhook-quota@example.com');
+    for (let index = 0; index < 10; index++) await createHook(env, token);
+
+    const request = new IncomingRequest('http://example.com/api/webhook/create', {
+      method: 'POST',
+      headers: { cookie: `wt_session=${token}` },
+    });
+    const ctx = createExecutionContext();
+    const response = await worker.fetch(request, env, ctx);
+    await waitOnExecutionContext(ctx);
+
+    expect(response.status).toBe(409);
+    expect(await response.text()).toContain('maximum of 10');
   });
 
   it('owner can delete a web-hook', async () => {
@@ -151,6 +257,11 @@ describe('WebHook Tester', () => {
     await waitOnExecutionContext(delCtx);
     expect(delRes.status).toBe(200);
     expect(await delRes.json<any>()).toEqual({ ok: true });
+
+    const storedEvents = await env.DB.prepare('SELECT COUNT(*) AS count FROM webhook_events WHERE webhook_id = ?')
+      .bind(id)
+      .first<number>('count');
+    expect(storedEvents).toBe(0);
 
     const afterPost = new IncomingRequest(`http://example.com/h/${id}/after-delete`, { method: 'POST' });
     const afterCtx = createExecutionContext();

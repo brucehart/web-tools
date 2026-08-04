@@ -94,9 +94,9 @@ A Cloudflare Worker that serves a suite of browser-based developer and utility t
   - Zoom in/out, fit to width, and inspect large images without server-side processing.
 
 - WebHook Tester (`/web-hook`)
-  - Create unique URLs and inspect the full headers, query parameters, and body of any request sent to them.
+  - Create unique URLs and inspect headers, query parameters, and up to 64 KiB of body for requests sent to them.
   - Capture is unauthenticated and public; viewing events requires sign-in.
-  - Captured requests appear in real time for the owning account.
+  - Captured requests appear in real time for the owning account; each endpoint retains its latest 100 events.
 
 All tools use the shared header/theme assets in `public/shared`, and the home page at `/` provides searchable tiles for the full suite.
 
