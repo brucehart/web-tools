@@ -80,6 +80,33 @@ async function ensureSchema(env: Bindings): Promise<void> {
       updated_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
     )
   `).run();
+
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS webhooks (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `).run();
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS webhook_events (
+      id TEXT PRIMARY KEY,
+      webhook_id TEXT NOT NULL,
+      method TEXT NOT NULL,
+      path TEXT NOT NULL,
+      headers TEXT NOT NULL,
+      query TEXT NOT NULL,
+      body TEXT NOT NULL DEFAULT '',
+      ip TEXT,
+      created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+      FOREIGN KEY (webhook_id) REFERENCES webhooks(id) ON DELETE CASCADE
+    )
+  `).run();
+  await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_webhooks_user ON webhooks(user_id, created_at DESC)').run();
+  await env.DB.prepare(
+    'CREATE INDEX IF NOT EXISTS idx_webhook_events_webhook_created ON webhook_events(webhook_id, created_at DESC)',
+  ).run();
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS card_images (
       id TEXT PRIMARY KEY,

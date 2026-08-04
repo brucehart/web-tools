@@ -25,6 +25,7 @@ describe('Tools index and Markdown viewer', () => {
 		expect(body).toContain('href="/format-tools"');
 		expect(body).toContain('href="/csv-editor"');
 		expect(body).toContain('href="/boards"');
+		expect(body).toContain('href="/web-hook"');
 	});
 
 	it('serves markdown viewer at /markdown (unit)', async () => {
@@ -252,6 +253,18 @@ describe('Tools index and Markdown viewer', () => {
 		expect(response.headers.get('content-type')).toContain('text/html');
 		const body = await response.text();
 		expect(body).toContain('<title>CSV Viewer &amp; Editor</title>');
+	});
+
+	it('serves web-hook tester at /web-hook (unit)', async () => {
+		const request = new IncomingRequest('http://example.com/web-hook');
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+		expect(response.status).toBe(200);
+		expect(response.headers.get('content-type')).toContain('text/html');
+		const body = await response.text();
+		expect(body).toContain('<title>WebHook Tester</title>');
+		expect(body).toContain('id="createBtn"');
 	});
 
 	it('serves actuary calculator at /actuary (unit)', async () => {

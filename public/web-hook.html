@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WebHook Tester</title>
+    <link rel="stylesheet" href="/shared/toolkit.css" />
+    <script defer src="/shared/toolkit.js"></script>
+    <style>
+      :root {
+        --panel: var(--wt-panel-solid, #ffffff);
+        --border: var(--wt-border, #d0d7de);
+        --muted: var(--wt-muted, #57606a);
+        --accent: var(--wt-accent, #0969da);
+        --danger: var(--wt-danger, #cf222e);
+        --success: var(--wt-success, #1a7f37);
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--wt-fg, #1f2328);
+      }
+
+      .layout {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 18px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .hero {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: var(--wt-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
+      }
+
+      .hero h1 {
+        margin: 0 0 6px;
+        font-size: 1.6rem;
+      }
+
+      .hero p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: var(--wt-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border-bottom: 1px solid var(--border);
+        padding: 10px 14px;
+      }
+
+      .panel-head h2 {
+        margin: 0;
+        font-size: 0.95rem;
+      }
+
+      .section {
+        padding: 14px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .url-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      input[type='text'],
+      textarea {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        padding: 8px 10px;
+      }
+
+      input[type='text'] {
+        flex: 1;
+        min-width: 220px;
+      }
+
+      .url-inline {
+        flex: 1;
+        min-width: 220px;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 6px 10px;
+      }
+
+      .url-inline input {
+        border: none;
+        outline: none;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .btn {
+        border: 1px solid var(--border);
+        background: transparent;
+        color: inherit;
+        border-radius: 10px;
+        padding: 8px 12px;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .btn:hover {
+        border-color: var(--accent);
+      }
+
+      .btn-primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+
+      .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .row .mut {
+        color: var(--muted);
+        font-size: 0.84rem;
+      }
+
+      .event {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      .event-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding: 10px 12px;
+        background: rgba(127, 127, 127, 0.05);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .method-badge {
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 6px;
+        color: #fff;
+        font-size: 0.8rem;
+      }
+
+      .m-GET { background: #1a7f37; }
+      .m-POST { background: #8250df; }
+      .m-PUT { background: #0969da; }
+      .m-PATCH { background: #9a6700; }
+      .m-DELETE { background: #cf222e; }
+      .m-HEAD { background: #57606a; }
+      .m-OPTIONS { background: #57606a; }
+
+      .event-path {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.85rem;
+        overflow-wrap: anywhere;
+      }
+
+      .event-time {
+        color: var(--muted);
+        font-size: 0.8rem;
+        margin-left: auto;
+      }
+
+      .event-tabs {
+        display: flex;
+        gap: 4px;
+        padding: 8px 12px 0;
+      }
+
+      .event-tabs button {
+        border: 1px solid transparent;
+        border-bottom: none;
+        background: transparent;
+        color: var(--muted);
+        padding: 6px 12px;
+        border-radius: 8px 8px 0 0;
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .event-tabs button.active {
+        background: rgba(127, 127, 127, 0.08);
+        border-color: var(--border);
+        color: inherit;
+      }
+
+      .event-body {
+        padding: 12px;
+        display: none;
+        max-height: 420px;
+        overflow: auto;
+      }
+
+      .event-body.active {
+        display: block;
+      }
+
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.82rem;
+        color: inherit;
+      }
+
+      table.kv {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.84rem;
+      }
+
+      table.kv th,
+      table.kv td {
+        text-align: left;
+        padding: 5px 6px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+
+      table.kv th {
+        color: var(--muted);
+        font-weight: 600;
+        width: 30%;
+      }
+
+      table.kv td {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        overflow-wrap: anywhere;
+      }
+
+      .empty {
+        color: var(--muted);
+        text-align: center;
+        padding: 24px 12px;
+      }
+
+      .toast {
+        position: fixed;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--accent);
+        color: #fff;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+        z-index: 50;
+      }
+
+      .toast.show {
+        opacity: 1;
+      }
+
+      .listen-banner {
+        display: none;
+        border: 1px solid var(--success);
+        background: color-mix(in srgb, var(--success) 12%, transparent);
+        color: var(--success);
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-size: 0.9rem;
+      }
+
+      .listen-banner.show {
+        display: block;
+      }
+
+      .ldsh {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(127, 127, 127, 0.35);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-right: 6px;
+        vertical-align: middle;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .idle { opacity: 0.55; }
+    </style>
+  </head>
+  <body class="wt" data-wt-tool="web-hook" data-wt-title="WebHook Tester">
+    <div class="wt-header" role="banner"></div>
+
+    <div class="layout">
+      <div class="hero">
+        <h1>WebHook Tester</h1>
+        <p>Create a unique URL, send any HTTP request to it, and inspect its headers and up to 64 KiB of body in real time — like webhook.site.</p>
+      </div>
+
+      <div id="authPanel" class="panel">
+        <div class="section" style="text-align:center">
+          <p class="mut" style="color: var(--muted)">Sign in to create and manage web-hook endpoints.</p>
+          <a class="btn btn-primary" href="/auth/google/login?returnTo=/web-hook">Sign in with Google</a>
+        </div>
+      </div>
+
+      <div id="toolPanel" style="display:none">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Create an endpoint</h2>
+            <div class="mut">Only you can view captured requests.</div>
+          </div>
+          <div class="section">
+            <a id="createBtn" class="btn btn-primary" href="#">+ New web-hook URL</a>
+            <div class="listen-banner" id="listenBanner">
+              <span class="ldsh"></span>Listening for requests…
+            </div>
+          </div>
+        </div>
+
+        <div id="activePanel" class="panel" style="display:none">
+          <div class="panel-head">
+            <h2>Active endpoint</h2>
+            <div>
+              <button id="copyBtn" class="btn" type="button">Copy URL</button>
+              <button id="deleteBtn" class="btn" type="button">Delete endpoint</button>
+            </div>
+          </div>
+          <div class="section">
+            <p class="mut" style="margin:0 0 4px">Send any HTTP request to this URL. Try it with <code>curl</code>:</p>
+            <pre id="curlHint"></pre>
+            <div class="url-inline">
+              <input id="urlInput" readonly type="text" />
+              <button id="copyInline" class="btn" type="button">Copy</button>
+            </div>
+            <div class="row">
+              <div class="mut">Captured requests</div>
+              <button id="clearBtn" class="btn" type="button">Clear captured requests</button>
+            </div>
+            <div id="events" class="section" style="padding:0"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      const qs = (sel) => document.querySelector(sel);
+
+      async function api(path, opts) {
+        const res = await fetch(path, Object.assign({ credentials: 'include' }, opts || {}));
+        if (!res.ok) throw new Error((await res.text()) || res.statusText);
+        return res.json();
+      }
+
+      let state = { id: null, events: [], pollTimer: null, pollGeneration: 0, seq: 0 };
+
+      const authPanel = qs('#authPanel');
+      const toolPanel = qs('#toolPanel');
+      const activePanel = qs('#activePanel');
+      const urlInput = qs('#urlInput');
+      const curlHint = qs('#curlHint');
+      const listenBanner = qs('#listenBanner');
+      const eventsEl = qs('#events');
+      const toastEl = qs('#toast');
+
+      function buildUrl(id) {
+        return location.origin + '/h/' + id;
+      }
+
+      function showToast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add('show');
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => toastEl.classList.remove('show'), 1800);
+      }
+
+      function escapeHtml(s) {
+        return String(s == null ? '' : s)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#039;');
+      }
+
+      function methodClass(method) {
+        const m = method.toUpperCase();
+        if (m in { GET: 1, POST: 1, PUT: 1, PATCH: 1, DELETE: 1, HEAD: 1, OPTIONS: 1 }) return 'm-' + m;
+        return 'm-GET';
+      }
+
+      function kvTable(entries) {
+        const keys = Object.keys(entries || {});
+        if (!keys.length) return '<p class="mut">None</p>';
+        let html = '<table class="kv">';
+        keys.forEach((k) => {
+          const value = Array.isArray(entries[k]) ? entries[k].join('\n') : entries[k];
+          html += '<tr><th>' + escapeHtml(k) + '</th><td>' + escapeHtml(value) + '</td></tr>';
+        });
+        return html + '</table>';
+      }
+
+      function renderEvents() {
+        if (!state.events.length) {
+          eventsEl.innerHTML = '<div class="empty">No requests yet. Send a request to your URL and it will appear here instantly.</div>';
+          return;
+        }
+        eventsEl.innerHTML = state.events.map((ev, i) => {
+          const method = (ev.method || 'GET').toUpperCase();
+          const tabs = ['headers', 'query', 'body'];
+          const labels = { headers: 'Headers', query: 'Query', body: 'Body' };
+          const panes = {
+            headers: kvTable(ev.headers),
+            query: kvTable(ev.query),
+            body: '<pre>' + escapeHtml(ev.body || '') + '</pre>',
+          };
+          const tabHtml = tabs
+            .map((t) => '<button type="button" data-tab="' + t + '" data-ev="' + i + '" class="' + (t === 'headers' ? 'active' : '') + '">' + labels[t] + '</button>')
+            .join('');
+          const paneHtml = tabs
+            .map((t) => '<div class="event-body' + (t === 'headers' ? ' active' : '') + '" data-pane="' + t + '">' + panes[t] + '</div>')
+            .join('');
+          return (
+            '<div class="event">' +
+            '<div class="event-head">' +
+            '<span class="method-badge ' + methodClass(method) + '">' + escapeHtml(method) + '</span>' +
+            '<span class="event-path">' + escapeHtml(ev.path || '/') + '</span>' +
+            (ev.ip ? '<span class="mut" style="font-size:0.8rem">' + escapeHtml(ev.ip) + '</span>' : '') +
+            '<span class="event-time">' + escapeHtml(ev.created_at || '') + '</span>' +
+            '</div>' +
+            '<div class="event-tabs">' + tabHtml + '</div>' +
+            '<div class="event-body-wrap">' + paneHtml + '</div>' +
+            '</div>'
+          );
+        }).join('');
+      }
+
+      eventsEl.addEventListener('click', (e) => {
+        const tabBtn = e.target.closest('button[data-tab]');
+        if (!tabBtn) return;
+        const ev = Number(tabBtn.dataset.ev);
+        const tab = tabBtn.dataset.tab;
+        const card = tabBtn.closest('.event');
+        card.querySelectorAll('.event-tabs button').forEach((b) => {
+          b.classList.toggle('active', b === tabBtn);
+        });
+        card.querySelectorAll('.event-body').forEach((pane) => {
+          pane.classList.toggle('active', pane.dataset.pane === tab);
+        });
+      });
+
+      async function loadEvents() {
+        if (!state.id) return;
+        const id = state.id;
+        const seq = ++state.seq;
+        try {
+          const events = await api('/api/webhook/events?id=' + encodeURIComponent(id));
+          if (id !== state.id || seq !== state.seq) return;
+          state.events = events;
+          renderEvents();
+        } catch (err) {
+          // Keep polling; transient failures are fine.
+        }
+      }
+
+      async function refreshAuth() {
+        try {
+          const me = await api('/api/auth/me');
+          if (me.loggedIn) {
+            authPanel.style.display = 'none';
+            toolPanel.style.display = '';
+            await initActive();
+          } else {
+            authPanel.style.display = '';
+            toolPanel.style.display = 'none';
+          }
+        } catch (err) {
+          authPanel.style.display = '';
+          toolPanel.style.display = 'none';
+        }
+      }
+
+      async function initActive() {
+        const list = await api('/api/webhook/list');
+        if (list.length) {
+          state.id = list[0].id;
+        } else {
+          const created = await api('/api/webhook/create', { method: 'POST' });
+          state.id = created.id;
+        }
+        activePanel.style.display = '';
+        urlInput.value = buildUrl(state.id);
+        curlHint.textContent = 'curl -X POST ' + buildUrl(state.id) + '/payload -H "Content-Type: application/json" -d \'{"hello":"world"}\'';
+        listenBanner.classList.add('show');
+        await loadEvents();
+        startPolling();
+      }
+
+      function startPolling() {
+        stopPolling();
+        const generation = state.pollGeneration;
+        const poll = async () => {
+          await loadEvents();
+          if (generation !== state.pollGeneration) return;
+          state.pollTimer = setTimeout(poll, 2000);
+        };
+        state.pollTimer = setTimeout(poll, 2000);
+      }
+
+      function stopPolling() {
+        if (state.pollTimer) {
+          clearTimeout(state.pollTimer);
+          state.pollTimer = null;
+        }
+        state.pollGeneration++;
+        state.seq++;
+      }
+
+      async function copyUrl() {
+        try {
+          await navigator.clipboard.writeText(urlInput.value);
+          showToast('URL copied');
+        } catch (err) {
+          urlInput.select();
+          document.execCommand('copy');
+          showToast('URL copied');
+        }
+      }
+
+      qs('#createBtn').addEventListener('click', async (e) => {
+        e.preventDefault();
+        try {
+          const created = await api('/api/webhook/create', { method: 'POST' });
+          state.id = created.id;
+          state.events = [];
+          state.seq++;
+          renderEvents();
+          urlInput.value = buildUrl(state.id);
+          curlHint.textContent = 'curl -X POST ' + buildUrl(state.id) + '/payload -H "Content-Type: application/json" -d \'{"hello":"world"}\'';
+          listenBanner.classList.add('show');
+          showToast('New web-hook created');
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : 'Unable to create web-hook');
+        }
+      });
+
+      qs('#copyBtn').addEventListener('click', copyUrl);
+      qs('#copyInline').addEventListener('click', copyUrl);
+
+      qs('#deleteBtn').addEventListener('click', async () => {
+        if (!state.id || !window.confirm('Delete this endpoint and all of its captured requests?')) return;
+        try {
+          await api('/api/webhook/delete', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ id: state.id }),
+          });
+          stopPolling();
+          state.id = null;
+          state.events = [];
+          activePanel.style.display = 'none';
+          await initActive();
+          showToast('Endpoint deleted');
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : 'Unable to delete endpoint');
+        }
+      });
+
+      qs('#clearBtn').addEventListener('click', async () => {
+        if (!state.id) return;
+        try {
+          await api('/api/webhook/events?id=' + encodeURIComponent(state.id), { method: 'DELETE' });
+          state.events = [];
+          state.seq++;
+          renderEvents();
+          showToast('Captured requests cleared');
+        } catch (err) {
+          showToast('Unable to clear requests');
+        }
+      });
+
+      refreshAuth();
+      window.addEventListener('beforeunload', stopPolling);
+    </script>
+  </body>
+</html>

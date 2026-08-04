@@ -21,6 +21,7 @@
     { id: 'boards', title: 'Boards', href: '/boards' },
     { id: 'goals', title: 'Goals', href: '/goals' },
     { id: 'actuary', title: 'Actuary', href: '/actuary' },
+    { id: 'web-hook', title: 'WebHook Tester', href: '/web-hook' },
   ];
 
   function preferredTheme() {
