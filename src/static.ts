@@ -39,6 +39,8 @@ const PRETTY_ROUTES: Record<string, string> = {
   '/area-code/': '/area-code.html',
   '/actuary': '/actuary.html',
   '/actuary/': '/actuary.html',
+  '/web-hook': '/web-hook.html',
+  '/web-hook/': '/web-hook.html',
 };
 
 const KNOWN_HTML = new Set(Object.values(PRETTY_ROUTES));

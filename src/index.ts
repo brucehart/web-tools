@@ -6,6 +6,7 @@ import { handleGoalApi } from './goals';
 import { handleTodoApi } from './todo';
 import { handleBoardsApi } from './boards';
 import { handleTranscriptApi } from './routes/transcript';
+import { handleWebhookApi, handleWebhookCapture } from './webhook';
 import { serveStatic } from './static';
 import type { Bindings, WorkerExport } from './types';
 
@@ -37,6 +38,12 @@ export default {
 
     const transcriptResponse = await handleTranscriptApi(request, bindings, url);
     if (transcriptResponse) return transcriptResponse;
+
+    const webhookCaptureResponse = await handleWebhookCapture(request, bindings, url);
+    if (webhookCaptureResponse) return webhookCaptureResponse;
+
+    const webhookApiResponse = await handleWebhookApi(request, bindings, url);
+    if (webhookApiResponse) return webhookApiResponse;
 
     const pastebinPageResponse = await handlePastebinPage(request, bindings, url);
     if (pastebinPageResponse) return pastebinPageResponse;

@@ -93,6 +93,11 @@ A Cloudflare Worker that serves a suite of browser-based developer and utility t
   - Toggle, solo, and recolor channels for multi-channel images.
   - Zoom in/out, fit to width, and inspect large images without server-side processing.
 
+- WebHook Tester (`/web-hook`)
+  - Create unique URLs and inspect the full headers, query parameters, and body of any request sent to them.
+  - Capture is unauthenticated and public; viewing events requires sign-in.
+  - Captured requests appear in real time for the owning account.
+
 All tools use the shared header/theme assets in `public/shared`, and the home page at `/` provides searchable tiles for the full suite.
 
 ## Routes
@@ -117,6 +122,7 @@ All tools use the shared header/theme assets in `public/shared`, and the home pa
 - `/actuary` - Actuary Calculator.
 - `/yt-transcript` - YouTube Transcript.
 - `/tiff-viewer` - TIFF Viewer.
+- `/web-hook` - WebHook Tester.
 
 ### Data and auth routes
 
@@ -133,6 +139,8 @@ All tools use the shared header/theme assets in `public/shared`, and the home pa
 - `/api/boards/cards/images/add`, `/api/boards/cards/images/delete`
 - `/api/todo/create`, `/api/todo/list`, `/api/todo/get`, `/api/todo/update`, `/api/todo/toggle`, `/api/todo/delete`
 - `/api/goals/create`, `/api/goals/list`, `/api/goals/delete`, `/api/goals/entry`
+- `/api/webhook/create`, `/api/webhook/list`, `/api/webhook/delete`, `/api/webhook/events`
+- `/h/:id` - public web-hook capture endpoint.
 - `/api/yt-transcript`
 - `/api/_internal/seed` - internal test helper.
 
@@ -142,6 +150,7 @@ All tools use the shared header/theme assets in `public/shared`, and the home pa
 - `src/static.ts` - pretty-route mapping for all HTML tool pages in `public/`.
 - `src/auth.ts` - Google OAuth, session lookup, and logout handling.
 - `src/boards.ts` - Boards API for boards, lists, cards, drag/drop ordering, and image attachments.
+- `src/webhook.ts` - WebHook Tester API, public `/h/:id` capture route, and event listing.
 - `src/pastebin.ts` - Pastebin API and `/pastebin/p/:id` page handling.
 - `src/pages.ts` - D1-backed saved pages for Markdown Viewer and Euler Preview.
 - `src/todo.ts` - To-Do List API.
@@ -150,7 +159,7 @@ All tools use the shared header/theme assets in `public/shared`, and the home pa
 - `public/` - one HTML page per tool, plus `public/shared/` for shared UI assets.
 - `public/vendor/dompurify/purify.min.js` - bundled DOMPurify used by the Boards tool.
 - `public/vendor/utif.js` - bundled TIFF decoder used by the viewer.
-- `migrations/0001_pastebin.sql` through `migrations/0007_boards.sql` - D1 schema for users/sessions, pastebin, todos, goals, synced editor pages, and boards.
+- `migrations/0001_pastebin.sql` through `migrations/0008_webhooks.sql` - D1 schema for users/sessions, pastebin, todos, goals, synced editor pages, boards, and web-hook events.
 - `test/index.spec.ts` - worker tests with Vitest and the Cloudflare Workers pool.
 - `wrangler.jsonc` - Wrangler config and bindings.
 
