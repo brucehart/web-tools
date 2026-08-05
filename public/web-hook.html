@@ -503,13 +503,16 @@
       async function refreshAuth() {
         try {
           const me = await api('/api/auth/me');
-          if (me.loggedIn) {
+          if (me.loggedIn && me.allowed) {
             authPanel.style.display = 'none';
             toolPanel.style.display = '';
             await initActive();
           } else {
             authPanel.style.display = '';
             toolPanel.style.display = 'none';
+            if (me.loggedIn && !me.allowed) {
+              authPanel.querySelector('p').textContent = 'This tool is restricted to the authorized Google account.';
+            }
           }
         } catch (err) {
           authPanel.style.display = '';

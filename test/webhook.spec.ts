@@ -61,9 +61,22 @@ describe('WebHook Tester', () => {
     expect(response.status).toBe(401);
   });
 
+  it('restricts web-hook management to the allowed Google account', async () => {
+    (env as any).INTERNAL_TEST_KEY = 'k';
+    const token = await seedUser(env, 'not-authorized@example.com');
+    const request = new IncomingRequest('http://example.com/api/webhook/create', {
+      method: 'POST',
+      headers: { cookie: `wt_session=${token}` },
+    });
+    const ctx = createExecutionContext();
+    const response = await worker.fetch(request, env, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(response.status).toBe(403);
+  });
+
   it('creates a web-hook, captures a request, and lists events (unit)', async () => {
     (env as any).INTERNAL_TEST_KEY = 'k';
-    const token = await seedUser(env, 'webhook-owner@example.com');
+    const token = await seedUser(env, 'bruce.hart@gmail.com');
     const id = await createHook(env, token);
 
     // Capture a POST with headers, query params, and a JSON body.
@@ -122,7 +135,7 @@ describe('WebHook Tester', () => {
   });
 
   it('preserves duplicate query values and bounds Unicode body capture', async () => {
-    const token = await seedUser(env, 'webhook-body@example.com');
+    const token = await seedUser(env, 'bruce.hart@gmail.com');
     const id = await createHook(env, token);
     const unicodeBody = 'こんにちは'.repeat(20_000);
 
@@ -152,7 +165,7 @@ describe('WebHook Tester', () => {
   });
 
   it('clears captured events permanently for the owner', async () => {
-    const token = await seedUser(env, 'webhook-clear@example.com');
+    const token = await seedUser(env, 'bruce.hart@gmail.com');
     const id = await createHook(env, token);
 
     const captureRes = await SELF.fetch(`http://example.com/h/${id}`, { method: 'POST', body: 'event' });
@@ -177,7 +190,7 @@ describe('WebHook Tester', () => {
   });
 
   it('retains only the newest 100 events per web-hook', async () => {
-    const token = await seedUser(env, 'webhook-retention@example.com');
+    const token = await seedUser(env, 'bruce.hart@gmail.com');
     const id = await createHook(env, token);
     const statements = Array.from({ length: 100 }, (_, index) =>
       env.DB.prepare(
@@ -204,9 +217,9 @@ describe('WebHook Tester', () => {
 
   it('does not list events for a non-owner', async () => {
     (env as any).INTERNAL_TEST_KEY = 'k';
-    const ownerToken = await seedUser(env, 'webhook-owner2@example.com');
+    const ownerToken = await seedUser(env, 'bruce.hart@gmail.com');
     const id = await createHook(env, ownerToken);
-    const otherToken = await seedUser(env, 'webhook-other@example.com');
+    const otherToken = await seedUser(env, 'bruce.hart@gmail.com');
 
     const list = new IncomingRequest(`http://example.com/api/webhook/events?id=${id}`, {
       headers: { cookie: `wt_session=${otherToken}` },
@@ -227,7 +240,7 @@ describe('WebHook Tester', () => {
   });
 
   it('limits each account to 10 web-hooks', async () => {
-    const token = await seedUser(env, 'webhook-quota@example.com');
+    const token = await seedUser(env, 'bruce.hart@gmail.com');
     for (let index = 0; index < 10; index++) await createHook(env, token);
 
     const request = new IncomingRequest('http://example.com/api/webhook/create', {
@@ -244,7 +257,7 @@ describe('WebHook Tester', () => {
 
   it('owner can delete a web-hook', async () => {
     (env as any).INTERNAL_TEST_KEY = 'k';
-    const token = await seedUser(env, 'webhook-delete@example.com');
+    const token = await seedUser(env, 'bruce.hart@gmail.com');
     const id = await createHook(env, token);
 
     const del = new IncomingRequest('http://example.com/api/webhook/delete', {

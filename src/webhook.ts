@@ -1,4 +1,4 @@
-import { requireUser } from './auth';
+import { requireAllowedUser } from './auth';
 import { badRequest, json } from './utils/http';
 import { urlSafeRandom } from './utils/random';
 import type { Bindings, HandlerResult } from './types';
@@ -264,19 +264,19 @@ export async function handleWebhookApi(
   const path = url.pathname;
 
   if (path === '/api/webhook/create' && request.method === 'POST') {
-    const user = await requireUser(request, env);
+    const user = await requireAllowedUser(request, env);
     if (user instanceof Response) return user;
     return createWebhook(env, user.id);
   }
 
   if (path === '/api/webhook/list' && request.method === 'GET') {
-    const user = await requireUser(request, env);
+    const user = await requireAllowedUser(request, env);
     if (user instanceof Response) return user;
     return listWebhooks(env, user.id);
   }
 
   if (path === '/api/webhook/delete' && request.method === 'POST') {
-    const user = await requireUser(request, env);
+    const user = await requireAllowedUser(request, env);
     if (user instanceof Response) return user;
     let body: unknown = {};
     try {
@@ -289,7 +289,7 @@ export async function handleWebhookApi(
   }
 
   if (path === '/api/webhook/events' && request.method === 'GET') {
-    const user = await requireUser(request, env);
+    const user = await requireAllowedUser(request, env);
     if (user instanceof Response) return user;
     const id = url.searchParams.get('id') || '';
     const limit = Number(url.searchParams.get('limit') || MAX_EVENTS_PER_WEBHOOK);
@@ -297,7 +297,7 @@ export async function handleWebhookApi(
   }
 
   if (path === '/api/webhook/events' && request.method === 'DELETE') {
-    const user = await requireUser(request, env);
+    const user = await requireAllowedUser(request, env);
     if (user instanceof Response) return user;
     const id = url.searchParams.get('id') || '';
     return clearEvents(env, user.id, id);

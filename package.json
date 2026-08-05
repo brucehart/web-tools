@@ -20,7 +20,7 @@
 		"@cloudflare/vitest-pool-workers": "^0.16.16",
 		"typescript": "^5.9.3",
 		"vitest": "^4.1.9",
-		"wrangler": "^4.101.0"
+		"wrangler": "^4.118.0"
 	},
 	"overrides": {
 		"esbuild": "0.28.1",
