@@ -61,6 +61,16 @@ describe('WebHook Tester', () => {
     expect(response.status).toBe(401);
   });
 
+  it('requires auth to open a web-hook stream', async () => {
+    const request = new IncomingRequest('http://example.com/api/webhook/stream?id=missing', {
+      headers: { upgrade: 'websocket' },
+    });
+    const ctx = createExecutionContext();
+    const response = await worker.fetch(request, env, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(response.status).toBe(401);
+  });
+
   it('restricts web-hook management to the allowed Google account', async () => {
     (env as any).INTERNAL_TEST_KEY = 'k';
     const token = await seedUser(env, 'not-authorized@example.com');
@@ -72,6 +82,33 @@ describe('WebHook Tester', () => {
     const response = await worker.fetch(request, env, ctx);
     await waitOnExecutionContext(ctx);
     expect(response.status).toBe(403);
+  });
+
+  it('opens an authenticated stream for the webhook owner', async () => {
+    (env as any).INTERNAL_TEST_KEY = 'k';
+    const token = await seedUser(env, 'bruce.hart@gmail.com');
+    const id = await createHook(env, token);
+    const request = new IncomingRequest(`http://example.com/api/webhook/stream?id=${id}`, {
+      headers: { cookie: `wt_session=${token}`, upgrade: 'websocket' },
+    });
+    const ctx = createExecutionContext();
+    const response = await worker.fetch(request, env, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(response.status).toBe(101);
+    const socket = response.webSocket;
+    expect(socket).toBeDefined();
+    socket?.accept();
+    const notification = new Promise<string>((resolve) => {
+      socket?.addEventListener('message', (event) => resolve(String((event as MessageEvent).data)), { once: true });
+    });
+    const postCtx = createExecutionContext();
+    const postResponse = await worker.fetch(new IncomingRequest(`http://example.com/h/${id}/payload`, { method: 'POST' }), env, postCtx);
+    await waitOnExecutionContext(postCtx);
+    expect(postResponse.status).toBe(200);
+    const message = JSON.parse(await notification);
+    expect(message.type).toBe('event');
+    expect(message.event.path).toBe(`/h/${id}/payload`);
+    socket?.close();
   });
 
   it('creates a web-hook, captures a request, and lists events (unit)', async () => {

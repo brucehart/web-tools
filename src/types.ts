@@ -1,6 +1,9 @@
+import type { WebhookConnection } from './webhook-connection';
+
 export type Bindings = Env & {
   DB: D1Database;
   ASSETS: Fetcher;
+  WEBHOOK_CONNECTION: DurableObjectNamespace<WebhookConnection>;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   OAUTH_REDIRECT_URL?: string;

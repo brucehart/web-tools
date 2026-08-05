@@ -10,6 +10,8 @@ import { handleWebhookApi, handleWebhookCapture } from './webhook';
 import { serveStatic } from './static';
 import type { Bindings, WorkerExport } from './types';
 
+export { WebhookConnection } from './webhook-connection';
+
 export default {
   async fetch(request, env, _ctx): Promise<Response> {
     const bindings = env as unknown as Bindings;

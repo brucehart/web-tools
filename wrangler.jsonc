@@ -55,6 +55,20 @@
 			"database_id": "f09d1fa6-3f91-4679-ae32-78c588c1e0bb"
 		}
 	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "WEBHOOK_CONNECTION",
+				"class_name": "WebhookConnection"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": ["WebhookConnection"]
+		}
+	],
 	"ratelimits": [
 		{
 			"name": "WEBHOOK_RATE_LIMITER",

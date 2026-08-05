@@ -2,14 +2,13 @@ import { requireAllowedUser } from './auth';
 import { badRequest, json } from './utils/http';
 import { urlSafeRandom } from './utils/random';
 import type { Bindings, HandlerResult } from './types';
+import type { StoredValue, WebhookEvent } from './webhook-types';
 
 const HEADER_BLOCKLIST = new Set(['cookie', 'authorization', 'host']);
 const WEBHOOK_ID_PATTERN = /^[A-Za-z0-9_-]{8,64}$/;
 const MAX_CAPTURE_BODY_BYTES = 64 * 1024;
 const MAX_EVENTS_PER_WEBHOOK = 100;
 const MAX_WEBHOOKS_PER_USER = 10;
-
-type StoredValue = string | string[];
 
 interface WebhookOwnerRow {
   user_id: string;
@@ -28,6 +27,10 @@ interface WebhookEventRow {
 
 function emptyStoredObject(): Record<string, StoredValue> {
   return Object.create(null) as Record<string, StoredValue>;
+}
+
+function serializableStoredObject(value: Record<string, StoredValue>): Record<string, StoredValue> {
+  return Object.fromEntries(Object.entries(value));
 }
 
 function safeHeaders(request: Request): Record<string, StoredValue> {
@@ -205,7 +208,7 @@ async function listEvents(env: Bindings, userId: string, id: string, limit = MAX
   return json(events);
 }
 
-function safeParseObject(raw: string): Record<string, StoredValue> {
+function safeParseObject(raw: string): WebhookEvent['headers'] {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return emptyStoredObject();
@@ -224,19 +227,25 @@ function safeParseObject(raw: string): Record<string, StoredValue> {
   }
 }
 
-async function captureEvent(env: Bindings, id: string, request: Request, url: URL): Promise<Response> {
+async function captureEvent(
+  env: Bindings,
+  id: string,
+  request: Request,
+  url: URL,
+): Promise<{ response: Response; event: WebhookEvent }> {
   const body = await readBody(request);
   const method = request.method;
   const path = url.pathname;
   const headers = safeHeaders(request);
   const query = safeQuery(url);
   const ip = request.headers.get('cf-connecting-ip') || '';
+  const createdAt = new Date().toISOString();
 
   const eventId = urlSafeRandom(16);
   await env.DB.batch([
     env.DB.prepare(
-      'INSERT INTO webhook_events (id, webhook_id, method, path, headers, query, body, ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    ).bind(eventId, id, method, path, JSON.stringify(headers), JSON.stringify(query), body, ip),
+      'INSERT INTO webhook_events (id, webhook_id, method, path, headers, query, body, ip, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    ).bind(eventId, id, method, path, JSON.stringify(headers), JSON.stringify(query), body, ip, createdAt),
     env.DB.prepare(
       `DELETE FROM webhook_events
        WHERE webhook_id = ?
@@ -246,14 +255,31 @@ async function captureEvent(env: Bindings, id: string, request: Request, url: UR
     ).bind(id, id, MAX_EVENTS_PER_WEBHOOK),
   ]);
 
-  return json(
-    {
-      ok: true,
-      event_id: eventId,
-      message: `Request received at ${new Date().toISOString()}`,
-    },
-    { status: 200 },
-  );
+  const event: WebhookEvent = {
+    id: eventId,
+    method,
+    path,
+    headers: serializableStoredObject(headers),
+    query: serializableStoredObject(query),
+    body,
+    ip: ip || null,
+    created_at: createdAt,
+  };
+  return {
+    event,
+    response: json(
+      {
+        ok: true,
+        event_id: eventId,
+        message: `Request received at ${event.created_at}`,
+      },
+      { status: 200 },
+    ),
+  };
+}
+
+async function publishWebhookEvent(env: Bindings, id: string, event: WebhookEvent): Promise<void> {
+  await env.WEBHOOK_CONNECTION.getByName(id).publish(event);
 }
 
 export async function handleWebhookApi(
@@ -296,6 +322,15 @@ export async function handleWebhookApi(
     return listEvents(env, user.id, id, limit);
   }
 
+  if (path === '/api/webhook/stream' && request.method === 'GET') {
+    const user = await requireAllowedUser(request, env);
+    if (user instanceof Response) return user;
+    const id = url.searchParams.get('id') || '';
+    const ownershipError = await requireOwnedWebhook(env, user.id, id);
+    if (ownershipError) return ownershipError;
+    return env.WEBHOOK_CONNECTION.getByName(id).fetch(request);
+  }
+
   if (path === '/api/webhook/events' && request.method === 'DELETE') {
     const user = await requireAllowedUser(request, env);
     if (user instanceof Response) return user;
@@ -326,5 +361,12 @@ export async function handleWebhookCapture(
 
   const row = await getWebhookOwner(env, id);
   if (!row) return null; // Fall through to the static 404 response.
-  return captureEvent(env, id, request, url);
+  const captured = await captureEvent(env, id, request, url);
+  try {
+    await publishWebhookEvent(env, id, captured.event);
+  } catch (error) {
+    // D1 is authoritative; a reconnecting client will catch up if delivery fails.
+    console.error('Failed to publish webhook event', { id, error: String(error) });
+  }
+  return captured.response;
 }
