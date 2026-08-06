@@ -206,7 +206,7 @@ Security notes:
 
 ## Notes
 
-- MathJax inline delimiters are restricted to `$...$` to avoid conflicts with ordinary text. Display math supports `$$...$$` and `\[...\]`.
+- MathJax supports `$...$` and `\(...\)` for inline math. Display math supports `$$...$$` and `\[...\]`.
 - Rendered HTML is sanitized before insertion. Be careful if you change the sanitization path.
 
 ## License

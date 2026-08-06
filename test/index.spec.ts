@@ -38,6 +38,8 @@ describe('Tools index and Markdown viewer', () => {
 		const body = await response.text();
 		expect(body).toContain('<title>Markdown Viewer</title>');
 		expect(body).toContain('textarea id="input"');
+		expect(body).toContain("inlineMath: [['$', '$'], ['\\\\(', '\\\\)']]");
+		expect(body).toContain("window.MathJax.typesetPromise([preview])");
 	});
 
 	it('serves text diff at /diff (unit)', async () => {
