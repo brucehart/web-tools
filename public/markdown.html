@@ -951,7 +951,9 @@ $$
       </form>
     </dialog>
 
-    <script>
+    <script type="module">
+      import { protectMarkdownMath } from '/shared/markdown-math.js';
+
       (function() {
         function boot() {
           const TOOL = 'markdown';
@@ -1316,12 +1318,14 @@ $$
 
           function render() {
             const md = input.value || '';
-            let raw = md;
+            const protectedMath = protectMarkdownMath(md);
+            let raw = protectedMath.markdown;
             const mk = window.marked;
             if (mk) {
-              if (typeof mk.parse === 'function') raw = mk.parse(md);
-              else if (typeof mk === 'function') raw = mk(md);
+              if (typeof mk.parse === 'function') raw = mk.parse(protectedMath.markdown);
+              else if (typeof mk === 'function') raw = mk(protectedMath.markdown);
             }
+            raw = protectedMath.restore(raw);
             const safe = window.DOMPurify ? window.DOMPurify.sanitize(raw) : raw;
             preview.innerHTML = safe;
             if (window.hljs) {

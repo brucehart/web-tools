@@ -39,6 +39,7 @@ describe('Tools index and Markdown viewer', () => {
 		expect(body).toContain('<title>Markdown Viewer</title>');
 		expect(body).toContain('textarea id="input"');
 		expect(body).toContain("inlineMath: [['$', '$'], ['\\\\(', '\\\\)']]");
+		expect(body).toContain("import { protectMarkdownMath } from '/shared/markdown-math.js'");
 		expect(body).toContain("window.MathJax.typesetPromise([preview])");
 	});
 
@@ -175,6 +176,11 @@ describe('Tools index and Markdown viewer', () => {
 		expect(response.headers.get('content-type')).toContain('text/html');
 		const body = await response.text();
 		expect(body).toContain('<title>Markdown Viewer</title>');
+
+		const mathScript = await SELF.fetch('https://example.com/shared/markdown-math.js');
+		expect(mathScript.status).toBe(200);
+		expect(mathScript.headers.get('content-type')).toContain('javascript');
+		expect(await mathScript.text()).toContain('export function protectMarkdownMath');
 	});
 
 	it('serves text diff (integration)', async () => {
