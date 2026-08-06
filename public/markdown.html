@@ -728,7 +728,7 @@
     <script>
       window.MathJax = {
         tex: {
-          inlineMath: [['$', '$']],
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
           displayMath: [['$$','$$'], ['\\[', '\\]']],
         },
         options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] },
@@ -1308,6 +1308,12 @@ $$
             return map[id] || id;
           }
 
+          function typesetMath() {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+              window.MathJax.typesetPromise([preview]).catch(() => {});
+            }
+          }
+
           function render() {
             const md = input.value || '';
             let raw = md;
@@ -1336,9 +1342,7 @@ $$
                 } catch {}
               });
             }
-            if (window.MathJax && window.MathJax.typesetPromise) {
-              window.MathJax.typesetPromise([preview]).catch(() => {});
-            }
+            typesetMath();
             renderInfo();
           }
 
@@ -1612,6 +1616,9 @@ $$
               persistCurrent().catch(() => setSaveState('Save failed', false));
             }, 450);
           });
+          // MathJax is loaded asynchronously, so the first render may happen
+          // before its typesetting API is available.
+          window.addEventListener('load', typesetMath, { once: true });
           newBtn?.addEventListener('click', () => newDoc().catch(() => {}));
           renameBtn?.addEventListener('click', renameDoc);
           deleteBtn?.addEventListener('click', requestDeleteDoc);
