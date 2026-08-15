@@ -21,7 +21,7 @@
 		"marked": "^12.0.2",
 		"typescript": "^5.9.3",
 		"vitest": "^4.1.9",
-		"wrangler": "^4.119.0"
+		"wrangler": "^4.123.0"
 	},
 	"overrides": {
 		"esbuild": "0.28.1",
