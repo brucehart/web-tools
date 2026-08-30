@@ -41,6 +41,12 @@ describe('Tools index and Markdown viewer', () => {
 		expect(body).toContain("inlineMath: [['$', '$'], ['\\\\(', '\\\\)']]");
 		expect(body).toContain("import { protectMarkdownMath } from '/shared/markdown-math.js'");
 		expect(body).toContain("window.MathJax.typesetPromise([preview])");
+		expect(body).toContain('Delete all documents');
+		expect(body).toContain("requestDeleteDoc(doc.id)");
+		expect(body).toContain("e.code === 'Digit1'");
+		expect(body).toContain("e.code === 'Digit2'");
+		expect(body).toContain('font-size: 3em');
+		expect(body).toContain('mark.md-search-match');
 	});
 
 	it('serves text diff at /diff (unit)', async () => {

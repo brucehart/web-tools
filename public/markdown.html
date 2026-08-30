@@ -215,16 +215,15 @@
       .md-doc-item {
         width: 100%;
         display: grid;
-        grid-template-columns: 30px minmax(0, 1fr) 24px;
-        gap: 10px;
+        grid-template-columns: minmax(0, 1fr) 34px;
+        gap: 4px;
         align-items: center;
         border: 1px solid rgba(15, 23, 42, 0.08);
         border-radius: 7px;
         background: #fff;
         color: inherit;
-        padding: 11px 10px;
+        padding: 3px;
         text-align: left;
-        cursor: pointer;
       }
       .md-doc-item:hover { border-color: rgba(37, 99, 235, 0.32); }
       .md-doc-item.active {
@@ -239,6 +238,21 @@
       [data-theme='dark'] .md-doc-item.active {
         border-color: #60a5fa;
         background: rgba(37, 99, 235, 0.16);
+      }
+      .md-doc-select {
+        min-width: 0;
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr);
+        gap: 10px;
+        align-items: center;
+        border: 0;
+        border-radius: 5px;
+        padding: 8px 6px;
+        background: transparent;
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+        font: inherit;
       }
       .md-doc-icon {
         width: 24px;
@@ -269,9 +283,21 @@
       [data-theme='dark'] .md-doc-subtitle,
       [data-theme='dark'] .md-muted { color: var(--wt-muted); }
       .md-more-dots {
+        width: 34px;
+        min-height: 34px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
         color: #667085;
+        cursor: pointer;
+        font: inherit;
         font-weight: 900;
         letter-spacing: 1px;
+      }
+      .md-more-dots:hover,
+      .md-more-dots[aria-expanded='true'] {
+        color: #1d4ed8;
+        background: rgba(37, 99, 235, 0.1);
       }
       .md-link-btn {
         appearance: none;
@@ -487,7 +513,7 @@
       .md-preview h1 {
         margin: 0 0 20px;
         color: #07112b;
-        font-size: clamp(2rem, 3vw, 3rem);
+        font-size: 3em;
         line-height: 1.08;
         letter-spacing: 0;
       }
@@ -566,6 +592,13 @@
         max-width: 100%;
         border-radius: 8px;
       }
+      .md-preview mark.md-search-match {
+        border-radius: 3px;
+        padding: 0.04em 0.08em;
+        background: #fde047;
+        color: #111827;
+        box-shadow: 0 0 0 1px rgba(161, 98, 7, 0.16);
+      }
       .md-reader.full .md-reader-grid {
         display: block;
       }
@@ -580,6 +613,10 @@
       }
       .md-menu-wrap {
         position: relative;
+      }
+      .md-doc-item .md-menu {
+        top: calc(100% + 4px);
+        right: -4px;
       }
       .md-menu {
         position: absolute;
@@ -754,7 +791,7 @@
         <section class="md-card" aria-labelledby="documentsTitle">
           <div class="md-card-head">
             <h2 id="documentsTitle" class="md-card-title">Documents</h2>
-            <button id="newTab" class="md-text-btn primary" type="button" title="New document">
+            <button id="newTab" class="md-text-btn primary" type="button" title="New document (Ctrl+Shift+N)" aria-keyshortcuts="Control+Shift+N Meta+Shift+N">
               <svg class="md-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
               New
             </button>
@@ -784,11 +821,11 @@
         <section class="md-card" aria-labelledby="viewTitle">
           <h2 id="viewTitle" class="md-card-title">View</h2>
           <div class="md-segment">
-            <button id="splitView" class="md-text-btn active" type="button" aria-pressed="true">
+            <button id="splitView" class="md-text-btn active" type="button" aria-pressed="true" title="Split view (Ctrl+Shift+1)" aria-keyshortcuts="Control+Shift+1 Meta+Shift+1">
               <svg class="md-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 4v16"/></svg>
               Split View
             </button>
-            <button id="fullView" class="md-text-btn" type="button" aria-pressed="false">
+            <button id="fullView" class="md-text-btn" type="button" aria-pressed="false" title="Full width (Ctrl+Shift+2)" aria-keyshortcuts="Control+Shift+2 Meta+Shift+2">
               <svg class="md-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 4v16"/></svg>
               Full Width
             </button>
@@ -876,6 +913,7 @@
               <span id="moreMenu" class="md-menu" role="menu">
                 <button id="renameTab" class="md-text-btn" type="button" role="menuitem">Rename document</button>
                 <button id="deleteTab" class="md-text-btn danger" type="button" role="menuitem">Delete document</button>
+                <button id="deleteAllTabs" class="md-text-btn danger" type="button" role="menuitem">Delete all documents</button>
               </span>
             </span>
           </div>
@@ -936,17 +974,7 @@ $$
         <p id="deleteDialogMessage">This document will be removed.</p>
         <div class="md-dialog-actions">
           <button class="md-text-btn" type="submit" value="cancel">Cancel</button>
-          <button class="md-text-btn danger" type="submit" value="delete">Delete</button>
-        </div>
-      </form>
-    </dialog>
-
-    <dialog id="noticeDialog" class="md-dialog" aria-labelledby="noticeDialogTitle">
-      <form method="dialog">
-        <h2 id="noticeDialogTitle">Document action</h2>
-        <p id="noticeDialogMessage"></p>
-        <div class="md-dialog-actions">
-          <button class="md-text-btn primary" type="submit" value="ok">OK</button>
+          <button id="confirmDelete" class="md-text-btn danger" type="submit" value="delete">Delete</button>
         </div>
       </form>
     </dialog>
@@ -975,6 +1003,7 @@ $$
           const newBtn = $('newTab');
           const renameBtn = $('renameTab');
           const deleteBtn = $('deleteTab');
+          const deleteAllBtn = $('deleteAllTabs');
           const copyBtn = $('copyHtml');
           const authArea = $('authArea');
           const reader = $('reader');
@@ -999,9 +1028,9 @@ $$
           const renameDialog = $('renameDialog');
           const renameInput = $('renameInput');
           const deleteDialog = $('deleteDialog');
+          const deleteDialogTitle = $('deleteDialogTitle');
           const deleteDialogMessage = $('deleteDialogMessage');
-          const noticeDialog = $('noticeDialog');
-          const noticeDialogMessage = $('noticeDialogMessage');
+          const confirmDelete = $('confirmDelete');
           if (!input || !preview) return;
 
           function syncHighlightTheme(theme) {
@@ -1033,7 +1062,7 @@ $$
           let readerSettings = loadReaderSettings();
           let bookmarkIds = loadBookmarkIds();
           let pendingRenameDoc = null;
-          let pendingDeleteDocId = '';
+          let pendingDeleteAction = null;
 
           function uid() {
             return 'd_' + Math.random().toString(36).slice(2, 9);
@@ -1226,21 +1255,22 @@ $$
               return `${doc.title || ''}\n${doc.content || ''}`.toLowerCase().includes(query);
             });
             filtered.forEach(doc => {
-              const button = document.createElement('button');
-              button.className = 'md-doc-item' + (doc.id === active ? ' active' : '');
-              button.dataset.id = doc.id;
-              button.type = 'button';
-              button.setAttribute('role', 'tab');
-              button.setAttribute('aria-selected', String(doc.id === active));
-              button.innerHTML = [
+              const item = document.createElement('div');
+              item.className = 'md-doc-item' + (doc.id === active ? ' active' : '');
+              item.dataset.id = doc.id;
+              const selectButton = document.createElement('button');
+              selectButton.className = 'md-doc-select';
+              selectButton.type = 'button';
+              selectButton.setAttribute('role', 'tab');
+              selectButton.setAttribute('aria-selected', String(doc.id === active));
+              selectButton.innerHTML = [
                 '<span class="md-doc-icon"><svg class="md-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h4"/></svg></span>',
                 `<span><span class="md-doc-title">${escapeHtml(doc.title || 'Untitled')}</span><span class="md-doc-subtitle">${escapeHtml(excerpt(doc.content || ''))}</span></span>`,
-                '<span class="md-more-dots">...</span>',
               ].join('');
-              button.addEventListener('click', () => {
+              selectButton.addEventListener('click', () => {
                 switchToDoc(doc.id).catch(() => {});
               });
-              button.addEventListener('dblclick', (e) => {
+              selectButton.addEventListener('dblclick', (e) => {
                 e.preventDefault();
                 if (active !== doc.id) {
                   switchToDoc(doc.id).then(renameDoc).catch(() => {});
@@ -1248,7 +1278,42 @@ $$
                   renameDoc();
                 }
               });
-              tabList.appendChild(button);
+              const menuWrap = document.createElement('span');
+              menuWrap.className = 'md-menu-wrap';
+              const menuButton = document.createElement('button');
+              menuButton.className = 'md-more-dots';
+              menuButton.type = 'button';
+              menuButton.textContent = '...';
+              menuButton.title = `Actions for ${doc.title || 'Untitled'}`;
+              menuButton.setAttribute('aria-label', menuButton.title);
+              menuButton.setAttribute('aria-haspopup', 'menu');
+              menuButton.setAttribute('aria-expanded', 'false');
+              const menu = document.createElement('span');
+              menu.className = 'md-menu md-doc-menu';
+              menu.setAttribute('role', 'menu');
+              const deleteOne = document.createElement('button');
+              deleteOne.className = 'md-text-btn danger';
+              deleteOne.type = 'button';
+              deleteOne.setAttribute('role', 'menuitem');
+              deleteOne.textContent = 'Delete document';
+              deleteOne.addEventListener('click', () => requestDeleteDoc(doc.id));
+              const deleteAll = document.createElement('button');
+              deleteAll.className = 'md-text-btn danger';
+              deleteAll.type = 'button';
+              deleteAll.setAttribute('role', 'menuitem');
+              deleteAll.textContent = 'Delete all documents';
+              deleteAll.addEventListener('click', requestDeleteAllDocs);
+              menu.append(deleteOne, deleteAll);
+              menuButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const open = !menu.classList.contains('open');
+                closeAllMenus();
+                menu.classList.toggle('open', open);
+                menuButton.setAttribute('aria-expanded', String(open));
+              });
+              menuWrap.append(menuButton, menu);
+              item.append(selectButton, menuWrap);
+              tabList.appendChild(item);
             });
             if (docCount) {
               const total = docs.length;
@@ -1311,9 +1376,57 @@ $$
           }
 
           function typesetMath() {
+            clearSearchHighlights();
             if (window.MathJax && window.MathJax.typesetPromise) {
-              window.MathJax.typesetPromise([preview]).catch(() => {});
+              window.MathJax.typesetPromise([preview])
+                .then(highlightSearchMatches)
+                .catch(highlightSearchMatches);
+              return;
             }
+            highlightSearchMatches();
+          }
+
+          function clearSearchHighlights() {
+            preview.querySelectorAll('mark.md-search-match').forEach((mark) => {
+              mark.replaceWith(document.createTextNode(mark.textContent || ''));
+            });
+            preview.normalize();
+          }
+
+          function highlightSearchMatches() {
+            clearSearchHighlights();
+            const query = searchText.trim();
+            if (!query) return;
+            const pattern = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+            const walker = document.createTreeWalker(preview, NodeFilter.SHOW_TEXT, {
+              acceptNode(node) {
+                const parent = node.parentElement;
+                if (!node.data.trim() || !parent) return NodeFilter.FILTER_REJECT;
+                if (parent.closest('script, style, textarea, mjx-container, mark.md-search-match')) {
+                  return NodeFilter.FILTER_REJECT;
+                }
+                pattern.lastIndex = 0;
+                return pattern.test(node.data) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+              },
+            });
+            const matches = [];
+            while (walker.nextNode()) matches.push(walker.currentNode);
+            matches.forEach((node) => {
+              const fragment = document.createDocumentFragment();
+              let lastIndex = 0;
+              pattern.lastIndex = 0;
+              for (const match of node.data.matchAll(pattern)) {
+                const index = match.index ?? 0;
+                fragment.append(document.createTextNode(node.data.slice(lastIndex, index)));
+                const mark = document.createElement('mark');
+                mark.className = 'md-search-match';
+                mark.textContent = match[0];
+                fragment.append(mark);
+                lastIndex = index + match[0].length;
+              }
+              fragment.append(document.createTextNode(node.data.slice(lastIndex)));
+              node.replaceWith(fragment);
+            });
           }
 
           function render() {
@@ -1439,7 +1552,7 @@ $$
             if (MODE === 'account') localStorage.setItem(REMOTE_ACTIVE_KEY, active);
             await ensureLoaded(active);
             input.value = getActive().content || '';
-            closeMoreMenu();
+            closeAllMenus();
             render();
             renderDocuments();
             setSaveState('Auto-saved', false);
@@ -1482,18 +1595,12 @@ $$
             }
           }
 
-          function showNotice(message) {
-            if (!noticeDialog || !noticeDialogMessage) return;
-            noticeDialogMessage.textContent = message;
-            noticeDialog.showModal();
-          }
-
           function renameDoc() {
             const current = getActive();
             if (!current) return;
             pendingRenameDoc = current;
             if (renameInput) renameInput.value = current.title || 'Untitled';
-            closeMoreMenu();
+            closeAllMenus();
             renameDialog?.showModal();
             setTimeout(() => {
               renameInput?.focus();
@@ -1501,25 +1608,58 @@ $$
             }, 0);
           }
 
-          function requestDeleteDoc() {
-            if (docs.length <= 1) {
-              showNotice('At least one document must remain.');
-              return;
-            }
-            const current = getActive();
+          function requestDeleteDoc(docId = active) {
+            const current = docs.find(doc => doc.id === docId);
             if (!current) return;
-            pendingDeleteDocId = current.id;
+            pendingDeleteAction = { type: 'one', id: current.id };
+            if (deleteDialogTitle) deleteDialogTitle.textContent = 'Delete document';
             if (deleteDialogMessage) {
-              deleteDialogMessage.textContent = `Delete "${current.title || 'Untitled'}"? This cannot be undone.`;
+              const replacement = docs.length === 1 ? ' A new empty document will be created.' : '';
+              deleteDialogMessage.textContent = `Delete "${current.title || 'Untitled'}"? This cannot be undone.${replacement}`;
             }
-            closeMoreMenu();
+            if (confirmDelete) confirmDelete.textContent = 'Delete';
+            closeAllMenus();
             deleteDialog?.showModal();
+          }
+
+          function requestDeleteAllDocs() {
+            if (!docs.length) return;
+            pendingDeleteAction = { type: 'all' };
+            if (deleteDialogTitle) deleteDialogTitle.textContent = 'Delete all documents';
+            if (deleteDialogMessage) {
+              const count = docs.length.toLocaleString();
+              deleteDialogMessage.textContent = `Delete all ${count} ${docs.length === 1 ? 'document' : 'documents'}? This cannot be undone. A new empty document will be created.`;
+            }
+            if (confirmDelete) confirmDelete.textContent = 'Delete all';
+            closeAllMenus();
+            deleteDialog?.showModal();
+          }
+
+          async function createEmptyDocument() {
+            if (MODE === 'account') {
+              const created = await api('/api/pages/create', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ tool: TOOL, title: 'Untitled', content: '' }),
+              });
+              return normalizeDoc({ id: created.id, title: 'Untitled', content: '' }, 0);
+            }
+            return normalizeDoc({ id: uid(), title: 'Untitled', content: '' }, 0);
+          }
+
+          function resetSearch() {
+            searchText = '';
+            if (docSearch) docSearch.value = '';
           }
 
           async function deleteDoc(docId) {
             const idx = docs.findIndex(d => d.id === docId);
             if (idx < 0) return;
             const current = docs[idx];
+            const wasActive = current.id === active;
+            clearTimeout(saveTimer);
+            let replacement = null;
+            if (docs.length === 1) replacement = await createEmptyDocument();
             if (MODE === 'account') {
               await api('/api/pages/delete', {
                 method: 'POST',
@@ -1527,15 +1667,59 @@ $$
                 body: JSON.stringify({ id: current.id }),
               });
             }
-            docs.splice(idx, 1);
-            active = docs[Math.max(0, idx - 1)].id;
+            bookmarkIds.delete(current.id);
+            saveBookmarkIds();
+            if (replacement) {
+              docs = [replacement];
+              active = replacement.id;
+              resetSearch();
+            } else {
+              docs.splice(idx, 1);
+              if (wasActive) active = docs[Math.min(idx, docs.length - 1)].id;
+            }
             if (MODE === 'account') localStorage.setItem(REMOTE_ACTIVE_KEY, active);
             else saveLocalState(docs, active);
-            await ensureLoaded(active);
-            input.value = getActive().content || '';
-            closeMoreMenu();
+            if (wasActive || replacement) {
+              await ensureLoaded(active);
+              input.value = getActive().content || '';
+            }
+            closeAllMenus();
             render();
             renderDocuments();
+            setSaveState('Auto-saved', false);
+          }
+
+          async function deleteAllDocs() {
+            const originalDocs = docs.slice();
+            if (!originalDocs.length) return;
+            clearTimeout(saveTimer);
+            const replacement = await createEmptyDocument();
+            if (MODE === 'account') {
+              const results = await Promise.allSettled(originalDocs.map(doc => api('/api/pages/delete', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ id: doc.id }),
+              })));
+              if (results.some(result => result.status === 'rejected')) {
+                await loadAccountDocs();
+                render();
+                renderDocuments();
+                throw new Error('Some documents could not be deleted');
+              }
+            }
+            originalDocs.forEach(doc => bookmarkIds.delete(doc.id));
+            saveBookmarkIds();
+            docs = [replacement];
+            active = replacement.id;
+            resetSearch();
+            input.value = '';
+            if (MODE === 'account') localStorage.setItem(REMOTE_ACTIVE_KEY, active);
+            else saveLocalState(docs, active);
+            closeAllMenus();
+            render();
+            renderDocuments();
+            input.focus();
+            setSaveState('Auto-saved', false);
           }
 
           function exportHtml() {
@@ -1600,6 +1784,18 @@ $$
             moreButton?.setAttribute('aria-expanded', 'false');
           }
 
+          function closeDocumentMenus() {
+            tabList?.querySelectorAll('.md-doc-menu.open').forEach(menu => menu.classList.remove('open'));
+            tabList?.querySelectorAll('.md-more-dots[aria-expanded="true"]').forEach(button => {
+              button.setAttribute('aria-expanded', 'false');
+            });
+          }
+
+          function closeAllMenus() {
+            closeMoreMenu();
+            closeDocumentMenus();
+          }
+
           function toggleBookmark() {
             const current = getActive();
             if (!current) return;
@@ -1625,7 +1821,8 @@ $$
           window.addEventListener('load', typesetMath, { once: true });
           newBtn?.addEventListener('click', () => newDoc().catch(() => {}));
           renameBtn?.addEventListener('click', renameDoc);
-          deleteBtn?.addEventListener('click', requestDeleteDoc);
+          deleteBtn?.addEventListener('click', () => requestDeleteDoc());
+          deleteAllBtn?.addEventListener('click', requestDeleteAllDocs);
           copyBtn?.addEventListener('click', copyRenderedHtml);
           exportHtmlBtn?.addEventListener('click', exportHtml);
           exportPdfBtn?.addEventListener('click', () => window.print());
@@ -1646,34 +1843,66 @@ $$
             renderInfo();
           });
           deleteDialog?.addEventListener('close', () => {
-            if (deleteDialog.returnValue !== 'delete' || !pendingDeleteDocId) {
-              pendingDeleteDocId = '';
+            if (deleteDialog.returnValue !== 'delete' || !pendingDeleteAction) {
+              pendingDeleteAction = null;
               return;
             }
-            const docId = pendingDeleteDocId;
-            pendingDeleteDocId = '';
-            deleteDoc(docId).catch(() => setSaveState('Delete failed', false));
+            const action = pendingDeleteAction;
+            pendingDeleteAction = null;
+            const operation = action.type === 'all' ? deleteAllDocs() : deleteDoc(action.id);
+            operation.catch(() => setSaveState('Delete failed', false));
           });
           splitView?.addEventListener('click', () => setView('split'));
           fullView?.addEventListener('click', () => setView('full'));
           moreButton?.addEventListener('click', (e) => {
             e.stopPropagation();
             const open = !moreMenu?.classList.contains('open');
+            closeAllMenus();
             moreMenu?.classList.toggle('open', open);
             moreButton.setAttribute('aria-expanded', String(open));
           });
           document.addEventListener('click', (e) => {
-            if (!moreMenu?.contains(e.target) && e.target !== moreButton) closeMoreMenu();
+            if (!e.target.closest?.('.md-menu-wrap')) closeAllMenus();
           });
           docSearch?.addEventListener('input', () => {
             searchText = docSearch.value || '';
             renderDocuments();
+            highlightSearchMatches();
           });
           document.addEventListener('keydown', (e) => {
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
               e.preventDefault();
               docSearch?.focus();
               docSearch?.select();
+              return;
+            }
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+              e.preventDefault();
+              persistCurrent().catch(() => setSaveState('Save failed', false));
+              return;
+            }
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.code === 'KeyN') {
+              e.preventDefault();
+              newDoc().catch(() => setSaveState('Create failed', false));
+              return;
+            }
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.code === 'Digit1') {
+              e.preventDefault();
+              setView('split');
+              return;
+            }
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.code === 'Digit2') {
+              e.preventDefault();
+              setView('full');
+              return;
+            }
+            if (e.key === 'F2' && !renameDialog?.open && !deleteDialog?.open) {
+              e.preventDefault();
+              renameDoc();
+              return;
+            }
+            if (e.key === 'Escape') {
+              closeAllMenus();
             }
           });
           decreaseFont?.addEventListener('click', () => {
